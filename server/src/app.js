@@ -16,6 +16,13 @@ const app = express();
 
 // 設置中間件 Set up middleware
 app.use(cors()); // 啟用 CORS Enable CORS
+
+// 設置字符編碼中間件 Set character encoding middleware
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 app.use(express.json()); // 解析 JSON 請求體 Parse JSON request body
 app.use(express.urlencoded({ extended: true })); // 解析 URL 編碼的請求體 Parse URL-encoded request body
 

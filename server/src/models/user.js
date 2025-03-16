@@ -1,6 +1,6 @@
 // 導入依賴 Import dependencies
 const { DataTypes } = require('sequelize');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { sequelize } = require('../../config/database');
 
 // 定義用戶模型 Define User model

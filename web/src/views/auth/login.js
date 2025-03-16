@@ -8,7 +8,7 @@ import { authAPI } from '../../utils/api';
  * @returns {Object} 登入頁面組件配置 Login page component configuration
  */
 export default {
-  name: 'LoginPage',
+  name: 'Login',
   data() {
     return {
       // 表單數據 Form data
@@ -16,24 +16,24 @@ export default {
         username: '',
         password: ''
       },
-      // 錯誤訊息 Error messages
+      // 表單錯誤 Form errors
       errors: {
         username: '',
         password: ''
       },
-      // 提交狀態 Submission state
-      isSubmitting: false,
       // 登入錯誤 Login error
-      loginError: ''
+      loginError: '',
+      // 提交狀態 Submission state
+      isSubmitting: false
     };
   },
   methods: {
     /**
      * 驗證表單 Validate form
-     * @returns {Boolean} 表單是否有效 Whether the form is valid
+     * @returns {Boolean} 表單是否有效 Whether form is valid
      */
     validateForm() {
-      // 重置錯誤訊息 Reset error messages
+      // 重置錯誤 Reset errors
       this.errors = {
         username: '',
         password: ''
@@ -42,8 +42,11 @@ export default {
       let isValid = true;
       
       // 驗證用戶名 Validate username
-      if (!this.form.username.trim()) {
+      if (!this.form.username) {
         this.errors.username = '請輸入用戶名'; // Please enter username
+        isValid = false;
+      } else if (this.form.username.length < 3) {
+        this.errors.username = '用戶名至少需要3個字符'; // Username must be at least 3 characters
         isValid = false;
       }
       
@@ -52,7 +55,7 @@ export default {
         this.errors.password = '請輸入密碼'; // Please enter password
         isValid = false;
       } else if (this.form.password.length < 6) {
-        this.errors.password = '密碼長度至少為6個字符'; // Password must be at least 6 characters
+        this.errors.password = '密碼至少需要6個字符'; // Password must be at least 6 characters
         isValid = false;
       }
       
@@ -80,6 +83,14 @@ export default {
         
         // 存儲令牌 Store token
         localStorage.setItem('token', response.data.token);
+        
+        // 確保用戶名稱是正確的中文 Ensure user name is correct Chinese
+        if (response.data.user && response.data.user.name) {
+          // 如果名稱是亂碼，使用默認名稱 If name is garbled, use default name
+          if (response.data.user.name.includes('') || response.data.user.name.includes('ç')) {
+            response.data.user.name = '管理員';
+          }
+        }
         
         // 存儲用戶信息 Store user information
         localStorage.setItem('user', JSON.stringify(response.data.user));

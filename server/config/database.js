@@ -23,9 +23,12 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    // 添加 dialectOptions 以確保使用正確的字符集 Add dialectOptions to ensure correct character set
     dialectOptions: {
-      // 強制使用本地連接 Force local connection
-      socketPath: '/tmp/mysql.sock'
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
+      supportBigNumbers: true,
+      bigNumberStrings: true
     },
     pool: {
       max: 5, // 連接池最大連接數 Maximum number of connections in pool
