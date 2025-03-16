@@ -26,7 +26,6 @@ const sequelize = new Sequelize(
     // 添加 dialectOptions 以確保使用正確的字符集 Add dialectOptions to ensure correct character set
     dialectOptions: {
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
       supportBigNumbers: true,
       bigNumberStrings: true
     },
@@ -50,6 +49,12 @@ const sequelize = new Sequelize(
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
+    // 設置連接字符集 Set connection character set
+    await sequelize.query('SET NAMES utf8mb4');
+    await sequelize.query('SET CHARACTER SET utf8mb4');
+    await sequelize.query('SET character_set_client = utf8mb4');
+    await sequelize.query('SET character_set_connection = utf8mb4');
+    await sequelize.query('SET character_set_results = utf8mb4');
     console.log('數據庫連接成功。 Database connection has been established successfully.');
     return true;
   } catch (error) {

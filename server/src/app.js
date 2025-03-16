@@ -7,6 +7,7 @@ const User = require('./models/user');
 
 // 導入路由 Import routes
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 // 導入中間件 Import middleware
 const timezoneMiddleware = require('./middleware/timezone');
@@ -34,6 +35,7 @@ app.use(timezoneMiddleware);
 
 // 設置路由 Set up routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // 根路由 Root route
 app.get('/', (req, res) => {
