@@ -1,6 +1,7 @@
 const path = require('path');
 const { VueLoaderPlugin } = require('vue-loader');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack'); // 導入 webpack 模塊 Import webpack module
 
 // webpack配置文件 Webpack configuration file
 module.exports = {
@@ -59,11 +60,18 @@ module.exports = {
       template: './public/index.html', // HTML模板 HTML template
       favicon: './public/favicon.ico', // 網站圖標 Website favicon
     }),
+    // 添加 DefinePlugin 設置 Vue 特性標誌 Add DefinePlugin to set Vue feature flags
+    new webpack.DefinePlugin({
+      __VUE_OPTIONS_API__: true, // 啟用 Options API Enable Options API
+      __VUE_PROD_DEVTOOLS__: false, // 生產環境禁用開發工具 Disable devtools in production
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false // 禁用水合不匹配詳情 Disable hydration mismatch details
+    }),
   ],
   resolve: {
     extensions: ['.js', '.vue', '.json'], // 自動解析的擴展名 Auto-resolved extensions
     alias: {
       '@': path.resolve(__dirname, 'src'), // 設置@指向src目錄 Set @ to point to src directory
+      'vue': '@vue/runtime-dom', // 使用運行時 DOM 版本 Use runtime DOM version
     },
   },
   devServer: {
