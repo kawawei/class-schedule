@@ -1,0 +1,30 @@
+@use 'sass:color'; // 導入 sass:color 模塊 Import sass:color module
+
+.dashboard {
+  min-height: 100vh; // 最小高度為視窗高度 Minimum height is viewport height
+  padding-bottom: var(--spacing-xxl); // 底部間距 Bottom padding
+}
+
+.dashboard-content {
+  padding-top: var(--spacing-xl); // 頂部間距 Top padding
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.activities-list {
+  margin: 0 calc(-1 * var(--spacing-lg));
+  padding: 0 var(--spacing-lg);
+} 
