@@ -8,6 +8,9 @@ const User = require('./models/user');
 // 導入路由 Import routes
 const authRoutes = require('./routes/auth');
 
+// 導入中間件 Import middleware
+const timezoneMiddleware = require('./middleware/timezone');
+
 // 加載環境變量 Load environment variables
 dotenv.config();
 
@@ -25,6 +28,9 @@ app.use((req, res, next) => {
 
 app.use(express.json()); // 解析 JSON 請求體 Parse JSON request body
 app.use(express.urlencoded({ extended: true })); // 解析 URL 編碼的請求體 Parse URL-encoded request body
+
+// 使用時區中間件 Use timezone middleware
+app.use(timezoneMiddleware);
 
 // 設置路由 Set up routes
 app.use('/api/auth', authRoutes);

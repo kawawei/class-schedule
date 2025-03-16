@@ -9,6 +9,121 @@
   padding-top: var(--spacing-xl); // 頂部間距 Top padding
 }
 
+.quick-access-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-access-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      
+      .quick-access-icon {
+        transform: scale(1.1);
+      }
+    }
+    
+    &:nth-child(1) {
+      background: linear-gradient(135deg, #0071e3, #5ac8fa);
+      color: white;
+      
+      .quick-access-icon {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .quick-access-description {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    &:nth-child(2) {
+      background: linear-gradient(135deg, #34c759, #30d158);
+      color: white;
+      
+      .quick-access-icon {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .quick-access-description {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    &:nth-child(3) {
+      background: linear-gradient(135deg, #ff9500, #ffcc00);
+      color: white;
+      
+      .quick-access-icon {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .quick-access-description {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    &:nth-child(4) {
+      background: linear-gradient(135deg, #5856d6, #bf5af2);
+      color: white;
+      
+      .quick-access-icon {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .quick-access-description {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    .quick-access-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      margin-bottom: var(--spacing-md);
+      transition: all 0.3s ease;
+    }
+    
+    .quick-access-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .quick-access-description {
+      font-size: var(--font-size-sm);
+      text-align: center;
+    }
+  }
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -25,6 +25,15 @@ const routes = [
     }
   },
   {
+    path: '/schedule',
+    name: 'Schedule',
+    component: () => import('../views/schedule/Schedule.vue'), // 懶加載排課管理頁面 Lazy load schedule page
+    meta: {
+      title: '排課管理', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
     path: '/:pathMatch(.*)*', // 捕獲所有未匹配的路由 Catch all unmatched routes
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),

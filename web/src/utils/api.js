@@ -1,7 +1,83 @@
 // API 服務 API Service
+import { toISOString, parseISOString } from './timezone';
 
 // API 基礎 URL API Base URL
 const API_BASE_URL = 'http://localhost:3004/api';
+
+/**
+ * 處理日期時間數據 Process date time data
+ * @param {Object|Array} data - 要處理的數據 Data to process
+ * @returns {Object|Array} 處理後的數據 Processed data
+ */
+const processDateTimeData = (data) => {
+  if (!data) return data;
+  
+  // 如果是數組，遍歷處理每個元素 If it's an array, process each element
+  if (Array.isArray(data)) {
+    return data.map(item => processDateTimeData(item));
+  }
+  
+  // 如果是對象，處理每個屬性 If it's an object, process each property
+  if (typeof data === 'object') {
+    const processed = { ...data };
+    
+    // 遍歷對象的所有屬性 Iterate through all properties of the object
+    for (const key in processed) {
+      const value = processed[key];
+      
+      // 如果屬性是日期對象，轉換為ISO字符串 If property is a Date object, convert to ISO string
+      if (value instanceof Date) {
+        processed[key] = toISOString(value);
+      } 
+      // 如果屬性是對象或數組，遞歸處理 If property is an object or array, process recursively
+      else if (typeof value === 'object' && value !== null) {
+        processed[key] = processDateTimeData(value);
+      }
+    }
+    
+    return processed;
+  }
+  
+  return data;
+};
+
+/**
+ * 解析響應數據中的日期時間 Parse date time in response data
+ * @param {Object|Array} data - 要解析的數據 Data to parse
+ * @returns {Object|Array} 解析後的數據 Parsed data
+ */
+const parseDateTimeData = (data) => {
+  if (!data) return data;
+  
+  // 如果是數組，遍歷處理每個元素 If it's an array, process each element
+  if (Array.isArray(data)) {
+    return data.map(item => parseDateTimeData(item));
+  }
+  
+  // 如果是對象，處理每個屬性 If it's an object, process each property
+  if (typeof data === 'object') {
+    const parsed = { ...data };
+    
+    // 遍歷對象的所有屬性 Iterate through all properties of the object
+    for (const key in parsed) {
+      const value = parsed[key];
+      
+      // 如果屬性是字符串且看起來像ISO日期時間，轉換為日期對象
+      // If property is a string and looks like ISO date time, convert to Date object
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        parsed[key] = parseISOString(value);
+      } 
+      // 如果屬性是對象或數組，遞歸處理 If property is an object or array, process recursively
+      else if (typeof value === 'object' && value !== null) {
+        parsed[key] = parseDateTimeData(value);
+      }
+    }
+    
+    return parsed;
+  }
+  
+  return data;
+};
 
 /**
  * 發送 API 請求 Send API request
@@ -30,7 +106,9 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
   
   // 如果有請求數據，添加到請求體 If there is request data, add to request body
   if (data) {
-    options.body = JSON.stringify(data);
+    // 處理請求數據中的日期時間 Process date time in request data
+    const processedData = processDateTimeData(data);
+    options.body = JSON.stringify(processedData);
   }
   
   try {
@@ -45,8 +123,11 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
       throw new Error(responseData.message || '請求失敗 Request failed');
     }
     
-    // 返回響應數據 Return response data
-    return responseData;
+    // 解析響應數據中的日期時間 Parse date time in response data
+    const parsedData = parseDateTimeData(responseData);
+    
+    // 返回解析後的響應數據 Return parsed response data
+    return parsedData;
   } catch (error) {
     console.error('API 請求錯誤 API request error:', error);
     throw error;

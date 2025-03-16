@@ -1,17 +1,14 @@
 <template>
   <div class="welcome-card card">
     <h2 class="welcome-title mb-sm">{{ greeting }}，{{ userName }}</h2>
-    <p class="welcome-subtitle mb-md">{{ currentDate }}</p>
-    <div class="quick-actions d-flex">
-      <slot name="actions">
-        <button class="btn btn-primary mr-md">{{ primaryActionText }}</button>
-        <button class="btn btn-secondary">{{ secondaryActionText }}</button>
-      </slot>
-    </div>
+    <p class="welcome-subtitle mb-xs">{{ currentDate }}</p>
+    <p class="welcome-time mb-md">{{ currentTime }}</p>
   </div>
 </template>
 
 <script>
+import { formatDate, formatTime, TAIWAN_TIMEZONE } from '@/utils/timezone';
+
 export default {
   name: 'WelcomeCard',
   props: {
@@ -25,16 +22,6 @@ export default {
       type: String,
       default: '歡迎回來'
     },
-    // 主要操作按鈕文本 Primary action button text
-    primaryActionText: {
-      type: String,
-      default: '新增老師'
-    },
-    // 次要操作按鈕文本 Secondary action button text
-    secondaryActionText: {
-      type: String,
-      default: '排課管理'
-    },
     // 日期格式 Date format
     dateFormat: {
       type: Object,
@@ -44,12 +31,43 @@ export default {
         day: 'numeric',
         weekday: 'long'
       })
+    },
+    // 時區 Timezone
+    timezone: {
+      type: String,
+      default: TAIWAN_TIMEZONE // 使用時區工具中的台灣時區 Use Taiwan timezone from timezone utility
     }
+  },
+  data() {
+    return {
+      time: new Date(),
+      timer: null
+    };
   },
   computed: {
     // 當前日期 Current date
     currentDate() {
-      return `今天是 ${new Date().toLocaleDateString('zh-TW', this.dateFormat)}，以下是您的系統概覽`;
+      return `今天是 ${formatDate(this.time, this.dateFormat)}，以下是您的系統概覽`;
+    },
+    // 當前時間 Current time
+    currentTime() {
+      return `現在時間：${formatTime(this.time)}`;
+    }
+  },
+  methods: {
+    // 更新時間 Update time
+    updateTime() {
+      this.time = new Date();
+    }
+  },
+  mounted() {
+    // 每秒更新時間 Update time every second
+    this.timer = setInterval(this.updateTime, 1000);
+  },
+  beforeUnmount() {
+    // 清除計時器 Clear timer
+    if (this.timer) {
+      clearInterval(this.timer);
     }
   }
 }
@@ -94,32 +112,25 @@ export default {
     z-index: 1; // 層級 Z-index
   }
   
-  .quick-actions {
+  .welcome-time {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    opacity: 0.9;
     position: relative; // 相對定位 Relative positioning
     z-index: 1; // 層級 Z-index
-  }
-  
-  .btn-primary {
-    background-color: white;
-    color: var(--color-primary);
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.9);
-    }
-  }
-  
-  .btn-secondary {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.3);
-    }
   }
 }
 
 // 工具類 Utility classes
-.mr-md {
-  margin-right: var(--spacing-md);
+.mb-xs {
+  margin-bottom: var(--spacing-xs);
+}
+
+.mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-md {
+  margin-bottom: var(--spacing-md);
 }
 </style> 

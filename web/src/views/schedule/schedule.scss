@@ -1,0 +1,128 @@
+@use 'sass:color'; // 導入 sass:color 模塊 Import sass:color module
+
+.schedule-page {
+  min-height: 100vh; // 最小高度為視窗高度 Minimum height is viewport height
+  padding-bottom: var(--spacing-xxl); // 底部間距 Bottom padding
+  display: flex; // 使用 flex 布局
+  flex-direction: column; // 垂直排列
+}
+
+// 修改容器寬度，使其更寬 Modify container width to make it wider
+.container {
+  max-width: 95%; // 將容器寬度設為視窗寬度的95% Set container width to 95% of viewport width
+  margin: 0 auto; // 保持居中 Keep centered
+  padding: 0; // 移除內邊距 Remove padding
+}
+
+.schedule-content {
+  padding-top: var(--spacing-md); // 減少頂部間距 Reduced top padding
+  flex: 1; // 佔據剩餘空間 Take remaining space
+}
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  
+  .toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+  }
+  
+  .date-navigation {
+    display: flex;
+    align-items: center;
+    margin-right: var(--spacing-md);
+    
+    .nav-button {
+      background: none;
+      border: none;
+      font-size: var(--font-size-lg);
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      
+      &:hover {
+        background-color: var(--color-gray-100);
+      }
+    }
+    
+    .current-date {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      margin: 0 var(--spacing-md);
+    }
+  }
+  
+  .today-button {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    
+    &:hover {
+      background-color: var(--color-primary-dark); // 使用預定義的深色變量 Use predefined dark variable
+      opacity: 0.9; // 添加透明度效果 Add opacity effect
+    }
+  }
+  
+  .view-selector {
+    display: flex;
+    
+    .view-option {
+      background: none;
+      border: 1px solid var(--color-gray-200);
+      padding: var(--spacing-xs) var(--spacing-md);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      
+      &:first-child {
+        border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      }
+      
+      &:last-child {
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      }
+      
+      &:not(:last-child) {
+        border-right: none;
+      }
+      
+      &.active {
+        background-color: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+      }
+      
+      &:not(.active):hover {
+        background-color: var(--color-gray-100);
+      }
+    }
+  }
+}
+
+.calendar-container {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  height: 800px; // 設置一個較大的固定高度值 Set a larger fixed height value
+  overflow: hidden; // 保持隱藏溢出 Keep hiding overflow
+  width: 100%; // 確保日曆容器使用全部可用寬度 Ensure calendar container uses all available width
+  
+  &.month-view {
+    height: 800px; // 同步調整月視圖高度 Adjust month view height accordingly
+  }
+  
+  &.week-view, &.day-view {
+    height: 800px; // 同步調整週視圖和日視圖高度 Adjust week and day view heights accordingly
+  }
+} 
