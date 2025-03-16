@@ -34,6 +34,33 @@ const routes = [
     }
   },
   {
+    path: '/teachers',
+    name: 'TeacherList',
+    component: () => import('../views/teachers/TeacherList.vue'), // 懶加載老師列表頁面 Lazy load teacher list page
+    meta: {
+      title: '老師管理', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
+    path: '/teachers/new',
+    name: 'NewTeacher',
+    component: () => import('../views/teachers/TeacherForm.vue'), // 懶加載新增老師頁面 Lazy load new teacher page
+    meta: {
+      title: '新增老師', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
+    path: '/teachers/:id',
+    name: 'EditTeacher',
+    component: () => import('../views/teachers/TeacherForm.vue'), // 懶加載編輯老師頁面 Lazy load edit teacher page
+    meta: {
+      title: '編輯老師', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('../views/setting/setting.vue'), // 懶加載基礎設置頁面 Lazy load settings page

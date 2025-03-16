@@ -3,7 +3,7 @@ import { ref, onMounted, h } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { useRouter } from 'vue-router'; // 導入 useRouter 用於頁面導航 Import useRouter for navigation
-import { authAPI, userAPI } from '@/utils/api'; // 導入 authAPI 和 userAPI Import authAPI and userAPI
+import { authAPI, userAPI, departmentAPI } from '@/utils/api'; // 導入 API Import API
 
 // 標籤頁圖標組件 Tab Icon Components (使用渲染函數代替模板 Using render function instead of template)
 const UserIcon = {
@@ -160,10 +160,33 @@ export default {
     });
     
     // 部門選項 Department options
-    const departmentOptions = [
-      { value: 'teaching', label: '師資部' },
-      { value: 'management', label: '管理部' }
-    ];
+    const departmentOptions = ref([]);
+    
+    // 獲取部門列表 Get department list
+    const fetchDepartments = async () => {
+      try {
+        const response = await departmentAPI.getAllDepartments();
+        if (response.success && response.data) {
+          departmentOptions.value = response.data.map(dept => ({
+            value: dept.code,
+            label: dept.name
+          }));
+        } else {
+          // 如果 API 調用失敗，使用默認值 If API call fails, use default values
+          departmentOptions.value = [
+            { value: 'teaching', label: '師資部' },
+            { value: 'management', label: '管理部' }
+          ];
+        }
+      } catch (error) {
+        console.error('獲取部門列表失敗 Failed to get department list:', error);
+        // 如果出錯，使用默認值 If error occurs, use default values
+        departmentOptions.value = [
+          { value: 'teaching', label: '師資部' },
+          { value: 'management', label: '管理部' }
+        ];
+      }
+    };
     
     // 用戶表格列定義 User table column definitions
     const userColumns = [
@@ -379,6 +402,45 @@ export default {
       }
     };
     
+    /**
+     * 切換用戶狀態 Toggle user status
+     * @param {Object} user - 用戶對象 User object
+     */
+    const toggleUserStatus = async (user) => {
+      // 如果是 ID 為 1 的管理員，不允許修改狀態 If it's the admin with ID 1, don't allow status change
+      if (user.id === 1) {
+        return;
+      }
+      
+      try {
+        loading.value = true;
+        
+        // 創建更新數據，只包含需要更新的字段 Create update data, only include fields that need to be updated
+        const updateData = {
+          id: user.id,
+          is_active: !user.is_active // 切換狀態 Toggle status
+        };
+        
+        // 調用 API 更新用戶狀態 Call API to update user status
+        await userAPI.updateUser(user.id, updateData);
+        
+        // 更新本地用戶數據 Update local user data
+        const index = users.value.findIndex(u => u.id === user.id);
+        if (index !== -1) {
+          users.value[index].is_active = !users.value[index].is_active;
+        }
+        
+        // 顯示成功消息 Show success message
+        const statusText = updateData.is_active ? '啟用' : '禁用';
+        console.log(`用戶 "${user.name}" 已${statusText} User "${user.name}" has been ${updateData.is_active ? 'activated' : 'deactivated'}`);
+      } catch (error) {
+        console.error('更新用戶狀態失敗 Failed to update user status:', error);
+        alert(`更新用戶狀態失敗: ${error.message} Failed to update user status: ${error.message}`);
+      } finally {
+        loading.value = false;
+      }
+    };
+    
     // 處理登出 Handle logout
     const handleLogout = async () => {
       isLoggingOut.value = true;
@@ -420,7 +482,8 @@ export default {
       handleEdit,
       handleDelete,
       handleLogout,
-      saveUser
+      saveUser,
+      toggleUserStatus
     };
   }
 }; 

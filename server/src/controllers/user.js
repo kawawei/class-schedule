@@ -1,6 +1,8 @@
 // 導入依賴 Import dependencies
 const User = require('../models/user');
-const { generateToken } = require('../utils/jwt');
+const Department = require('../models/department');
+const UserDepartment = require('../models/userDepartment');
+const { sequelize } = require('../../config/database');
 
 /**
  * 獲取所有用戶 Get all users
@@ -9,41 +11,39 @@ const { generateToken } = require('../utils/jwt');
  */
 const getAllUsers = async (req, res) => {
   try {
-    // 查詢所有用戶，不返回密碼字段 Query all users, exclude password field
+    // 獲取所有用戶 Get all users
     const users = await User.findAll({
-      attributes: { exclude: ['password'] },
-      order: [['createdAt', 'DESC']] // 按創建時間降序排序 Sort by creation time in descending order
+      attributes: { exclude: ['password'] }, // 排除密碼字段 Exclude password field
+      include: [
+        {
+          model: Department,
+          as: 'departments',
+          through: { attributes: [] } // 不包含中間表字段 Don't include junction table fields
+        }
+      ],
+      order: [['id', 'ASC']]
     });
-    
-    // 輸出原始用戶數據 Log raw user data
-    console.log('原始用戶數據 Raw user data:', JSON.stringify(users, null, 2));
     
     // 格式化用戶數據 Format user data
     const formattedUsers = users.map(user => {
       const userData = user.toJSON();
-      
-      // 不再嘗試重新編碼用戶名，直接使用數據庫返回的值
-      // No longer try to re-encode user name, directly use the value returned by the database
-      
       return {
         ...userData,
-        status: userData.is_active ? 'active' : 'inactive' // 將 is_active 轉換為 status Format is_active as status
+        status: userData.is_active ? 'active' : 'inactive', // 將 is_active 轉換為 status Format is_active as status
+        departments: userData.departments.map(dept => dept.code) // 只返回部門代碼 Only return department codes
       };
     });
     
-    // 輸出格式化後的用戶數據 Log formatted user data
-    console.log('格式化後的用戶數據 Formatted user data:', JSON.stringify(formattedUsers, null, 2));
-    
-    // 返回用戶列表 Return user list
     return res.status(200).json({
       success: true,
+      message: '獲取用戶列表成功 Get users list successfully',
       data: formattedUsers
     });
   } catch (error) {
-    console.error('獲取用戶列表失敗 Failed to get user list:', error);
+    console.error('獲取用戶列表失敗 Failed to get users list:', error);
     return res.status(500).json({
       success: false,
-      message: '獲取用戶列表失敗 Failed to get user list',
+      message: '獲取用戶列表失敗 Failed to get users list',
       error: error.message
     });
   }
@@ -58,12 +58,19 @@ const getUser = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 查詢用戶 Query user
+    // 獲取用戶 Get user
     const user = await User.findByPk(id, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] }, // 排除密碼字段 Exclude password field
+      include: [
+        {
+          model: Department,
+          as: 'departments',
+          through: { attributes: [] } // 不包含中間表字段 Don't include junction table fields
+        }
+      ]
     });
     
-    // 如果用戶不存在，返回 404 If user doesn't exist, return 404
+    // 如果用戶不存在，返回404 If user doesn't exist, return 404
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -75,12 +82,13 @@ const getUser = async (req, res) => {
     const userData = user.toJSON();
     const formattedUser = {
       ...userData,
-      status: userData.is_active ? 'active' : 'inactive' // 將 is_active 轉換為 status Format is_active as status
+      status: userData.is_active ? 'active' : 'inactive', // 將 is_active 轉換為 status Format is_active as status
+      departments: userData.departments.map(dept => dept.code) // 只返回部門代碼 Only return department codes
     };
     
-    // 返回用戶信息 Return user info
     return res.status(200).json({
       success: true,
+      message: '獲取用戶成功 Get user successfully',
       data: formattedUser
     });
   } catch (error) {
@@ -99,11 +107,15 @@ const getUser = async (req, res) => {
  * @param {Object} res - 響應對象 Response object
  */
 const createUser = async (req, res) => {
+  // 開始事務 Start transaction
+  const transaction = await sequelize.transaction();
+  
   try {
-    const { username, password, name, email, role } = req.body;
+    const { username, password, name, email, role, departments } = req.body;
     
     // 檢查必填字段 Check required fields
     if (!username || !password || !name) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: '用戶名、密碼和姓名為必填字段 Username, password and name are required'
@@ -113,6 +125,7 @@ const createUser = async (req, res) => {
     // 檢查用戶名是否已存在 Check if username already exists
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: '用戶名已存在 Username already exists'
@@ -127,21 +140,54 @@ const createUser = async (req, res) => {
       email,
       role: role || 'user',
       is_active: true
+    }, { transaction });
+    
+    // 如果有部門，添加部門關聯 If departments are provided, add department relations
+    if (departments && departments.length > 0) {
+      // 獲取部門 Get departments
+      const deptRecords = await Department.findAll({
+        where: { code: departments },
+        transaction
+      });
+      
+      // 添加部門關聯 Add department relations
+      if (deptRecords.length > 0) {
+        await user.addDepartments(deptRecords, { transaction });
+      }
+    }
+    
+    // 提交事務 Commit transaction
+    await transaction.commit();
+    
+    // 獲取完整的用戶信息（包括部門） Get complete user info (including departments)
+    const createdUser = await User.findByPk(user.id, {
+      attributes: { exclude: ['password'] }, // 排除密碼字段 Exclude password field
+      include: [
+        {
+          model: Department,
+          as: 'departments',
+          through: { attributes: [] } // 不包含中間表字段 Don't include junction table fields
+        }
+      ]
     });
     
-    // 返回創建的用戶信息（不包含密碼） Return created user info (excluding password)
-    const userData = user.toJSON();
-    delete userData.password;
+    // 格式化用戶數據 Format user data
+    const userData = createdUser.toJSON();
+    const formattedUser = {
+      ...userData,
+      status: userData.is_active ? 'active' : 'inactive', // 將 is_active 轉換為 status Format is_active as status
+      departments: userData.departments.map(dept => dept.code) // 只返回部門代碼 Only return department codes
+    };
     
     return res.status(201).json({
       success: true,
       message: '用戶創建成功 User created successfully',
-      data: {
-        ...userData,
-        status: userData.is_active ? 'active' : 'inactive' // 將 is_active 轉換為 status Format is_active as status
-      }
+      data: formattedUser
     });
   } catch (error) {
+    // 回滾事務 Rollback transaction
+    await transaction.rollback();
+    
     console.error('創建用戶失敗 Failed to create user:', error);
     return res.status(500).json({
       success: false,
@@ -157,51 +203,96 @@ const createUser = async (req, res) => {
  * @param {Object} res - 響應對象 Response object
  */
 const updateUser = async (req, res) => {
+  // 開始事務 Start transaction
+  const transaction = await sequelize.transaction();
+  
   try {
     const { id } = req.params;
-    const { name, email, role, status, password } = req.body;
+    const { username, password, name, email, role, is_active, departments } = req.body;
     
-    // 查詢用戶 Query user
-    const user = await User.findByPk(id);
+    // 獲取用戶 Get user
+    const user = await User.findByPk(id, { transaction });
     
-    // 如果用戶不存在，返回 404 If user doesn't exist, return 404
+    // 如果用戶不存在，返回404 If user doesn't exist, return 404
     if (!user) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: '用戶不存在 User not found'
       });
     }
     
-    // 準備更新數據 Prepare update data
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (role) updateData.role = role;
-    if (status !== undefined) updateData.is_active = status === 'active';
-    if (password) updateData.password = password;
+    // 如果更改用戶名，檢查是否已存在 If changing username, check if it already exists
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ 
+        where: { username },
+        transaction
+      });
+      
+      if (existingUser) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: '用戶名已存在 Username already exists'
+        });
+      }
+    }
     
-    // 更新用戶 Update user
-    await user.update(updateData);
+    // 更新用戶字段 Update user fields
+    if (username) user.username = username;
+    if (password) user.password = password; // 密碼會在模型的 beforeUpdate 鉤子中自動加密 Password will be automatically encrypted in the model's beforeUpdate hook
+    if (name) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (role) user.role = role;
+    if (is_active !== undefined) user.is_active = is_active;
     
-    // 重新獲取更新後的用戶信息 Get updated user info
+    // 保存用戶 Save user
+    await user.save({ transaction });
+    
+    // 如果有部門，更新部門關聯 If departments are provided, update department relations
+    if (departments && Array.isArray(departments)) {
+      // 獲取部門 Get departments
+      const deptRecords = await Department.findAll({
+        where: { code: departments },
+        transaction
+      });
+      
+      // 設置部門關聯 Set department relations
+      await user.setDepartments(deptRecords, { transaction });
+    }
+    
+    // 提交事務 Commit transaction
+    await transaction.commit();
+    
+    // 獲取更新後的用戶信息 Get updated user info
     const updatedUser = await User.findByPk(id, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] }, // 排除密碼字段 Exclude password field
+      include: [
+        {
+          model: Department,
+          as: 'departments',
+          through: { attributes: [] } // 不包含中間表字段 Don't include junction table fields
+        }
+      ]
     });
     
     // 格式化用戶數據 Format user data
     const userData = updatedUser.toJSON();
     const formattedUser = {
       ...userData,
-      status: userData.is_active ? 'active' : 'inactive' // 將 is_active 轉換為 status Format is_active as status
+      status: userData.is_active ? 'active' : 'inactive', // 將 is_active 轉換為 status Format is_active as status
+      departments: userData.departments.map(dept => dept.code) // 只返回部門代碼 Only return department codes
     };
     
-    // 返回更新後的用戶信息 Return updated user info
     return res.status(200).json({
       success: true,
       message: '用戶更新成功 User updated successfully',
       data: formattedUser
     });
   } catch (error) {
+    // 回滾事務 Rollback transaction
+    await transaction.rollback();
+    
     console.error('更新用戶失敗 Failed to update user:', error);
     return res.status(500).json({
       success: false,
@@ -220,10 +311,10 @@ const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 查詢用戶 Query user
+    // 獲取用戶 Get user
     const user = await User.findByPk(id);
     
-    // 如果用戶不存在，返回 404 If user doesn't exist, return 404
+    // 如果用戶不存在，返回404 If user doesn't exist, return 404
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -234,7 +325,6 @@ const deleteUser = async (req, res) => {
     // 刪除用戶 Delete user
     await user.destroy();
     
-    // 返回成功信息 Return success message
     return res.status(200).json({
       success: true,
       message: '用戶刪除成功 User deleted successfully'
@@ -249,7 +339,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// 導出控制器函數 Export controller functions
+// 導出控制器方法 Export controller methods
 module.exports = {
   getAllUsers,
   getUser,

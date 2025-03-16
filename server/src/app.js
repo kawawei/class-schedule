@@ -4,10 +4,13 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { sequelize, testConnection } = require('../config/database');
 const User = require('./models/user');
+const Department = require('./models/department');
+const UserDepartment = require('./models/userDepartment');
 
 // 導入路由 Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const departmentRoutes = require('./routes/department');
 
 // 導入中間件 Import middleware
 const timezoneMiddleware = require('./middleware/timezone');
@@ -36,6 +39,7 @@ app.use(timezoneMiddleware);
 // 設置路由 Set up routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/departments', departmentRoutes);
 
 // 根路由 Root route
 app.get('/', (req, res) => {

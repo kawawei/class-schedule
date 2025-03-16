@@ -227,9 +227,83 @@ const userAPI = {
   }
 };
 
+/**
+ * 部門 API Department API
+ */
+const departmentAPI = {
+  /**
+   * 獲取所有部門 Get all departments
+   * @returns {Promise} 部門列表 Department list
+   */
+  getAllDepartments: () => {
+    return apiRequest('/departments', 'GET', null, true);
+  },
+  
+  /**
+   * 獲取單個部門 Get single department
+   * @param {Number} id - 部門ID Department ID
+   * @returns {Promise} 部門信息 Department info
+   */
+  getDepartment: (id) => {
+    return apiRequest(`/departments/${id}`, 'GET', null, true);
+  }
+};
+
+/**
+ * 老師 API Teacher API
+ */
+const teacherAPI = {
+  /**
+   * 獲取所有老師 Get all teachers
+   * @returns {Promise} 老師列表 Teacher list
+   */
+  getAllTeachers: () => {
+    return apiRequest('/teachers', 'GET', null, true);
+  },
+  
+  /**
+   * 獲取單個老師 Get single teacher
+   * @param {Number} id - 老師ID Teacher ID
+   * @returns {Promise} 老師信息 Teacher info
+   */
+  getTeacher: (id) => {
+    return apiRequest(`/teachers/${id}`, 'GET', null, true);
+  },
+  
+  /**
+   * 創建老師 Create teacher
+   * @param {Object} teacherData - 老師數據 Teacher data
+   * @returns {Promise} 創建結果 Creation result
+   */
+  createTeacher: (teacherData) => {
+    return apiRequest('/teachers', 'POST', teacherData, true);
+  },
+  
+  /**
+   * 更新老師 Update teacher
+   * @param {Number} id - 老師ID Teacher ID
+   * @param {Object} teacherData - 老師數據 Teacher data
+   * @returns {Promise} 更新結果 Update result
+   */
+  updateTeacher: (id, teacherData) => {
+    return apiRequest(`/teachers/${id}`, 'PUT', teacherData, true);
+  },
+  
+  /**
+   * 刪除老師 Delete teacher
+   * @param {Number} id - 老師ID Teacher ID
+   * @returns {Promise} 刪除結果 Deletion result
+   */
+  deleteTeacher: (id) => {
+    return apiRequest(`/teachers/${id}`, 'DELETE', null, true);
+  }
+};
+
 // 導出 API Export API
 export {
   apiRequest,
   authAPI,
-  userAPI
+  userAPI,
+  departmentAPI,
+  teacherAPI
 }; 

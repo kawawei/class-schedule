@@ -2,6 +2,8 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { sequelize } = require('../../config/database');
+const Department = require('./department');
+const UserDepartment = require('./userDepartment');
 
 // 定義用戶模型 Define User model
 const User = sequelize.define('USER', {
@@ -34,7 +36,7 @@ const User = sequelize.define('USER', {
     comment: '電子郵件 Email'
   },
   role: {
-    type: DataTypes.ENUM('admin', 'user'),
+    type: DataTypes.ENUM('admin', 'teacher', 'user'),
     defaultValue: 'user',
     comment: '角色 Role'
   },
@@ -71,6 +73,21 @@ const User = sequelize.define('USER', {
       }
     }
   }
+});
+
+// 設置用戶與部門的多對多關聯 Set up many-to-many association between User and Department
+User.belongsToMany(Department, {
+  through: UserDepartment,
+  foreignKey: 'user_id',
+  otherKey: 'department_id',
+  as: 'departments'
+});
+
+Department.belongsToMany(User, {
+  through: UserDepartment,
+  foreignKey: 'department_id',
+  otherKey: 'user_id',
+  as: 'users'
 });
 
 // 添加實例方法 Add instance methods

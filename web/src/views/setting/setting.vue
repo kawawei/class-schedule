@@ -64,9 +64,10 @@
                 
                 <!-- 狀態列 Status column -->
                 <template #status="{ row }">
-                  <StatusBadge
-                    :status="row.is_active ? 'completed' : 'cancelled'"
-                    :text="getStatusName(row.is_active ? 'active' : 'inactive')"
+                  <ToggleSwitch
+                    :model-value="row.is_active"
+                    :disabled="row.id === 1" 
+                    @change="toggleUserStatus(row)"
                   />
                 </template>
                 
@@ -162,13 +163,6 @@
             placeholder="請選擇角色"
           />
         </div>
-        <div class="form-row">
-          <CheckboxGroup
-            label="部門"
-            :options="departmentOptions"
-            v-model="currentUser.departments"
-          />
-        </div>
       </div>
     </AppDialog>
   </div>
@@ -184,6 +178,7 @@ import AppDialog from '@/components/base/AppDialog.vue';
 import AppCheckbox from '@/components/base/AppCheckbox.vue';
 import CheckboxGroup from '@/components/base/CheckboxGroup.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
+import ToggleSwitch from '@/components/base/ToggleSwitch.vue';
 import settingLogic from './setting.js';
 
 export default {
@@ -197,9 +192,14 @@ export default {
     AppDialog,
     AppCheckbox,
     CheckboxGroup,
-    AppSelect
+    AppSelect,
+    ToggleSwitch
   },
-  ...settingLogic
+  setup() {
+    return {
+      ...settingLogic.setup()
+    };
+  }
 };
 </script>
 
