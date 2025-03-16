@@ -1,7 +1,20 @@
 <template>
   <header class="app-header frosted-glass">
     <div class="container d-flex justify-content-between align-items-center">
-      <div class="header-left">
+      <div class="header-left d-flex align-items-center">
+        <router-link to="/dashboard" class="home-btn" title="返回首頁">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </router-link>
+        <button class="menu-btn" @click="toggleMenu" title="功能選單">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
         <slot name="left">
           <h1 class="header-title">{{ title }}</h1>
         </slot>
@@ -25,161 +38,100 @@
       </div>
     </div>
   </header>
+
+  <!-- 菜單彈出窗口 Menu popup window -->
+  <div class="menu-overlay" v-if="menuVisible" @click="closeMenu">
+    <div class="menu-popup frosted-glass" @click.stop>
+      <div class="menu-header">
+        <h2>系統功能選單</h2>
+        <button class="close-btn" @click="closeMenu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="menu-content">
+        <router-link to="/schedule" class="menu-item">
+          <div class="icon-wrapper schedule-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+              <circle cx="12" cy="15" r="2"></circle>
+            </svg>
+          </div>
+          <span>排課管理</span>
+        </router-link>
+        <router-link to="/teachers" class="menu-item">
+          <div class="icon-wrapper teacher-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+              <path d="M12 11v4"></path>
+              <path d="M9 14h6"></path>
+            </svg>
+          </div>
+          <span>老師管理</span>
+        </router-link>
+        <router-link to="/courses" class="menu-item">
+          <div class="icon-wrapper course-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <path d="M8 6h8"></path>
+              <path d="M8 10h8"></path>
+              <path d="M8 14h6"></path>
+            </svg>
+          </div>
+          <span>課程管理</span>
+        </router-link>
+        <router-link to="/materials" class="menu-item">
+          <div class="icon-wrapper material-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              <path d="M12 10v6"></path>
+              <path d="M9 13h6"></path>
+            </svg>
+          </div>
+          <span>教材管理</span>
+        </router-link>
+        <router-link to="/reports" class="menu-item">
+          <div class="icon-wrapper report-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+              <path d="M3 20h18"></path>
+              <circle cx="18" cy="7" r="2"></circle>
+            </svg>
+          </div>
+          <span>報表統計</span>
+        </router-link>
+        <router-link to="/settings" class="menu-item">
+          <div class="icon-wrapper settings-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+          <span>基礎設置</span>
+        </router-link>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-export default {
-  name: 'AppHeader',
-  props: {
-    // 頁面標題 Page title
-    title: {
-      type: String,
-      default: '才藝老師管理系統'
-    },
-    // 用戶名稱 User name
-    userName: {
-      type: String,
-      default: '管理員'
-    },
-    // 用戶頭像 User avatar
-    userAvatar: {
-      type: String,
-      default: ''
-    },
-    // 登出狀態 Logout state
-    isLoggingOut: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      // 默認頭像 Default avatar
-      defaultAvatar: 'https://ui-avatars.com/api/?name=Admin&background=0071e3&color=fff'
-    };
-  },
-  methods: {
-    /**
-     * 處理登出事件 Handle logout event
-     */
-    handleLogout() {
-      // 觸發登出事件 Emit logout event
-      this.$emit('logout');
-    }
-  }
-}
+// 導入腳本文件 Import script file
+import AppHeaderScript from './AppHeader.js';
+
+// 導出組件 Export component
+export default AppHeaderScript;
 </script>
 
 <style lang="scss" scoped>
-@use 'sass:color'; // 導入 sass:color 模塊 Import sass:color module
-
-.app-header {
-  position: sticky; // 固定在頂部 Sticky at the top
-  top: 0;
-  z-index: 100;
-  padding: var(--spacing-md) 0;
-  margin-bottom: var(--spacing-xl);
-  box-shadow: var(--shadow-sm);
-  background-color: rgba(255, 255, 255, 0.8); // 半透明背景 Semi-transparent background
-  backdrop-filter: blur(10px); // 毛玻璃效果 Frosted glass effect
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.container {
-  padding-right: 0; // 移除右側內邊距 Remove right padding
-}
-
-.header-title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.header-right {
-  position: relative; // 設置相對定位 Set relative positioning
-  right: -40px; // 向右偏移 Offset to the right
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  
-  .user-name {
-    margin-right: var(--spacing-md);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-  }
-  
-  .user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    margin-right: var(--spacing-md);
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-}
-
-.logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  background-color: rgba(255, 59, 48, 0.1);
-  color: var(--color-danger);
-  border: 1px solid rgba(255, 59, 48, 0.2);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 80px;
-  
-  svg {
-    margin-right: 6px;
-  }
-  
-  &:hover {
-    background-color: rgba(255, 59, 48, 0.2);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-  }
-  
-  &:active {
-    transform: translateY(0);
-    box-shadow: none;
-  }
-  
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-}
-
-// 加載中動畫 Loading spinner
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
-  border: 2px solid rgba(255, 59, 48, 0.3);
-  border-radius: 50%;
-  border-top-color: var(--color-danger);
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+// 導入樣式文件 Import style file
+@import './AppHeader.scss';
 </style> 
