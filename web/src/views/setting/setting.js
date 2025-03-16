@@ -2,6 +2,8 @@
 import { ref, onMounted, h } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import { useRouter } from 'vue-router'; // 導入 useRouter 用於頁面導航 Import useRouter for navigation
+import { authAPI, userAPI } from '@/utils/api'; // 導入 authAPI 和 userAPI Import authAPI and userAPI
 
 // 標籤頁圖標組件 Tab Icon Components (使用渲染函數代替模板 Using render function instead of template)
 const UserIcon = {
@@ -95,6 +97,9 @@ export default {
     LogIcon
   },
   setup() {
+    // 獲取路由器 Get router
+    const router = useRouter();
+    
     // 用戶信息 User information
     const userName = ref(localStorage.getItem('userName') || '管理員');
     const isLoggingOut = ref(false);
@@ -166,33 +171,29 @@ export default {
       }
     ];
     
-    // 模擬用戶數據 Mock user data
-    const users = ref([
-      {
-        id: 1,
-        username: 'admin',
-        name: '系統管理員',
-        role: 'admin',
-        status: 'active',
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      {
-        id: 2,
-        username: 'teacher1',
-        name: '王老師',
-        role: 'teacher',
-        status: 'active',
-        createdAt: '2024-01-02T00:00:00Z'
-      },
-      {
-        id: 3,
-        username: 'staff1',
-        name: '李小姐',
-        role: 'staff',
-        status: 'inactive',
-        createdAt: '2024-01-03T00:00:00Z'
+    // 用戶數據 User data
+    const users = ref([]);
+    
+    // 獲取用戶列表 Get user list
+    const fetchUsers = async () => {
+      try {
+        loading.value = true;
+        console.log('開始獲取用戶列表 Start fetching user list');
+        const response = await userAPI.getAllUsers();
+        console.log('API 返回的用戶數據 User data returned from API:', response);
+        users.value = response.data;
+        console.log('設置到 users.value 的數據 Data set to users.value:', users.value);
+      } catch (error) {
+        console.error('獲取用戶列表失敗 Failed to get user list:', error);
+      } finally {
+        loading.value = false;
       }
-    ]);
+    };
+    
+    // 組件掛載時獲取用戶列表 Get user list when component is mounted
+    onMounted(() => {
+      fetchUsers();
+    });
     
     // 切換標籤頁 Switch tab
     const switchTab = (tab) => {
@@ -208,6 +209,7 @@ export default {
     const getRoleName = (role) => {
       const roleMap = {
         admin: '管理員',
+        user: '用戶',
         teacher: '老師',
         staff: '職員'
       };
@@ -236,19 +238,37 @@ export default {
     };
     
     // 刪除用戶 Delete user
-    const handleDelete = (user) => {
-      // TODO: 實現刪除用戶功能 Implement delete user functionality
-      console.log('Delete user:', user);
+    const handleDelete = async (user) => {
+      if (confirm(`確定要刪除用戶 "${user.name}" 嗎？ Are you sure you want to delete user "${user.name}"?`)) {
+        try {
+          loading.value = true;
+          await userAPI.deleteUser(user.id);
+          // 刪除成功後重新獲取用戶列表 Fetch user list after successful deletion
+          await fetchUsers();
+        } catch (error) {
+          console.error('刪除用戶失敗 Failed to delete user:', error);
+        } finally {
+          loading.value = false;
+        }
+      }
     };
     
     // 處理登出 Handle logout
     const handleLogout = async () => {
       isLoggingOut.value = true;
       try {
-        // TODO: 實現登出功能 Implement logout functionality
-        console.log('Logout');
+        // 調用登出 API Call logout API
+        await authAPI.logout();
+        
+        // API 調用成功後，清除身份驗證狀態 After successful API call, clear authentication state
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+        
+        // 導航到登入頁面 Navigate to login page
+        router.push({ name: 'Login' });
       } catch (error) {
-        console.error('Logout failed:', error);
+        console.error('登出失敗 Logout failed:', error);
       } finally {
         isLoggingOut.value = false;
       }

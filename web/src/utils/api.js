@@ -115,8 +115,19 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
     // 發送請求 Send request
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
     
+    // 輸出響應頭部 Log response headers
+    console.log('響應頭部 Response headers:', {
+      'content-type': response.headers.get('content-type'),
+      'content-encoding': response.headers.get('content-encoding')
+    });
+    
+    // 獲取響應文本 Get response text
+    const responseText = await response.text();
+    console.log('響應文本 Response text:', responseText);
+    
     // 解析響應 Parse response
-    const responseData = await response.json();
+    const responseData = JSON.parse(responseText);
+    console.log('解析後的響應數據 Parsed response data:', responseData);
     
     // 如果響應不成功，拋出錯誤 If response is not successful, throw error
     if (!response.ok) {
@@ -125,6 +136,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
     
     // 解析響應數據中的日期時間 Parse date time in response data
     const parsedData = parseDateTimeData(responseData);
+    console.log('處理日期後的響應數據 Response data after date processing:', parsedData);
     
     // 返回解析後的響應數據 Return parsed response data
     return parsedData;
@@ -165,8 +177,59 @@ const authAPI = {
   }
 };
 
+/**
+ * 用戶 API User API
+ */
+const userAPI = {
+  /**
+   * 獲取所有用戶 Get all users
+   * @returns {Promise} 用戶列表 User list
+   */
+  getAllUsers: () => {
+    return apiRequest('/users', 'GET', null, true);
+  },
+  
+  /**
+   * 獲取單個用戶 Get single user
+   * @param {Number} id - 用戶ID User ID
+   * @returns {Promise} 用戶信息 User info
+   */
+  getUser: (id) => {
+    return apiRequest(`/users/${id}`, 'GET', null, true);
+  },
+  
+  /**
+   * 創建用戶 Create user
+   * @param {Object} userData - 用戶數據 User data
+   * @returns {Promise} 創建結果 Creation result
+   */
+  createUser: (userData) => {
+    return apiRequest('/users', 'POST', userData, true);
+  },
+  
+  /**
+   * 更新用戶 Update user
+   * @param {Number} id - 用戶ID User ID
+   * @param {Object} userData - 用戶數據 User data
+   * @returns {Promise} 更新結果 Update result
+   */
+  updateUser: (id, userData) => {
+    return apiRequest(`/users/${id}`, 'PUT', userData, true);
+  },
+  
+  /**
+   * 刪除用戶 Delete user
+   * @param {Number} id - 用戶ID User ID
+   * @returns {Promise} 刪除結果 Deletion result
+   */
+  deleteUser: (id) => {
+    return apiRequest(`/users/${id}`, 'DELETE', null, true);
+  }
+};
+
 // 導出 API Export API
 export {
   apiRequest,
-  authAPI
+  authAPI,
+  userAPI
 }; 

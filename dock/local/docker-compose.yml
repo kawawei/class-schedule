@@ -59,6 +59,7 @@ services:
     volumes:
       - talent-mysql-data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./mysql-conf:/etc/mysql/conf.d
     environment:
       - MYSQL_ROOT_PASSWORD=talent_password
       - MYSQL_DATABASE=Talent_teacher_db
