@@ -34,6 +34,15 @@ const routes = [
     }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/setting/setting.vue'), // 懶加載基礎設置頁面 Lazy load settings page
+    meta: {
+      title: '基礎設置', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
     path: '/:pathMatch(.*)*', // 捕獲所有未匹配的路由 Catch all unmatched routes
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),
