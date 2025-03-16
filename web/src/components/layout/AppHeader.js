@@ -4,6 +4,7 @@
  */
 export default {
   name: 'AppHeader',
+  emits: ['logout'],
   props: {
     // 頁面標題 Page title
     title: {

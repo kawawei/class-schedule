@@ -1,48 +1,88 @@
 // 導入依賴 Import dependencies
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, h } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
-// 標籤頁圖標組件 Tab Icon Components
+// 標籤頁圖標組件 Tab Icon Components (使用渲染函數代替模板 Using render function instead of template)
 const UserIcon = {
-  template: `
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-      <circle cx="9" cy="7" r="4"></circle>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-    </svg>
-  `
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: 9, cy: 7, r: 4 }),
+      h('path', { d: 'M23 21v-2a4 4 0 0 0-3-3.87' }),
+      h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
+    ]);
+  }
 };
 
 const SecurityIcon = {
-  template: `
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-    </svg>
-  `
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' })
+    ]);
+  }
 };
 
 const BackupIcon = {
-  template: `
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-      <polyline points="17 8 12 3 7 8"></polyline>
-      <line x1="12" y1="3" x2="12" y2="15"></line>
-    </svg>
-  `
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+      h('polyline', { points: '17 8 12 3 7 8' }),
+      h('line', { x1: 12, y1: 3, x2: 12, y2: 15 })
+    ]);
+  }
 };
 
 const LogIcon = {
-  template: `
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-      <line x1="16" y1="13" x2="8" y2="13"></line>
-      <line x1="16" y1="17" x2="8" y2="17"></line>
-      <polyline points="10 9 9 9 8 9"></polyline>
-    </svg>
-  `
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+      h('polyline', { points: '14 2 14 8 20 8' }),
+      h('line', { x1: 16, y1: 13, x2: 8, y2: 13 }),
+      h('line', { x1: 16, y1: 17, x2: 8, y2: 17 }),
+      h('polyline', { points: '10 9 9 9 8 9' })
+    ]);
+  }
 };
 
 // 導出設置頁面組件配置 Export settings page component configuration
@@ -68,25 +108,25 @@ export default {
       {
         key: 'users',
         label: '用戶管理',
-        icon: 'UserIcon',
+        icon: UserIcon,
         iconBg: 'rgba(0, 122, 255, 0.1)'
       },
       {
         key: 'security',
         label: '安全設置',
-        icon: 'SecurityIcon',
+        icon: SecurityIcon,
         iconBg: 'rgba(88, 86, 214, 0.1)'
       },
       {
         key: 'backup',
         label: '備份管理',
-        icon: 'BackupIcon',
+        icon: BackupIcon,
         iconBg: 'rgba(52, 199, 89, 0.1)'
       },
       {
         key: 'logs',
         label: '系統日誌',
-        icon: 'LogIcon',
+        icon: LogIcon,
         iconBg: 'rgba(255, 149, 0, 0.1)'
       }
     ];

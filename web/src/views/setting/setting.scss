@@ -38,8 +38,11 @@
           color: var(--color-primary);
           
           .tab-icon {
-            background-color: var(--color-primary);
-            color: white;
+            background-color: rgba(0, 122, 255, 0.1);
+            
+            svg {
+              stroke: var(--color-primary);
+            }
           }
         }
         
@@ -51,6 +54,11 @@
           height: 36px;
           border-radius: var(--radius-full);
           transition: all 0.2s ease;
+          
+          svg {
+            stroke: currentColor;
+            transition: all 0.2s ease;
+          }
         }
         
         .tab-text {
