@@ -15,7 +15,7 @@
 }
 
 .schedule-content {
-  padding-top: var(--spacing-md); // 減少頂部間距 Reduced top padding
+  padding-top: var(--spacing-sm); // 減少頂部間距 Reduce top padding
   flex: 1; // 佔據剩餘空間 Take remaining space
 }
 
@@ -24,7 +24,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md); // 減少上下內邊距 Reduce vertical padding
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -38,6 +38,9 @@
     display: flex;
     align-items: center;
     margin-right: var(--spacing-md);
+    background-color: var(--color-gray-100);
+    border-radius: var(--radius-full);
+    padding: var(--spacing-xs);
     
     .nav-button {
       background: none;
@@ -46,17 +49,48 @@
       color: var(--text-primary);
       cursor: pointer;
       padding: var(--spacing-xs);
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-full);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
       
       &:hover {
-        background-color: var(--color-gray-100);
+        background-color: var(--color-gray-200);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2.5;
       }
     }
     
     .current-date {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-medium);
-      margin: 0 var(--spacing-md);
+      display: flex;
+      align-items: center;
+      margin: 0 var(--spacing-sm);
+      font-weight: var(--font-weight-bold); // 加粗字體 Make font bold
+      min-width: 140px; // 增加最小寬度 Increase minimum width
+      justify-content: center;
+      
+      .year {
+        font-size: var(--font-size-xl); // 增加年份字體大小 Increase year font size
+        color: var(--text-primary);
+        margin-right: var(--spacing-sm); // 增加年月之間的間距 Increase spacing between year and month
+      }
+      
+      .month {
+        font-size: var(--font-size-xl); // 增加月份字體大小 Increase month font size
+        color: var(--text-primary);
+      }
     }
   }
   
@@ -65,13 +99,25 @@
     color: white;
     border: none;
     padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-full);
     font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
+    transition: all 0.2s ease;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
     &:hover {
-      background-color: var(--color-primary-dark); // 使用預定義的深色變量 Use predefined dark variable
-      opacity: 0.9; // 添加透明度效果 Add opacity effect
+      background-color: var(--color-primary-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    &:active {
+      transform: translateY(0);
+      box-shadow: none;
     }
   }
   

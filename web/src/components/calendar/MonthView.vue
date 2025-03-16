@@ -28,7 +28,8 @@
             'other-month': !day.currentMonth,
             'today': day.isToday,
             'has-events': getEventsForDay(day.date).length > 0,
-            'weekend': dayIndex >= 5
+            'weekend': dayIndex >= 5,
+            'selected': isSelectedDate(day.date)
           }"
           @click="handleDayClick(day.date)"
         >
@@ -130,6 +131,9 @@ export default defineComponent({
     const moreEventsDialogVisible = ref(false);
     const selectedDay = ref(null);
     
+    // 添加選中日期狀態 Add selected date state
+    const selectedDate = ref(null);
+    
     // 計算屬性 Computed properties
     
     // 日曆天數 Calendar days
@@ -178,6 +182,11 @@ export default defineComponent({
       return format(selectedDay.value, 'yyyy/MM/dd EEEE', { locale: zhTW });
     });
     
+    // 檢查日期是否被選中 Check if date is selected
+    const isSelectedDate = (date) => {
+      return selectedDate.value && isSameDay(date, selectedDate.value);
+    };
+    
     // 方法 Methods
     
     // 獲取指定日期的事件 Get events for specific day
@@ -196,8 +205,9 @@ export default defineComponent({
       return `${format(eventStart, 'HH:mm')} - ${format(eventEnd, 'HH:mm')}`;
     };
     
-    // 處理日期點擊 Handle day click
+    // 修改處理日期點擊事件 Modify day click handler
     const handleDayClick = (date) => {
+      selectedDate.value = date; // 更新選中日期 Update selected date
       emit('date-click', date);
     };
     
@@ -231,6 +241,8 @@ export default defineComponent({
       formatSelectedDay,
       getEventsForDay,
       formatEventTime,
+      isSelectedDate,
+      selectedDate,
       handleDayClick,
       handleEventClick,
       handleMoreEventsClick
@@ -248,7 +260,7 @@ export default defineComponent({
   height: 100%;
   background-color: #f9f9f9;
   border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
+  padding: 0;
 }
 
 .month-header {
@@ -277,30 +289,34 @@ export default defineComponent({
   flex-direction: column;
   background-color: var(--color-white);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-left: 1px solid #E5E5E5;
+  border-top: 1px solid #E5E5E5;
   
   .week-row {
     display: flex;
-    flex: 1; // 使用 flex: 1 讓每行平均分配容器高度
+    flex: 1;
+    min-height: 100px;
     
     .day-cell {
       flex: 1;
-      // 移除最小高度，讓日期格子根據週行的高度自動調整
-      // Remove minimum height to let date cells adjust automatically based on week row height
-      border-right: 1px solid var(--color-gray-200);
-      border-bottom: 1px solid var(--color-gray-200);
-      padding: var(--spacing-xs);
+      min-height: 100px;
+      border-right: 1px solid #E5E5E5;
+      border-bottom: 1px solid #E5E5E5;
+      padding: 4px;
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
-      display: flex; // 使用 flex 布局
-      flex-direction: column; // 垂直排列
+      display: flex;
+      flex-direction: column;
+      background-color: white;
       
-      &:first-child {
-        border-left: 1px solid var(--color-gray-200);
+      &:not(:first-child) {
+        border-left: none; // 除了第一格外，移除左邊框 Remove left border except for first cell
       }
       
       &:hover {
-        background-color: rgba(0, 113, 227, 0.05);
+        background-color: var(--bg-hover);
+        z-index: 1;
       }
       
       &.current-month {
@@ -327,7 +343,7 @@ export default defineComponent({
       
       &.weekend {
         .day-number {
-          color: #e74c3c; // 紅色 Red color for weekends
+          color: #e74c3c;
         }
         
         &.today .day-number {
@@ -336,18 +352,27 @@ export default defineComponent({
         }
       }
       
+      &.selected {
+        .day-number {
+          background-color: rgba(0, 113, 227, 0.1);
+          font-weight: var(--font-weight-bold);
+          color: var(--color-primary);
+        }
+      }
+      
       .day-number {
         display: inline-block;
-        width: 28px;
-        height: 28px;
-        line-height: 28px;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
         text-align: center;
         border-radius: 50%;
         font-size: var(--font-size-md);
-        margin-bottom: var(--spacing-xs);
+        margin: 2px;
       }
       
       .day-events {
+        margin-top: 2px;
         display: flex;
         flex-direction: column;
         gap: 2px;

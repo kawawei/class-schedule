@@ -15,11 +15,18 @@
           <div class="toolbar-left">
             <div class="date-navigation">
               <button class="nav-button" @click="navigatePrevious">
-                &lt;
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
               </button>
-              <span class="current-date">{{ formattedCurrentDate }}</span>
+              <div class="current-date">
+                <span class="year">{{ currentYear }}</span>
+                <span class="month">{{ currentMonth }}</span>
+              </div>
               <button class="nav-button" @click="navigateNext">
-                &gt;
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
               </button>
             </div>
             <button class="today-button" @click="goToToday">今天</button>
@@ -330,6 +337,16 @@ export default defineComponent({
       }
     });
     
+    // 計算屬性：當前年份 Computed property: current year
+    const currentYear = computed(() => {
+      return format(currentDate.value, 'yyyy', { locale: zhTW });
+    });
+    
+    // 計算屬性：當前月份 Computed property: current month
+    const currentMonth = computed(() => {
+      return format(currentDate.value, 'MM', { locale: zhTW });
+    });
+    
     // 方法 Methods
     const navigatePrevious = () => {
       if (currentView.value === 'day') {
@@ -500,7 +517,9 @@ export default defineComponent({
       applyFilters,
       userName,
       isLoggingOut,
-      handleLogout
+      handleLogout,
+      currentYear,
+      currentMonth
     };
   }
 });
