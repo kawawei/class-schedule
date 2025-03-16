@@ -87,6 +87,11 @@ const LogIcon = {
   }
 };
 
+// 用戶管理頁面 User management page
+const UserManagementTab = {
+  // ... existing code ...
+};
+
 // 導出設置頁面組件配置 Export settings page component configuration
 export default {
   name: 'SettingPage',
@@ -103,7 +108,6 @@ export default {
     // 用戶信息 User information
     const userName = ref(localStorage.getItem('userName') || '管理員');
     const isLoggingOut = ref(false);
-    const loading = ref(false);
     
     // 當前標籤頁 Current tab
     const currentTab = ref('users');
@@ -136,32 +140,73 @@ export default {
       }
     ];
     
+    // 加載狀態 Loading state
+    const loading = ref(false);
+    
+    // 用戶列表 User list
+    const users = ref([]);
+    
+    // 用戶對話框狀態 User dialog state
+    const userDialogVisible = ref(false);
+    const isEditMode = ref(false);
+    const currentUser = ref({
+      username: '',
+      password: '',
+      name: '',
+      email: '',
+      role: 'admin', // 默認角色改為管理員 Default role changed to admin
+      is_active: true,
+      departments: [] // 移除 brands 字段 Removed brands field
+    });
+    
+    // 部門選項 Department options
+    const departmentOptions = [
+      { value: 'teaching', label: '師資部' },
+      { value: 'management', label: '管理部' }
+    ];
+    
     // 用戶表格列定義 User table column definitions
     const userColumns = [
       {
+        key: 'id',
+        title: 'ID',
+        width: 80
+      },
+      {
         key: 'username',
         title: '用戶名',
-        width: 150
+        width: 120
       },
       {
         key: 'name',
         title: '姓名',
-        width: 150
+        width: 120
+      },
+      {
+        key: 'email',
+        title: '電子郵件',
+        width: 200
       },
       {
         key: 'role',
         title: '角色',
-        width: 120
+        width: 100,
+        render: (row) => getRoleName(row.role)
       },
       {
         key: 'status',
         title: '狀態',
-        width: 100
+        width: 100,
+        render: (row) => {
+          const status = row.is_active ? 'active' : 'inactive';
+          return `<span class="status-${status}">${getStatusName(status)}</span>`;
+        }
       },
       {
         key: 'createdAt',
         title: '創建時間',
-        width: 180
+        width: 160,
+        render: (row) => formatDate(row.createdAt)
       },
       {
         key: 'actions',
@@ -170,9 +215,6 @@ export default {
         align: 'center'
       }
     ];
-    
-    // 用戶數據 User data
-    const users = ref([]);
     
     // 獲取用戶列表 Get user list
     const fetchUsers = async () => {
@@ -209,9 +251,7 @@ export default {
     const getRoleName = (role) => {
       const roleMap = {
         admin: '管理員',
-        user: '用戶',
-        teacher: '老師',
-        staff: '職員'
+        teacher: '老師'
       };
       return roleMap[role] || role;
     };
@@ -225,16 +265,102 @@ export default {
       return statusMap[status] || status;
     };
     
+    // 重置用戶表單 Reset user form
+    const resetUserForm = () => {
+      currentUser.value = {
+        username: '',
+        password: '',
+        name: '',
+        email: '',
+        role: 'admin', // 默認角色改為管理員 Default role changed to admin
+        is_active: true, // 默認啟用 Default to active
+        departments: [] // 移除 brands 字段 Removed brands field
+      };
+      isEditMode.value = false;
+    };
+    
     // 打開添加用戶對話框 Open add user dialog
     const openAddUserDialog = () => {
-      // TODO: 實現添加用戶功能 Implement add user functionality
-      console.log('Open add user dialog');
+      resetUserForm();
+      userDialogVisible.value = true;
+    };
+    
+    // 打開編輯用戶對話框 Open edit user dialog
+    const openEditUserDialog = (user) => {
+      isEditMode.value = true;
+      // 複製用戶數據，避免直接修改原始數據 Copy user data to avoid modifying original data
+      currentUser.value = {
+        ...user,
+        password: '', // 編輯時不顯示密碼 Don't show password when editing
+        is_active: true, // 確保啟用狀態 Ensure active status
+        departments: user.departments || []
+      };
+      userDialogVisible.value = true;
+    };
+    
+    // 驗證用戶表單 Validate user form
+    const validateUserForm = () => {
+      if (!currentUser.value.username) {
+        alert('請輸入用戶名 Please enter username');
+        return false;
+      }
+      
+      if (!isEditMode.value && !currentUser.value.password) {
+        alert('請輸入密碼 Please enter password');
+        return false;
+      }
+      
+      if (!currentUser.value.name) {
+        alert('請輸入姓名 Please enter name');
+        return false;
+      }
+      
+      return true;
+    };
+    
+    // 保存用戶 Save user
+    const saveUser = async () => {
+      if (!validateUserForm()) {
+        return;
+      }
+      
+      try {
+        loading.value = true;
+        
+        // 準備用戶數據 Prepare user data
+        const userData = {
+          ...currentUser.value
+        };
+        
+        // 如果是編輯模式且密碼為空，則刪除密碼字段 If edit mode and password is empty, remove password field
+        if (isEditMode.value && !userData.password) {
+          delete userData.password;
+        }
+        
+        if (isEditMode.value) {
+          // 更新用戶 Update user
+          await userAPI.updateUser(userData.id, userData);
+        } else {
+          // 創建用戶 Create user
+          await userAPI.createUser(userData);
+        }
+        
+        // 關閉對話框 Close dialog
+        userDialogVisible.value = false;
+        
+        // 重新獲取用戶列表 Fetch user list again
+        await fetchUsers();
+      } catch (error) {
+        console.error('保存用戶失敗 Failed to save user:', error);
+        alert(`保存用戶失敗: ${error.message} Failed to save user: ${error.message}`);
+      } finally {
+        loading.value = false;
+      }
     };
     
     // 編輯用戶 Edit user
     const handleEdit = (user) => {
-      // TODO: 實現編輯用戶功能 Implement edit user functionality
-      console.log('Edit user:', user);
+      openEditUserDialog(user);
     };
     
     // 刪除用戶 Delete user
@@ -279,9 +405,13 @@ export default {
       isLoggingOut,
       currentTab,
       tabs,
+      loading,
       users,
       userColumns,
-      loading,
+      userDialogVisible,
+      isEditMode,
+      currentUser,
+      departmentOptions,
       switchTab,
       formatDate,
       getRoleName,
@@ -289,7 +419,8 @@ export default {
       openAddUserDialog,
       handleEdit,
       handleDelete,
-      handleLogout
+      handleLogout,
+      saveUser
     };
   }
 }; 

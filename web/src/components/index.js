@@ -11,6 +11,10 @@ import StatCard from './base/StatCard.vue';
 import StatusBadge from './base/StatusBadge.vue';
 import WelcomeCard from './base/WelcomeCard.vue';
 import AppInput from './base/AppInput.vue';
+import AppDialog from './base/AppDialog.vue';
+import AppCheckbox from './base/AppCheckbox.vue';
+import CheckboxGroup from './base/CheckboxGroup.vue';
+import AppSelect from './base/AppSelect.vue';
 
 // 導出所有組件 Export all components
 export {
@@ -26,7 +30,11 @@ export {
   StatCard,
   StatusBadge,
   WelcomeCard,
-  AppInput
+  AppInput,
+  AppDialog,
+  AppCheckbox,
+  CheckboxGroup,
+  AppSelect
 };
 
 // 默認導出所有組件 Default export all components
@@ -43,5 +51,9 @@ export default {
     app.component('StatusBadge', StatusBadge);
     app.component('WelcomeCard', WelcomeCard);
     app.component('AppInput', AppInput);
+    app.component('AppDialog', AppDialog);
+    app.component('AppCheckbox', AppCheckbox);
+    app.component('CheckboxGroup', CheckboxGroup);
+    app.component('AppSelect', AppSelect);
   }
 }; 

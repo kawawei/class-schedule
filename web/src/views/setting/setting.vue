@@ -65,8 +65,8 @@
                 <!-- 狀態列 Status column -->
                 <template #status="{ row }">
                   <StatusBadge
-                    :status="row.status === 'active' ? 'completed' : 'cancelled'"
-                    :text="getStatusName(row.status)"
+                    :status="row.is_active ? 'completed' : 'cancelled'"
+                    :text="getStatusName(row.is_active ? 'active' : 'inactive')"
                   />
                 </template>
                 
@@ -109,6 +109,68 @@
         </div>
       </div>
     </div>
+    
+    <!-- 用戶對話框 User Dialog -->
+    <AppDialog
+      v-model="userDialogVisible"
+      :title="isEditMode ? '編輯用戶' : '新增用戶'"
+      :loading="loading"
+      @confirm="saveUser"
+    >
+      <div class="user-form">
+        <div class="form-row">
+          <AppInput
+            label="用戶名"
+            v-model="currentUser.username"
+            placeholder="請輸入用戶名"
+            required
+          />
+        </div>
+        <div class="form-row">
+          <AppInput
+            label="密碼"
+            type="password"
+            v-model="currentUser.password"
+            :placeholder="isEditMode ? '不修改請留空' : '請輸入密碼'"
+            :required="!isEditMode"
+          />
+        </div>
+        <div class="form-row">
+          <AppInput
+            label="姓名"
+            v-model="currentUser.name"
+            placeholder="請輸入姓名"
+            required
+          />
+        </div>
+        <div class="form-row">
+          <AppInput
+            label="電子郵件"
+            type="email"
+            v-model="currentUser.email"
+            placeholder="請輸入電子郵件"
+          />
+        </div>
+        <div class="form-row">
+          <AppSelect
+            label="角色"
+            v-model="currentUser.role"
+            :options="[
+              { value: 'admin', label: '管理員' },
+              { value: 'teacher', label: '老師' }
+            ]"
+            placeholder="請選擇角色"
+          />
+        </div>
+        <div class="form-row">
+          <CheckboxGroup
+            label="部門"
+            :options="departmentOptions"
+            v-model="currentUser.departments"
+          />
+        </div>
+      </div>
+    </AppDialog>
   </div>
 </template>
 
@@ -117,6 +179,11 @@ import AppHeader from '@/components/layout/AppHeader.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import StatusBadge from '@/components/base/StatusBadge.vue';
 import AppButton from '@/components/base/AppButton.vue';
+import AppInput from '@/components/base/AppInput.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
+import AppCheckbox from '@/components/base/AppCheckbox.vue';
+import CheckboxGroup from '@/components/base/CheckboxGroup.vue';
+import AppSelect from '@/components/base/AppSelect.vue';
 import settingLogic from './setting.js';
 
 export default {
@@ -125,7 +192,12 @@ export default {
     AppHeader,
     DataTable,
     StatusBadge,
-    AppButton
+    AppButton,
+    AppInput,
+    AppDialog,
+    AppCheckbox,
+    CheckboxGroup,
+    AppSelect
   },
   ...settingLogic
 };
@@ -133,4 +205,69 @@ export default {
 
 <style lang="scss" scoped>
 @import './setting.scss';
+
+.user-form {
+  .form-row {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+  }
+  
+  .form-select {
+    position: relative;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 15px;
+      transform: translateY(-50%) rotate(45deg);
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid #000;
+      border-bottom: 2px solid #000;
+      pointer-events: none;
+      transition: transform 0.3s ease;
+    }
+    
+    &:hover::after {
+      transform: translateY(-50%) rotate(45deg) scale(1.2);
+    }
+    
+    select {
+      width: 100%;
+      padding: var(--spacing-sm) var(--spacing-md);
+      padding-right: 35px;
+      border: 1px solid #000000;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-md);
+      color: var(--text-primary);
+      background-color: var(--color-white);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      
+      &:hover {
+        background-color: var(--color-gray-50);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        border-width: 2px;
+        box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
+      }
+    }
+  }
+}
 </style> 
