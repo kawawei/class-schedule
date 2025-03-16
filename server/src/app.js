@@ -62,16 +62,17 @@ app.use((err, req, res, next) => {
 // 獲取端口 Get port
 const PORT = process.env.PORT || 3004;
 
-// 啟動服務器 Start server
-const startServer = async () => {
-  try {
-    // 嘗試測試數據庫連接，但不阻止服務器啟動
-    // Try to test database connection, but don't block server startup
+// 添加重試機制 Add retry mechanism
+const connectWithRetry = async (retries = 5, delay = 5000) => {
+  let currentRetry = 0;
+  
+  while (currentRetry < retries) {
     try {
+      console.log(`嘗試連接數據庫 (${currentRetry + 1}/${retries}) Trying to connect to database (${currentRetry + 1}/${retries})`);
       await testConnection();
       
       // 同步數據庫模型 Sync database models
-      await sequelize.sync({ alter: true });
+      await sequelize.sync({ alter: false });
       console.log('數據庫模型已同步 Database models synced');
       
       // 檢查是否有管理員用戶，如果沒有則創建 Check if admin user exists, create if not
@@ -87,11 +88,32 @@ const startServer = async () => {
         });
         console.log('已創建默認管理員用戶 Default admin user created');
       }
+      
+      return true;
     } catch (dbError) {
-      console.warn('數據庫連接或同步失敗，但服務器仍將啟動 Database connection or sync failed, but server will still start:', dbError.message);
-      console.warn('請確保MySQL服務器正在運行，並且已創建數據庫 Please ensure MySQL server is running and database is created');
-      console.warn('您可以使用以下SQL命令創建數據庫：CREATE DATABASE talent_teacher_db;');
+      console.warn(`數據庫連接失敗 (${currentRetry + 1}/${retries}): ${dbError.message} Database connection failed (${currentRetry + 1}/${retries}): ${dbError.message}`);
+      
+      if (currentRetry === retries - 1) {
+        console.warn('數據庫連接或同步失敗，但服務器仍將啟動 Database connection or sync failed, but server will still start:', dbError.message);
+        console.warn('請確保MySQL服務器正在運行，並且已創建數據庫 Please ensure MySQL server is running and database is created');
+        console.warn('您可以使用以下SQL命令創建數據庫：CREATE DATABASE talent_teacher_db;');
+        return false;
+      }
+      
+      console.log(`等待 ${delay/1000} 秒後重試 Waiting ${delay/1000} seconds before retrying...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      currentRetry++;
     }
+  }
+  
+  return false;
+};
+
+// 啟動服務器 Start server
+const startServer = async () => {
+  try {
+    // 嘗試連接數據庫，使用重試機制 Try to connect to database with retry mechanism
+    await connectWithRetry();
     
     // 啟動服務器 Start server
     app.listen(PORT, () => {
