@@ -26,11 +26,11 @@
 export default {
   name: 'AppButton',
   props: {
-    // 按鈕類型 Button type (primary, secondary, success, warning, danger, info)
+    // 按鈕類型 Button type (primary, secondary, success, warning, danger, info, text)
     type: {
       type: String,
       default: 'primary',
-      validator: (value) => ['primary', 'secondary', 'success', 'warning', 'danger', 'info'].includes(value)
+      validator: (value) => ['primary', 'secondary', 'success', 'warning', 'danger', 'info', 'text'].includes(value)
     },
     // 按鈕大小 Button size (sm, md, lg)
     size: {
@@ -67,6 +67,9 @@ export default {
   methods: {
     // 處理點擊事件 Handle click event
     handleClick(event) {
+      // 阻止事件冒泡 Prevent event bubbling
+      event.stopPropagation();
+      
       if (!this.disabled && !this.loading) {
         this.$emit('click', event);
       }
@@ -177,6 +180,20 @@ export default {
     
     &:hover:not(.btn-disabled):not(.btn-loading) {
       background-color: color.adjust(#5ac8fa, $lightness: -5%);
+    }
+  }
+  
+  // 文本按鈕變體 Text button variant
+  &.btn-text {
+    background-color: transparent;
+    color: var(--color-primary);
+    padding: 0;
+    height: auto;
+    box-shadow: none;
+    
+    &:hover:not(.btn-disabled):not(.btn-loading) {
+      color: color.adjust(#0071e3, $lightness: -10%);
+      background-color: transparent;
     }
   }
   

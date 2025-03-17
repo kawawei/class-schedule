@@ -272,64 +272,60 @@ export default {
     
     // 保存課程 Save course
     const saveCourse = async () => {
+      // 檢查課程名稱是否為空 Check if course name is empty
+      if (!courseForm.name.trim()) {
+        Message.error('請輸入課程名稱');
+        return;
+      }
+      
+      saving.value = true;
+      
       try {
-        // 驗證表單 Validate form
-        if (!courseForm.name) {
-          Message.error('請輸入課程名稱 Please enter course name');
-          return;
-        }
-        
+        // 設置默認值 Set default values
         if (!courseForm.category) {
-          Message.error('請選擇課程類別 Please select course category');
-          return;
+          courseForm.category = '魔術'; // 默認類別 Default category
         }
         
         if (!courseForm.level) {
-          Message.error('請選擇課程級別 Please select course level');
-          return;
+          courseForm.level = '初級'; // 默認級別 Default level
         }
         
-        if (!courseForm.duration || courseForm.duration <= 0) {
-          Message.error('請輸入有效的課程時長 Please enter valid course duration');
-          return;
+        if (!courseForm.duration) {
+          courseForm.duration = 60; // 默認時長 Default duration
         }
         
-        saving.value = true;
+        if (!courseForm.description) {
+          courseForm.description = `${courseForm.name}課程`; // 默認描述 Default description
+        }
+        
         console.log('保存課程 Save course:', courseForm);
         
-        // 模擬 API 調用 Simulate API call
-        // 實際項目中應該調用真實的 API In real project, should call real API
-        // const response = isEditMode.value
-        //   ? await courseAPI.updateCourse(courseForm.id, courseForm)
-        //   : await courseAPI.createCourse(courseForm);
+        // 模擬API調用 Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // 模擬保存成功 Simulate save success
-        setTimeout(() => {
-          if (isEditMode.value) {
-            // 更新課程 Update course
-            const index = courses.value.findIndex(course => course.id === courseForm.id);
-            if (index !== -1) {
-              courses.value[index] = { ...courseForm };
-            }
-            
-            Message.success('更新課程成功 Course updated successfully');
-          } else {
-            // 創建課程 Create course
-            const newCourse = {
-              ...courseForm,
-              id: courses.value.length > 0 ? Math.max(...courses.value.map(c => c.id)) + 1 : 1
-            };
-            courses.value.push(newCourse);
-            
-            Message.success('創建課程成功 Course created successfully');
+        if (courseForm.id) {
+          // 更新現有課程 Update existing course
+          const index = courses.value.findIndex(c => c.id === courseForm.id);
+          if (index !== -1) {
+            courses.value[index] = { ...courseForm };
+            Message.success('課程更新成功');
           }
-          
-          courseDialogVisible.value = false;
-          saving.value = false;
-        }, 500);
+        } else {
+          // 添加新課程 Add new course
+          const newCourse = {
+            ...courseForm,
+            id: Date.now() // 使用時間戳作為ID Use timestamp as ID
+          };
+          courses.value.push(newCourse);
+          Message.success('課程添加成功');
+        }
+        
+        // 關閉對話框 Close dialog
+        courseDialogVisible.value = false;
       } catch (error) {
         console.error('保存課程失敗 Failed to save course:', error);
-        Message.error('保存課程失敗 Failed to save course');
+        Message.error('保存課程失敗');
+      } finally {
         saving.value = false;
       }
     };

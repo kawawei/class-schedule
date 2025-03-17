@@ -14,18 +14,6 @@
         <!-- 課程列表標題 Course list title -->
         <div class="course-list-header">
           <h2 class="course-list-title">課程列表</h2>
-          <AppButton 
-            type="primary"
-            @click="openAddCourseDialog"
-          >
-            <template #icon>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </template>
-            新增課程
-          </AppButton>
         </div>
         
         <!-- 搜索框 Search box -->
@@ -46,7 +34,13 @@
         <!-- 課程卡片網格 Course card grid -->
         <div v-if="!loading" class="course-card-grid">
           <div v-for="course in filteredCourses" :key="course.id" class="course-card-item">
-            <AppCard :hoverable="true" class="course-card" :class="getCardColorClass(course.category)">
+            <AppCard 
+              :hoverable="true" 
+              :clickable="true"
+              class="course-card" 
+              :class="getCardColorClass(course.category)"
+              @click="editCourse(course)"
+            >
               <div class="course-card-content">
                 <h3 class="course-name">{{ course.name }}</h3>
                 <div class="course-card-actions">
@@ -77,7 +71,12 @@
           
           <!-- 新增課程卡片 Add course card -->
           <div class="course-card-item">
-            <AppCard :hoverable="true" class="course-card add-card" @click="openAddCourseDialog">
+            <AppCard 
+              :hoverable="true" 
+              :clickable="true" 
+              class="course-card add-card" 
+              @click="openAddCourseDialog"
+            >
               <div class="course-card-content">
                 <div class="add-course-content">
                   <div class="add-icon">
@@ -120,7 +119,7 @@
     
     <!-- 新增/編輯課程對話框 Add/Edit course dialog -->
     <AppDialog
-      :visible="courseDialogVisible"
+      v-model="courseDialogVisible"
       :title="isEditMode ? '編輯課程' : '新增課程'"
       @close="courseDialogVisible = false"
     >
@@ -133,90 +132,48 @@
             required
           />
         </div>
-        <div class="form-group">
-          <AppSelect
-            label="課程類別"
-            v-model="courseForm.category"
-            :options="categoryOptions"
-            placeholder="請選擇課程類別"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <AppSelect
-            label="課程級別"
-            v-model="courseForm.level"
-            :options="levelOptions"
-            placeholder="請選擇課程級別"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <AppInput
-            label="課程時長（分鐘）"
-            v-model="courseForm.duration"
-            type="number"
-            placeholder="請輸入課程時長"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <AppInput
-            label="課程描述"
-            v-model="courseForm.description"
-            type="textarea"
-            placeholder="請輸入課程描述"
-          />
-        </div>
-        <div class="form-group">
-          <div class="toggle-container">
-            <span class="toggle-label">課程狀態</span>
-            <ToggleSwitch v-model="courseForm.is_active" />
-            <span class="toggle-value">{{ courseForm.is_active ? '啟用' : '停用' }}</span>
-          </div>
-        </div>
-        <div class="form-actions">
-          <AppButton 
-            type="secondary"
-            @click="courseDialogVisible = false"
-          >
-            取消
-          </AppButton>
-          <AppButton 
-            type="primary"
-            @click="saveCourse"
-            :loading="saving"
-          >
-            {{ isEditMode ? '更新' : '新增' }}
-          </AppButton>
-        </div>
       </div>
+      <template #footer>
+        <AppButton 
+          type="secondary"
+          @click="courseDialogVisible = false"
+        >
+          取消
+        </AppButton>
+        <AppButton 
+          type="primary"
+          @click="saveCourse"
+          :loading="saving"
+        >
+          {{ isEditMode ? '更新' : '新增' }}
+        </AppButton>
+      </template>
     </AppDialog>
     
     <!-- 刪除確認對話框 Delete confirmation dialog -->
     <AppDialog
-      :visible="deleteDialogVisible"
+      v-model="deleteDialogVisible"
       title="確認刪除"
       @close="deleteDialogVisible = false"
     >
       <div class="delete-confirmation">
         <p>確定要刪除課程「{{ currentCourse.name }}」嗎？此操作無法撤銷。</p>
-        <div class="form-actions">
-          <AppButton 
-            type="secondary"
-            @click="deleteDialogVisible = false"
-          >
-            取消
-          </AppButton>
-          <AppButton 
-            type="danger"
-            @click="confirmDelete"
-            :loading="deleting"
-          >
-            確認刪除
-          </AppButton>
-        </div>
       </div>
+      <template #footer>
+        <AppButton 
+          type="secondary"
+          @click="deleteDialogVisible = false"
+        >
+          取消
+        </AppButton>
+        <AppButton 
+          type="danger"
+          @click="confirmDelete"
+          :loading="deleting"
+        >
+          確認刪除
+        </AppButton>
+      </template>
     </AppDialog>
   </div>
 </template>

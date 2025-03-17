@@ -1,5 +1,9 @@
 <template>
-  <div class="app-card" :class="{ 'card-hoverable': hoverable, 'card-flat': flat }">
+  <div class="app-card" 
+    :class="{ 'card-hoverable': hoverable, 'card-flat': flat }"
+    @click="handleClick"
+    :style="{ cursor: clickable ? 'pointer' : 'default' }"
+  >
     <div v-if="$slots.header || title" class="card-header">
       <slot name="header">
         <h3 class="card-title">{{ title }}</h3>
@@ -38,6 +42,21 @@ export default {
     flat: {
       type: Boolean,
       default: false
+    },
+    // 是否可點擊 Whether the card is clickable
+    clickable: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['click'],
+  methods: {
+    // 處理點擊事件 Handle click event
+    handleClick(event) {
+      // 如果卡片是可點擊的，則觸發點擊事件 If the card is clickable, emit click event
+      if (this.clickable) {
+        this.$emit('click', event);
+      }
     }
   }
 }
