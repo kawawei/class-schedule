@@ -301,9 +301,8 @@ const teacherAPI = {
 
 // 導出 API Export API
 export {
-  apiRequest,
-  authAPI,
   userAPI,
-  departmentAPI,
-  teacherAPI
+  authAPI,
+  teacherAPI,
+  departmentAPI
 }; 

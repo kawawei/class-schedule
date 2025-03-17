@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 // import { teacherAPI, authAPI } from '@/utils/api';
+import { teacherAPI, authAPI } from '@/utils/api';
 
 /**
  * 老師列表頁面邏輯 Teacher list page logic
@@ -508,16 +509,16 @@ export default {
         isLoggingOut.value = true;
         console.log('登出中... Logging out...');
         
-        // 模擬登出操作 Mock logout operation
-        setTimeout(() => {
-          router.push('/login');
-          isLoggingOut.value = false;
-          console.log('登出成功 Logout successful');
-        }, 1000);
+        // 調用登出 API Call logout API
+        await authAPI.logout();
         
-        // 實際API調用 Actual API call
-        // await authAPI.logout();
-        // router.push('/login');
+        // API 調用成功後，清除身份驗證狀態 After successful API call, clear authentication state
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+        
+        // 導航到登入頁面 Navigate to login page
+        router.push('/login');
       } catch (error) {
         console.error('登出失敗 Logout failed:', error);
         isLoggingOut.value = false;
