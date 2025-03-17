@@ -101,6 +101,10 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
     const token = localStorage.getItem('token');
     if (token) {
       options.headers['Authorization'] = `Bearer ${token}`;
+      console.log('添加認證頭部 Adding Authorization header:', `Bearer ${token.substring(0, 10)}...`);
+    } else {
+      console.warn('需要認證但未找到令牌 Authentication required but no token found');
+      throw new Error('未找到認證令牌 Authentication token not found');
     }
   }
   
@@ -112,13 +116,17 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
   }
   
   try {
+    console.log(`發送 ${method} 請求到 Sending ${method} request to: ${API_BASE_URL}${endpoint}`);
+    
     // 發送請求 Send request
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
     
     // 輸出響應頭部 Log response headers
     console.log('響應頭部 Response headers:', {
       'content-type': response.headers.get('content-type'),
-      'content-encoding': response.headers.get('content-encoding')
+      'content-encoding': response.headers.get('content-encoding'),
+      'status': response.status,
+      'statusText': response.statusText
     });
     
     // 獲取響應文本 Get response text
@@ -126,12 +134,20 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
     console.log('響應文本 Response text:', responseText);
     
     // 解析響應 Parse response
-    const responseData = JSON.parse(responseText);
-    console.log('解析後的響應數據 Parsed response data:', responseData);
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('解析後的響應數據 Parsed response data:', responseData);
+    } catch (parseError) {
+      console.error('解析響應數據失敗 Failed to parse response data:', parseError);
+      throw new Error('解析響應數據失敗 Failed to parse response data');
+    }
     
     // 如果響應不成功，拋出錯誤 If response is not successful, throw error
     if (!response.ok) {
-      throw new Error(responseData.message || '請求失敗 Request failed');
+      const errorMessage = responseData.message || `請求失敗 (${response.status}) Request failed (${response.status})`;
+      console.error('API 響應錯誤 API response error:', errorMessage);
+      throw new Error(errorMessage);
     }
     
     // 解析響應數據中的日期時間 Parse date time in response data
@@ -296,6 +312,15 @@ const teacherAPI = {
    */
   deleteTeacher: (id) => {
     return apiRequest(`/teachers/${id}`, 'DELETE', null, true);
+  },
+  
+  /**
+   * 切換老師狀態 Toggle teacher status
+   * @param {Number} id - 老師ID Teacher ID
+   * @returns {Promise} 切換結果 Toggle result
+   */
+  toggleTeacherStatus: (id) => {
+    return apiRequest(`/teachers/${id}/toggle-status`, 'PUT', null, true);
   }
 };
 

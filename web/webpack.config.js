@@ -10,6 +10,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'), // 輸出目錄 Output directory
     filename: 'js/[name].[contenthash].js', // 輸出文件名 Output filename
     clean: true, // 每次構建前清理輸出目錄 Clean output directory before each build
+    publicPath: '/' // 添加公共路徑，確保資源使用絕對路徑 Add public path to ensure resources use absolute paths
   },
   module: {
     rules: [

@@ -86,28 +86,47 @@ const router = createRouter({
   routes
 });
 
-// 檢查用戶是否已登入 (模擬) Check if user is logged in (simulated)
+// 檢查用戶是否已登入 Check if user is logged in
 const isAuthenticated = () => {
   // 從 localStorage 獲取身份驗證狀態 Get authentication status from localStorage
-  return localStorage.getItem('isAuthenticated') === 'true';
+  const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+  const token = localStorage.getItem('token');
+  
+  // 檢查令牌是否存在 Check if token exists
+  if (authStatus && !token) {
+    console.warn('認證狀態為真但令牌不存在 Authentication status is true but token does not exist');
+    return false;
+  }
+  
+  return authStatus;
 };
 
 // 路由守衛，用於身份驗證和頁面標題設置 Router guard for authentication and page title
 router.beforeEach((to, from, next) => {
+  console.log(`路由導航: 從 ${from.path} 到 ${to.path} Router navigation: from ${from.path} to ${to.path}`);
+  
   // 設置頁面標題 Set page title
   document.title = to.meta.title ? `${to.meta.title} - 才藝老師管理系統` : '才藝老師管理系統';
   
   // 檢查路由是否需要身份驗證 Check if route requires authentication
   if (to.meta.requiresAuth !== false) {
+    console.log(`路由 ${to.path} 需要認證 Route ${to.path} requires authentication`);
+    
     // 如果用戶未登入，重定向到登入頁面 If user is not authenticated, redirect to login page
     if (!isAuthenticated()) {
+      console.log('用戶未認證，重定向到登入頁面 User not authenticated, redirecting to login page');
       next({ name: 'Login' });
       return;
     }
+    
+    console.log('用戶已認證，允許訪問 User authenticated, allowing access');
+  } else {
+    console.log(`路由 ${to.path} 不需要認證 Route ${to.path} does not require authentication`);
   }
   
   // 如果用戶已登入且嘗試訪問登入頁面，重定向到儀表板 If user is authenticated and tries to access login page, redirect to dashboard
   if (to.name === 'Login' && isAuthenticated()) {
+    console.log('用戶已認證且嘗試訪問登入頁面，重定向到儀表板 User authenticated and trying to access login page, redirecting to dashboard');
     next({ name: 'Dashboard' });
     return;
   }

@@ -16,6 +16,7 @@ import AppCheckbox from './base/AppCheckbox.vue';
 import CheckboxGroup from './base/CheckboxGroup.vue';
 import AppSelect from './base/AppSelect.vue';
 import ToggleSwitch from './base/ToggleSwitch.vue';
+import AppMessage from './base/AppMessage.vue';
 
 // 導出所有組件 Export all components
 export {
@@ -36,7 +37,8 @@ export {
   AppCheckbox,
   CheckboxGroup,
   AppSelect,
-  ToggleSwitch
+  ToggleSwitch,
+  AppMessage
 };
 
 // 默認導出所有組件 Default export all components
@@ -58,5 +60,6 @@ export default {
     app.component('CheckboxGroup', CheckboxGroup);
     app.component('AppSelect', AppSelect);
     app.component('ToggleSwitch', ToggleSwitch);
+    app.component('AppMessage', AppMessage);
   }
 }; 

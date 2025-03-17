@@ -3,6 +3,8 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 // import { teacherAPI, authAPI } from '@/utils/api';
 import { teacherAPI, authAPI } from '@/utils/api';
+import Message from '@/utils/message';
+import Confirm from '@/utils/confirm';
 
 /**
  * 老師列表頁面邏輯 Teacher list page logic
@@ -197,67 +199,9 @@ export default {
     
     // 篩選後的老師列表 Filtered teacher list
     const filteredTeachers = computed(() => {
-      // 模擬數據 Mock data
+      // 如果老師列表為空，返回空數組 If teacher list is empty, return empty array
       if (teachers.value.length === 0) {
-        return [
-          {
-            id: 1,
-            name: '王小明',
-            phone: '0912-345-678',
-            line_id: 'wang123',
-            county: '台北市',
-            district: '大安區',
-            address: '和平東路二段100號',
-            teaching_categories: ['鋼琴', '小提琴'],
-            level: '高級',
-            years_of_experience: 8,
-            specialty: '古典音樂',
-            hourly_rate: 800,
-            emergency_contact_name: '王大明',
-            emergency_contact_relation: '父親',
-            emergency_contact_phone: '0933-123-456',
-            notes: '擅長教導兒童，有耐心。\n週一、週三晚上無法排課。',
-            is_active: true
-          },
-          {
-            id: 2,
-            name: '李小華',
-            phone: '0923-456-789',
-            line_id: 'lee456',
-            county: '新北市',
-            district: '板橋區',
-            address: '文化路一段200號',
-            teaching_categories: ['吉他', '聲樂'],
-            level: '中級',
-            years_of_experience: 5,
-            specialty: '流行音樂',
-            hourly_rate: 600,
-            emergency_contact_name: '李大華',
-            emergency_contact_relation: '母親',
-            emergency_contact_phone: '0922-234-567',
-            notes: '',
-            is_active: true
-          },
-          {
-            id: 3,
-            name: '張小芳',
-            phone: '0934-567-890',
-            line_id: 'zhang789',
-            county: '台北市',
-            district: '信義區',
-            address: '松仁路100號',
-            teaching_categories: ['繪畫', '書法'],
-            level: '初級',
-            years_of_experience: 3,
-            specialty: '水彩畫',
-            hourly_rate: 500,
-            emergency_contact_name: '張大芳',
-            emergency_contact_relation: '姊姊',
-            emergency_contact_phone: '0911-345-678',
-            notes: '剛開始教學，但有豐富的創作經驗。',
-            is_active: false
-          }
-        ];
+        return [];
       }
       
       let result = [...teachers.value];
@@ -314,91 +258,56 @@ export default {
     // 獲取老師列表 Get teacher list
     const fetchTeachers = async () => {
       try {
+        // 檢查認證狀態 Check authentication status
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const token = localStorage.getItem('token');
+        
+        if (!isAuthenticated || !token) {
+          console.log('未認證，重定向到登入頁面 Not authenticated, redirecting to login page');
+          router.push('/login');
+          return;
+        }
+        
         loading.value = true;
         console.log('開始獲取老師列表 Start fetching teacher list');
         
-        // 模擬數據，實際應用中應該從API獲取
-        // Mock data, should be fetched from API in real application
-        setTimeout(() => {
-          teachers.value = [
-            {
-              id: 1,
-              name: '王小明',
-              user_id: 2,
-              phone: '0912-345-678',
-              line_id: 'wang_teacher',
-              county: '台北市',
-              district: '大安區',
-              address: '復興南路一段100號',
-              teaching_categories: ['鋼琴', '小提琴'],
-              level: '高級',
-              years_of_experience: 8,
-              specialty: '古典鋼琴、小提琴入門',
-              hourly_rate: 800,
-              emergency_contact_name: '王大明',
-              emergency_contact_relation: '父親',
-              emergency_contact_phone: '0987-654-321',
-              notes: '週一、三、五晚上有空',
-              is_active: true,
-              createdAt: '2023-01-15T08:30:00.000Z',
-              updatedAt: '2023-03-10T14:20:00.000Z'
-            },
-            {
-              id: 2,
-              name: '李小華',
-              user_id: 3,
-              phone: '0923-456-789',
-              line_id: 'lee_teacher',
-              county: '新北市',
-              district: '板橋區',
-              address: '文化路一段200號',
-              teaching_categories: ['吉他', '聲樂'],
-              level: '中級',
-              years_of_experience: 5,
-              specialty: '流行吉他、現代聲樂',
-              hourly_rate: 650,
-              emergency_contact_name: '李大華',
-              emergency_contact_relation: '母親',
-              emergency_contact_phone: '0976-543-210',
-              notes: '週末全天有空',
-              is_active: true,
-              createdAt: '2023-02-20T10:15:00.000Z',
-              updatedAt: '2023-03-12T09:45:00.000Z'
-            },
-            {
-              id: 3,
-              name: '張小芳',
-              user_id: 4,
-              phone: '0934-567-890',
-              line_id: 'zhang_teacher',
-              county: '台中市',
-              district: '西屯區',
-              address: '台灣大道三段300號',
-              teaching_categories: ['繪畫', '書法'],
-              level: '初級',
-              years_of_experience: 3,
-              specialty: '水彩畫、硬筆書法',
-              hourly_rate: 550,
-              emergency_contact_name: '張大芳',
-              emergency_contact_relation: '姐姐',
-              emergency_contact_phone: '0965-432-109',
-              notes: '週二、四下午有空',
-              is_active: false,
-              createdAt: '2023-03-05T13:40:00.000Z',
-              updatedAt: '2023-03-14T11:30:00.000Z'
-            }
-          ];
-          loading.value = false;
-          console.log('老師列表獲取成功 Teacher list fetched successfully');
-        }, 1000);
+        // 從API獲取老師列表 Fetch teacher list from API
+        const response = await teacherAPI.getAllTeachers();
         
-        // 實際API調用 Actual API call
-        // const response = await teacherAPI.getAllTeachers();
-        // teachers.value = response.data;
+        if (response.success) {
+          // 處理 Sequelize 模型數據，提取 dataValues 屬性
+          // Process Sequelize model data, extract dataValues property
+          const processedData = response.data.map(teacher => {
+            // 檢查是否有 dataValues 屬性，如果有則使用它，否則使用原始對象
+            // Check if dataValues property exists, if yes use it, otherwise use the original object
+            return teacher.dataValues ? teacher.dataValues : teacher;
+          });
+          
+          teachers.value = processedData;
+          console.log('老師列表獲取成功 Teacher list fetched successfully:', teachers.value);
+        } else {
+          console.error('獲取老師列表失敗 Failed to fetch teacher list:', response.message);
+          Message.error('獲取老師列表失敗 Failed to fetch teacher list');
+        }
+        
+        loading.value = false;
       } catch (error) {
-        console.error('獲取老師列表失敗 Failed to get teacher list:', error);
-      } finally {
-        // loading.value = false;
+        console.error('獲取老師列表出錯 Error fetching teacher list:', error);
+        
+        // 檢查是否是認證錯誤 Check if it's an authentication error
+        if (error.message && error.message.includes('認證令牌')) {
+          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
+          // 清除認證狀態 Clear authentication state
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          // 導航到登入頁面 Navigate to login page
+          router.push('/login');
+        } else {
+          Message.error('獲取老師列表出錯 Error fetching teacher list');
+        }
+        
+        loading.value = false;
       }
     };
     
@@ -443,33 +352,45 @@ export default {
     
     // 刪除老師 Delete teacher
     const deleteTeacher = (teacher) => {
-      currentTeacher.id = teacher.id;
-      currentTeacher.name = teacher.name;
-      deleteDialogVisible.value = true;
+      Confirm.confirm(
+        `確定要刪除老師 "${teacher.name}" 嗎？此操作不可逆。`,
+        '刪除確認',
+        {
+          confirmButtonText: '確定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+        .then(() => {
+          confirmDelete(teacher.id);
+        })
+        .catch(() => {
+          console.log('取消刪除 Delete cancelled');
+        });
     };
     
     // 確認刪除 Confirm delete
-    const confirmDelete = async () => {
+    const confirmDelete = async (id) => {
       try {
         loading.value = true;
-        console.log('刪除老師: Delete teacher:', currentTeacher.id);
+        console.log('刪除老師 Delete teacher:', id);
         
-        // 模擬刪除操作 Mock delete operation
-        setTimeout(() => {
-          teachers.value = teachers.value.filter(teacher => teacher.id !== currentTeacher.id);
-          deleteDialogVisible.value = false;
+        // 從API刪除老師 Delete teacher from API
+        const response = await teacherAPI.deleteTeacher(id);
+        
+        if (response.success) {
+          Message.success('刪除老師成功 Teacher deleted successfully');
+          // 重新獲取老師列表 Fetch teacher list again
+          fetchTeachers();
+        } else {
+          console.error('刪除老師失敗 Failed to delete teacher:', response.message);
+          Message.error('刪除老師失敗 Failed to delete teacher');
           loading.value = false;
-          console.log('老師刪除成功 Teacher deleted successfully');
-        }, 1000);
-        
-        // 實際API調用 Actual API call
-        // await teacherAPI.deleteTeacher(currentTeacher.id);
-        // teachers.value = teachers.value.filter(teacher => teacher.id !== currentTeacher.id);
-        // deleteDialogVisible.value = false;
+        }
       } catch (error) {
-        console.error('刪除老師失敗 Failed to delete teacher:', error);
-      } finally {
-        // loading.value = false;
+        console.error('刪除老師出錯 Error deleting teacher:', error);
+        Message.error('刪除老師出錯 Error deleting teacher');
+        loading.value = false;
       }
     };
     
@@ -477,29 +398,28 @@ export default {
     const toggleTeacherStatus = async (teacher) => {
       try {
         loading.value = true;
-        console.log('切換老師狀態: Toggle teacher status:', teacher.id, !teacher.is_active);
+        console.log('切換老師狀態 Toggle teacher status:', teacher.id);
         
-        // 模擬狀態切換 Mock status toggle
-        setTimeout(() => {
+        // 從API切換老師狀態 Toggle teacher status from API
+        const response = await teacherAPI.toggleTeacherStatus(teacher.id);
+        
+        if (response.success) {
+          Message.success('切換老師狀態成功 Teacher status toggled successfully');
+          // 更新本地數據 Update local data
           const index = teachers.value.findIndex(t => t.id === teacher.id);
           if (index !== -1) {
-            teachers.value[index].is_active = !teachers.value[index].is_active;
+            teachers.value[index].is_active = response.data.is_active;
           }
-          loading.value = false;
-          console.log('老師狀態更新成功 Teacher status updated successfully');
-        }, 500);
+        } else {
+          console.error('切換老師狀態失敗 Failed to toggle teacher status:', response.message);
+          Message.error('切換老師狀態失敗 Failed to toggle teacher status');
+        }
         
-        // 實際API調用 Actual API call
-        // const updatedTeacher = { ...teacher, is_active: !teacher.is_active };
-        // await teacherAPI.updateTeacher(teacher.id, updatedTeacher);
-        // const index = teachers.value.findIndex(t => t.id === teacher.id);
-        // if (index !== -1) {
-        //   teachers.value[index].is_active = !teachers.value[index].is_active;
-        // }
+        loading.value = false;
       } catch (error) {
-        console.error('更新老師狀態失敗 Failed to update teacher status:', error);
-      } finally {
-        // loading.value = false;
+        console.error('切換老師狀態出錯 Error toggling teacher status:', error);
+        Message.error('切換老師狀態出錯 Error toggling teacher status');
+        loading.value = false;
       }
     };
     

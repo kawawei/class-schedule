@@ -3,6 +3,7 @@
     <label v-if="label" class="input-label" :for="id">{{ label }}</label>
     <div class="input-container">
       <input
+        v-if="type !== 'textarea'"
         :id="id"
         :type="type"
         :value="modelValue"
@@ -15,6 +16,19 @@
         @focus="handleFocus"
         @blur="handleBlur"
       />
+      <textarea
+        v-else
+        :id="id"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :required="required"
+        :rows="rows"
+        class="app-textarea"
+        @input="updateValue"
+        @focus="handleFocus"
+        @blur="handleBlur"
+      ></textarea>
       <div v-if="type === 'password'" class="input-icon" @click="togglePasswordVisibility">
         <svg v-if="!passwordVisible" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -50,7 +64,7 @@ export default {
     type: {
       type: String,
       default: 'text',
-      validator: (value) => ['text', 'password', 'email', 'number', 'tel', 'url'].includes(value)
+      validator: (value) => ['text', 'password', 'email', 'number', 'tel', 'url', 'textarea'].includes(value)
     },
     // 輸入框值 Input value (v-model)
     modelValue: {
@@ -81,6 +95,11 @@ export default {
     error: {
       type: String,
       default: ''
+    },
+    // 文本區域行數 Textarea rows
+    rows: {
+      type: [Number, String],
+      default: 3
     }
   },
   emits: ['update:modelValue', 'focus', 'blur'],
@@ -207,5 +226,34 @@ export default {
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-xs);
   color: var(--color-danger);
+}
+
+.app-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
+  }
+  
+  &:disabled {
+    background-color: var(--bg-tertiary);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
 }
 </style> 

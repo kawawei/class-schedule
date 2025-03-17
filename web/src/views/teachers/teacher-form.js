@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { teacherAPI, authAPI } from '@/utils/api';
+import Message from '@/utils/message';
 
 /**
  * 老師表單頁面邏輯 Teacher form page logic
@@ -29,8 +30,6 @@ export default {
     const teacher = reactive({
       id: null,
       name: '',
-      username: '',
-      password: '',
       email: '',
       phone: '',
       line_id: '',
@@ -135,56 +134,77 @@ export default {
     // 獲取老師數據 Get teacher data
     const fetchTeacher = async (id) => {
       try {
+        // 檢查 ID 是否有效 Check if ID is valid
+        if (!id) {
+          console.error('無效的老師 ID Invalid teacher ID');
+          Message.error('無效的老師 ID Invalid teacher ID');
+          router.push('/teachers');
+          return;
+        }
+        
+        // 檢查認證狀態 Check authentication status
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const token = localStorage.getItem('token');
+        
+        if (!isAuthenticated || !token) {
+          console.log('未認證，重定向到登入頁面 Not authenticated, redirecting to login page');
+          router.push('/login');
+          return;
+        }
+        
         loading.value = true;
         console.log('獲取老師數據 Get teacher data:', id);
         
-        // 模擬獲取數據 Mock data fetching
-        setTimeout(() => {
-          // 模擬數據 Mock data
-          const mockTeacher = {
-            id: 1,
-            name: '王小明',
-            username: 'teacher1',
-            email: 'teacher1@example.com',
-            phone: '0912-345-678',
-            line_id: 'wang_teacher',
-            county: '台北市',
-            district: '大安區',
-            address: '復興南路一段100號',
-            teaching_categories: ['鋼琴', '小提琴'],
-            level: '高級',
-            years_of_experience: 8,
-            specialty: '古典鋼琴、小提琴入門',
-            hourly_rate: 800,
-            emergency_contact_name: '王大明',
-            emergency_contact_relation: '父親',
-            emergency_contact_phone: '0987-654-321',
-            notes: '週一、三、五晚上有空',
-            is_active: true
-          };
+        // 從API獲取老師數據 Fetch teacher data from API
+        const response = await teacherAPI.getTeacher(id);
+        console.log('API響應 API response:', response);
+        
+        if (response && response.success) {
+          // 處理 Sequelize 模型數據，提取 dataValues 屬性
+          // Process Sequelize model data, extract dataValues property
+          const processedData = response.data && response.data.dataValues ? response.data.dataValues : response.data;
+          
+          // 檢查數據是否為空 Check if data is empty
+          if (!processedData || Object.keys(processedData).length === 0) {
+            console.error('獲取到的老師數據為空 Teacher data is empty');
+            Message.error('獲取到的老師數據為空 Teacher data is empty');
+            router.push('/teachers');
+            return;
+          }
           
           // 更新老師數據 Update teacher data
-          Object.assign(teacher, mockTeacher);
+          Object.assign(teacher, processedData);
           
           // 更新區域選項 Update district options
           if (teacher.county) {
             districtOptions.value = countyDistrictMap[teacher.county] || [];
           }
           
-          loading.value = false;
-          console.log('老師數據獲取成功 Teacher data fetched successfully');
-        }, 1000);
-        
-        // 實際API調用 Actual API call
-        // const response = await teacherAPI.getTeacher(id);
-        // Object.assign(teacher, response.data);
-        // if (teacher.county) {
-        //   districtOptions.value = countyDistrictMap[teacher.county] || [];
-        // }
+          console.log('老師數據獲取成功 Teacher data fetched successfully:', teacher);
+        } else {
+          const errorMessage = response?.message || '獲取老師數據失敗 Failed to fetch teacher data';
+          console.error('獲取老師數據失敗 Failed to fetch teacher data:', errorMessage);
+          Message.error(errorMessage);
+          router.push('/teachers');
+        }
       } catch (error) {
-        console.error('獲取老師數據失敗 Failed to get teacher data:', error);
+        console.error('獲取老師數據出錯 Error fetching teacher data:', error);
+        
+        // 檢查是否是認證錯誤 Check if it's an authentication error
+        if (error.message && error.message.includes('認證令牌')) {
+          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
+          // 清除認證狀態 Clear authentication state
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          // 導航到登入頁面 Navigate to login page
+          router.push('/login');
+        } else {
+          Message.error('獲取老師數據出錯 Error fetching teacher data');
+          router.push('/teachers');
+        }
       } finally {
-        // loading.value = false;
+        loading.value = false;
       }
     };
     
@@ -192,52 +212,42 @@ export default {
     const validateForm = () => {
       // 基本驗證 Basic validation
       if (!teacher.name) {
-        alert('請輸入姓名');
-        return false;
-      }
-      
-      if (!teacher.username) {
-        alert('請輸入用戶名');
-        return false;
-      }
-      
-      if (!isEditMode.value && !teacher.password) {
-        alert('請輸入密碼');
+        Message.error('請輸入姓名');
         return false;
       }
       
       if (!teacher.phone) {
-        alert('請輸入手機號碼');
-        return false;
-      }
-      
-      if (!teacher.email) {
-        alert('請輸入電子郵件');
+        Message.error('請輸入手機號碼');
         return false;
       }
       
       if (!teacher.county || !teacher.district) {
-        alert('請選擇縣市和區域');
+        Message.error('請選擇縣市和區域');
         return false;
       }
       
-      if (!teacher.address) {
-        alert('請輸入詳細地址');
-        return false;
-      }
-      
-      if (teacher.teaching_categories.length === 0) {
-        alert('請選擇至少一種教學種類');
+      if (!teacher.teaching_categories || teacher.teaching_categories.length === 0) {
+        Message.error('請選擇至少一種教學種類');
         return false;
       }
       
       if (!teacher.level) {
-        alert('請選擇等級');
+        Message.error('請選擇等級');
         return false;
       }
       
-      if (!teacher.emergency_contact_name || !teacher.emergency_contact_relation || !teacher.emergency_contact_phone) {
-        alert('請填寫緊急聯絡人資料');
+      if (!teacher.specialty) {
+        Message.error('請輸入專長');
+        return false;
+      }
+      
+      if (!teacher.hourly_rate || teacher.hourly_rate <= 0) {
+        Message.error('請輸入有效的時薪');
+        return false;
+      }
+      
+      if (teacher.years_of_experience === undefined || teacher.years_of_experience === null) {
+        Message.error('請輸入教學年資');
         return false;
       }
       
@@ -246,33 +256,62 @@ export default {
     
     // 保存老師數據 Save teacher data
     const saveTeacher = async () => {
-      // 驗證表單 Validate form
-      if (!validateForm()) {
-        return;
-      }
-      
       try {
+        // 驗證表單 Validate form
+        if (!validateForm()) {
+          return;
+        }
+        
+        // 檢查認證狀態 Check authentication status
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const token = localStorage.getItem('token');
+        
+        if (!isAuthenticated || !token) {
+          console.log('未認證，重定向到登入頁面 Not authenticated, redirecting to login page');
+          router.push('/login');
+          return;
+        }
+        
         loading.value = true;
         console.log('保存老師數據 Save teacher data:', teacher);
         
-        // 模擬保存操作 Mock save operation
-        setTimeout(() => {
-          loading.value = false;
-          router.push('/teachers');
-          console.log('老師數據保存成功 Teacher data saved successfully');
-        }, 1500);
+        let response;
         
-        // 實際API調用 Actual API call
-        // if (isEditMode.value) {
-        //   await teacherAPI.updateTeacher(teacher.id, teacher);
-        // } else {
-        //   await teacherAPI.createTeacher(teacher);
-        // }
-        // router.push('/teachers');
+        // 根據是否有ID決定是創建還是更新 Create or update based on whether there is an ID
+        if (teacher.id) {
+          // 更新老師 Update teacher
+          response = await teacherAPI.updateTeacher(teacher.id, teacher);
+        } else {
+          // 創建老師 Create teacher
+          response = await teacherAPI.createTeacher(teacher);
+        }
+        
+        if (response.success) {
+          Message.success(teacher.id ? '更新老師成功 Teacher updated successfully' : '創建老師成功 Teacher created successfully');
+          router.push('/teachers');
+        } else {
+          console.error('保存老師失敗 Failed to save teacher:', response.message);
+          Message.error('保存老師失敗 Failed to save teacher');
+        }
+        
+        loading.value = false;
       } catch (error) {
-        console.error('保存老師數據失敗 Failed to save teacher data:', error);
-      } finally {
-        // loading.value = false;
+        console.error('保存老師出錯 Error saving teacher:', error);
+        
+        // 檢查是否是認證錯誤 Check if it's an authentication error
+        if (error.message && error.message.includes('認證令牌')) {
+          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
+          // 清除認證狀態 Clear authentication state
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          // 導航到登入頁面 Navigate to login page
+          router.push('/login');
+        } else {
+          Message.error('保存老師出錯 Error saving teacher');
+        }
+        
+        loading.value = false;
       }
     };
     
@@ -304,9 +343,34 @@ export default {
     };
     
     // 組件掛載時獲取老師數據 Get teacher data when component is mounted
-    onMounted(() => {
-      if (isEditMode.value) {
-        fetchTeacher(route.params.id);
+    onMounted(async () => {
+      try {
+        // 從 URL 中獲取老師 ID Get teacher ID from URL
+        const teacherId = route.params.id;
+        console.log('組件掛載，路由參數 Component mounted, route params:', route.params);
+        
+        // 檢查認證狀態 Check authentication status
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const token = localStorage.getItem('token');
+        
+        if (!isAuthenticated || !token) {
+          console.log('未認證，重定向到登入頁面 Not authenticated, redirecting to login page');
+          router.push('/login');
+          return;
+        }
+        
+        // 如果 URL 中有老師 ID，則獲取老師數據
+        // If there is a teacher ID in the URL, fetch teacher data
+        if (teacherId) {
+          console.log('檢測到老師 ID，獲取老師數據 Teacher ID detected, fetching teacher data:', teacherId);
+          await fetchTeacher(teacherId);
+        } else {
+          console.log('未檢測到老師 ID，創建新老師 No teacher ID detected, creating new teacher');
+        }
+      } catch (error) {
+        console.error('組件掛載時出錯 Error during component mounting:', error);
+        Message.error('加載頁面時出錯 Error loading page');
+        router.push('/teachers');
       }
     });
     
