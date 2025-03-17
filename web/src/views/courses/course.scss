@@ -1,0 +1,356 @@
+// 課程管理頁面樣式 Course management page styles
+
+.course-list-page {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+  }
+  
+  .course-list-content {
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
+  }
+}
+
+// 課程列表頁面樣式 Course list page styles
+.course-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.course-list-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+// 搜索框樣式 Search box styles
+.search-box {
+  position: relative;
+  width: 100%;
+  margin-bottom: var(--spacing-lg);
+  
+  .search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-left: calc(var(--spacing-md) * 2 + 20px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    transition: all 0.3s;
+    
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.1);
+      outline: none;
+    }
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+  }
+}
+
+// 課程卡片網格樣式 Course card grid styles
+.course-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.course-card-item {
+  display: flex;
+  flex-direction: column;
+}
+
+// 課程卡片樣式 Course card styles
+.course-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  
+  // 漸層背景效果 Gradient background effects
+  &.card-magic {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    box-shadow: 0 10px 20px rgba(106, 17, 203, 0.2);
+  }
+  
+  &.card-3d-pen {
+    background: linear-gradient(135deg, #f83600 0%, #f9d423 100%);
+    box-shadow: 0 10px 20px rgba(248, 54, 0, 0.2);
+  }
+  
+  &.card-science {
+    background: linear-gradient(135deg, #00c6fb 0%, #005bea 100%);
+    box-shadow: 0 10px 20px rgba(0, 198, 251, 0.2);
+  }
+  
+  &.card-robot {
+    background: linear-gradient(135deg, #7928ca 0%, #ff0080 100%);
+    box-shadow: 0 10px 20px rgba(121, 40, 202, 0.2);
+  }
+  
+  &.card-programming {
+    background: linear-gradient(135deg, #21d4fd 0%, #b721ff 100%);
+    box-shadow: 0 10px 20px rgba(33, 212, 253, 0.2);
+  }
+  
+  &.card-creative {
+    background: linear-gradient(135deg, #ff3d00 0%, #fcad38 100%);
+    box-shadow: 0 10px 20px rgba(255, 61, 0, 0.2);
+  }
+  
+  &.card-experiment {
+    background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+    box-shadow: 0 10px 20px rgba(0, 176, 155, 0.2);
+  }
+  
+  &.card-art {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    box-shadow: 0 10px 20px rgba(255, 65, 108, 0.2);
+  }
+  
+  &.card-default {
+    background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+    box-shadow: 0 10px 20px rgba(142, 45, 226, 0.2);
+  }
+  
+  // 新增課程卡片樣式 Add course card styles
+  &.add-card {
+    background: linear-gradient(135deg, #a8a8a8 0%, #d7d7d7 100%);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    
+    .add-course-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      
+      .add-icon {
+        color: white;
+        margin-bottom: var(--spacing-md);
+        transition: all 0.3s;
+      }
+    }
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+      
+      .add-icon {
+        transform: scale(1.1);
+      }
+    }
+  }
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  }
+  
+  .course-card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: var(--spacing-md);
+    position: relative;
+    z-index: 1;
+  }
+  
+  .course-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: white;
+    margin: 0;
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .course-card-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: auto;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    
+    .edit-btn, .delete-btn {
+      color: rgba(0, 0, 0, 0.7);
+      background-color: white;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.9);
+        transform: scale(1.1);
+      }
+    }
+    
+    .edit-btn {
+      color: #0071e3;
+    }
+    
+    .delete-btn {
+      color: #ff3b30;
+    }
+  }
+}
+
+// 加載中狀態樣式 Loading state styles
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  p {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+// 空數據提示樣式 Empty data prompt styles
+.empty-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+  color: var(--text-secondary);
+  
+  svg {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-tertiary);
+  }
+  
+  p {
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-md);
+  }
+}
+
+// 課程表單樣式 Course form styles
+.course-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  
+  .form-group {
+    margin-bottom: var(--spacing-md);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    
+    .toggle-label {
+      font-size: var(--font-size-md);
+      color: var(--text-primary);
+    }
+    
+    .toggle-value {
+      font-size: var(--font-size-md);
+      color: var(--text-secondary);
+    }
+  }
+}
+
+// 表單操作按鈕樣式 Form actions styles
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+// 刪除確認對話框樣式 Delete confirmation dialog styles
+.delete-confirmation {
+  p {
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+  }
+}
+
+// 響應式樣式 Responsive styles
+@media (max-width: 768px) {
+  .course-list-page {
+    .container {
+      padding: var(--spacing-md);
+    }
+    
+    .course-list-content {
+      padding: var(--spacing-md);
+    }
+    
+    .course-list-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--spacing-md);
+      
+      .course-list-title {
+        margin-bottom: var(--spacing-sm);
+      }
+    }
+  }
+  
+  .course-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .course-card-grid {
+    grid-template-columns: 1fr;
+  }
+} 

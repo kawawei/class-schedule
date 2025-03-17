@@ -34,6 +34,15 @@ const routes = [
     }
   },
   {
+    path: '/courses',
+    name: 'CourseList',
+    component: () => import('../views/courses/CourseList.vue'), // 懶加載課程列表頁面 Lazy load course list page
+    meta: {
+      title: '課程管理', // 頁面標題 Page title
+      requiresAuth: true // 需要身份驗證 Authentication required
+    }
+  },
+  {
     path: '/teachers',
     name: 'TeacherList',
     component: () => import('../views/teachers/TeacherList.vue'), // 懶加載老師列表頁面 Lazy load teacher list page
