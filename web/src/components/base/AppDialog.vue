@@ -13,7 +13,7 @@
           <div class="app-dialog-footer">
             <slot name="footer">
               <AppButton type="secondary" @click="closeDialog">取消</AppButton>
-              <AppButton type="primary" @click="confirm" :loading="loading">確定</AppButton>
+              <AppButton type="primary" @click="confirmDialog" :loading="loading">確定</AppButton>
             </slot>
           </div>
         </div>
@@ -52,19 +52,22 @@ export default {
       default: false
     }
   },
-  emits: ['update:modelValue', 'confirm'],
+  emits: ['update:modelValue', 'confirm', 'close'],
   methods: {
     /**
      * 關閉對話框 Close dialog
      */
     closeDialog() {
+      console.log('關閉對話框 Close dialog');
       this.$emit('update:modelValue', false);
+      this.$emit('close');
     },
     
     /**
      * 確認操作 Confirm operation
      */
-    confirm() {
+    confirmDialog() {
+      console.log('確認操作 Confirm operation');
       this.$emit('confirm');
     }
   }

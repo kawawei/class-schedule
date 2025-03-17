@@ -324,10 +324,71 @@ const teacherAPI = {
   }
 };
 
+/**
+ * 課程 API Course API
+ */
+const courseAPI = {
+  /**
+   * 獲取所有課程 Get all courses
+   * @returns {Promise} 課程列表 Course list
+   */
+  getAllCourses: () => {
+    return apiRequest('/courses', 'GET', null, true);
+  },
+  
+  /**
+   * 獲取單個課程 Get single course
+   * @param {Number} id - 課程ID Course ID
+   * @returns {Promise} 課程信息 Course info
+   */
+  getCourse: (id) => {
+    return apiRequest(`/courses/${id}`, 'GET', null, true);
+  },
+  
+  /**
+   * 創建課程 Create course
+   * @param {Object} courseData - 課程數據 Course data
+   * @returns {Promise} 創建結果 Creation result
+   */
+  createCourse: (courseData) => {
+    return apiRequest('/courses', 'POST', courseData, true);
+  },
+  
+  /**
+   * 更新課程 Update course
+   * @param {Number} id - 課程ID Course ID
+   * @param {Object} courseData - 課程數據 Course data
+   * @returns {Promise} 更新結果 Update result
+   */
+  updateCourse: (id, courseData) => {
+    return apiRequest(`/courses/${id}`, 'PUT', courseData, true);
+  },
+  
+  /**
+   * 刪除課程 Delete course
+   * @param {Number} id - 課程ID Course ID
+   * @returns {Promise} 刪除結果 Deletion result
+   */
+  deleteCourse: (id) => {
+    return apiRequest(`/courses/${id}`, 'DELETE', null, true);
+  },
+  
+  /**
+   * 切換課程狀態 Toggle course status
+   * @param {Number} id - 課程ID Course ID
+   * @returns {Promise} 切換結果 Toggle result
+   */
+  toggleCourseStatus: (id) => {
+    return apiRequest(`/courses/${id}/toggle-status`, 'PUT', null, true);
+  }
+};
+
 // 導出 API Export API
 export {
   userAPI,
   authAPI,
   teacherAPI,
-  departmentAPI
+  departmentAPI,
+  courseAPI,
+  apiRequest
 }; 

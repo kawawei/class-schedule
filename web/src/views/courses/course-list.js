@@ -3,7 +3,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Message from '@/utils/message';
 import Confirm from '@/utils/confirm';
-import { authAPI } from '@/utils/api';
+import { authAPI, courseAPI } from '@/utils/api';
 
 /**
  * 課程列表頁面邏輯 Course list page logic
@@ -110,19 +110,13 @@ export default {
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
         result = result.filter(course => 
-          course.name.toLowerCase().includes(query) ||
-          course.description.toLowerCase().includes(query)
+          course.category && course.category.toLowerCase().includes(query)
         );
       }
       
       // 類別過濾 Category filter
       if (filters.category) {
         result = result.filter(course => course.category === filters.category);
-      }
-      
-      // 級別過濾 Level filter
-      if (filters.level) {
-        result = result.filter(course => course.level === filters.level);
       }
       
       // 狀態過濾 Status filter
@@ -140,61 +134,21 @@ export default {
         loading.value = true;
         console.log('獲取課程列表 Get course list');
         
-        // 模擬 API 調用 Simulate API call
-        // 實際項目中應該調用真實的 API In real project, should call real API
-        // const response = await courseAPI.getAllCourses();
+        // 調用课程API獲取課程 Call course API to get courses
+        const response = await courseAPI.getAllCourses();
         
-        // 模擬數據 Simulate data
-        setTimeout(() => {
-          courses.value = [
-            {
-              id: 1,
-              name: '魔術',
-              category: '魔術',
-              level: '',
-              duration: 60,
-              description: '學習基礎魔術技巧',
-              is_active: true
-            },
-            {
-              id: 2,
-              name: '3D列印筆',
-              category: '3D列印筆',
-              level: '',
-              duration: 90,
-              description: '使用3D列印筆創作立體藝術作品',
-              is_active: true
-            },
-            {
-              id: 3,
-              name: '科學',
-              category: '科學',
-              level: '',
-              duration: 120,
-              description: '透過有趣的實驗探索科學原理',
-              is_active: true
-            },
-            {
-              id: 4,
-              name: '機器人',
-              category: '機器人',
-              level: '',
-              duration: 90,
-              description: '學習機器人編程的基本概念和技巧',
-              is_active: true
-            },
-            {
-              id: 5,
-              name: '創意思考',
-              category: '創意思考',
-              level: '',
-              duration: 60,
-              description: '培養創意思考能力和解決問題的技巧',
-              is_active: false
-            }
-          ];
-          loading.value = false;
-        }, 500);
+        if (response.success) {
+          courses.value = response.data.map(course => ({
+            id: course.dataValues ? course.dataValues.id : course.id,
+            category: course.dataValues ? course.dataValues.category : course.category,
+            is_active: course.dataValues ? course.dataValues.is_active : course.is_active
+          }));
+          console.log('獲取課程成功 Get courses successfully:', courses.value);
+        } else {
+          Message.error(response.message || '獲取課程列表失敗');
+        }
+        
+        loading.value = false;
       } catch (error) {
         console.error('獲取課程列表失敗 Failed to get course list:', error);
         Message.error('獲取課程列表失敗 Failed to get course list');
@@ -216,7 +170,7 @@ export default {
     const openAddCourseDialog = () => {
       // 重置表單 Reset form
       Object.assign(courseForm, {
-        id: null,
+        id: null,  // 設置id為null，使isEditMode計算為false
         name: '',
         category: '',
         level: '',
@@ -232,6 +186,7 @@ export default {
     const editCourse = (course) => {
       // 複製課程數據到表單 Copy course data to form
       Object.assign(courseForm, course);
+      // 由於複製了course.id，使isEditMode計算為true
       
       courseDialogVisible.value = true;
     };
@@ -244,84 +199,73 @@ export default {
       deleteDialogVisible.value = true;
     };
     
-    // 確認刪除 Confirm delete
+    // 確認刪除課程 Confirm delete course
     const confirmDelete = async () => {
       try {
         deleting.value = true;
-        console.log('刪除課程 Delete course:', currentCourse.id);
         
-        // 模擬 API 調用 Simulate API call
-        // 實際項目中應該調用真實的 API In real project, should call real API
-        // await courseAPI.deleteCourse(currentCourse.id);
+        const response = await courseAPI.deleteCourse(currentCourse.id);
         
-        // 模擬刪除成功 Simulate delete success
-        setTimeout(() => {
-          // 從列表中移除課程 Remove course from list
-          courses.value = courses.value.filter(course => course.id !== currentCourse.id);
-          
-          Message.success('刪除課程成功 Course deleted successfully');
+        if (response.success) {
+          Message.success('課程刪除成功');
+          // 關閉確認對話框 Close confirm dialog
           deleteDialogVisible.value = false;
-          deleting.value = false;
-        }, 500);
+          // 刷新課程列表 Refresh course list
+          await fetchCourses();
+        } else {
+          Message.error(response.message || '刪除課程失敗');
+        }
       } catch (error) {
         console.error('刪除課程失敗 Failed to delete course:', error);
-        Message.error('刪除課程失敗 Failed to delete course');
+        Message.error('刪除課程失敗');
+      } finally {
         deleting.value = false;
       }
     };
     
     // 保存課程 Save course
     const saveCourse = async () => {
-      // 檢查課程名稱是否為空 Check if course name is empty
-      if (!courseForm.name.trim()) {
-        Message.error('請輸入課程名稱');
+      // 檢查課程類別是否為空 Check if course category is empty
+      if (!courseForm.category.trim()) {
+        Message.error('請輸入課程種類');
+        return;
+      }
+      
+      // 如果已經在保存中，直接返回 If already saving, return directly
+      if (saving.value) {
+        console.log('正在保存中，請勿重複提交 Already saving, please do not submit repeatedly');
         return;
       }
       
       saving.value = true;
       
       try {
-        // 設置默認值 Set default values
-        if (!courseForm.category) {
-          courseForm.category = '魔術'; // 默認類別 Default category
-        }
-        
-        if (!courseForm.level) {
-          courseForm.level = '初級'; // 默認級別 Default level
-        }
-        
-        if (!courseForm.duration) {
-          courseForm.duration = 60; // 默認時長 Default duration
-        }
-        
-        if (!courseForm.description) {
-          courseForm.description = `${courseForm.name}課程`; // 默認描述 Default description
-        }
-        
         console.log('保存課程 Save course:', courseForm);
         
-        // 模擬API調用 Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        let response;
         if (courseForm.id) {
           // 更新現有課程 Update existing course
-          const index = courses.value.findIndex(c => c.id === courseForm.id);
-          if (index !== -1) {
-            courses.value[index] = { ...courseForm };
-            Message.success('課程更新成功');
-          }
+          response = await courseAPI.updateCourse(courseForm.id, {
+            category: courseForm.category,
+            is_active: courseForm.is_active
+          });
         } else {
           // 添加新課程 Add new course
-          const newCourse = {
-            ...courseForm,
-            id: Date.now() // 使用時間戳作為ID Use timestamp as ID
-          };
-          courses.value.push(newCourse);
-          Message.success('課程添加成功');
+          response = await courseAPI.createCourse({
+            category: courseForm.category,
+            is_active: true
+          });
         }
         
-        // 關閉對話框 Close dialog
-        courseDialogVisible.value = false;
+        if (response.success) {
+          Message.success(courseForm.id ? '課程更新成功' : '課程添加成功');
+          // 刷新課程列表 Refresh course list
+          await fetchCourses();
+          // 關閉對話框 Close dialog
+          courseDialogVisible.value = false;
+        } else {
+          Message.error(response.message || '保存課程失敗');
+        }
       } catch (error) {
         console.error('保存課程失敗 Failed to save course:', error);
         Message.error('保存課程失敗');
@@ -336,24 +280,20 @@ export default {
         loading.value = true;
         console.log('切換課程狀態 Toggle course status:', course.id);
         
-        // 模擬 API 調用 Simulate API call
-        // 實際項目中應該調用真實的 API In real project, should call real API
-        // await courseAPI.toggleCourseStatus(course.id);
+        // 調用API切換課程狀態 Call API to toggle course status
+        const response = await courseAPI.toggleCourseStatus(course.id);
         
-        // 模擬切換成功 Simulate toggle success
-        setTimeout(() => {
-          // 更新課程狀態 Update course status
-          const index = courses.value.findIndex(c => c.id === course.id);
-          if (index !== -1) {
-            courses.value[index].is_active = !courses.value[index].is_active;
-          }
-          
-          Message.success('切換課程狀態成功 Course status toggled successfully');
-          loading.value = false;
-        }, 500);
+        if (response.success) {
+          // 更新前端課程狀態 Update frontend course status
+          course.is_active = response.data.is_active;
+          Message.success('課程狀態已更新');
+        } else {
+          Message.error(response.message || '切換課程狀態失敗');
+        }
       } catch (error) {
         console.error('切換課程狀態失敗 Failed to toggle course status:', error);
-        Message.error('切換課程狀態失敗 Failed to toggle course status');
+        Message.error('切換課程狀態失敗');
+      } finally {
         loading.value = false;
       }
     };

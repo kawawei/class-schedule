@@ -3,7 +3,7 @@
   <div class="course-list-page">
     <!-- 頂部導航欄 Top navigation bar -->
     <AppHeader 
-      title="課程管理" 
+      title="課程種類管理" 
       :userName="userName" 
       :isLoggingOut="isLoggingOut"
       @logout="handleLogout"
@@ -13,7 +13,7 @@
       <div class="course-list-content">
         <!-- 課程列表標題 Course list title -->
         <div class="course-list-header">
-          <h2 class="course-list-title">課程列表</h2>
+          <h2 class="course-list-title">課程種類列表</h2>
         </div>
         
         <!-- 搜索框 Search box -->
@@ -42,7 +42,7 @@
               @click="editCourse(course)"
             >
               <div class="course-card-content">
-                <h3 class="course-name">{{ course.name }}</h3>
+                <h3 class="course-name">{{ course.category }}</h3>
                 <div class="course-card-actions">
                   <AppButton 
                     type="text" 
@@ -85,7 +85,7 @@
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
                   </div>
-                  <p class="course-name">新增課程</p>
+                  <p class="course-name">新增課程種類</p>
                 </div>
               </div>
             </AppCard>
@@ -120,15 +120,16 @@
     <!-- 新增/編輯課程對話框 Add/Edit course dialog -->
     <AppDialog
       v-model="courseDialogVisible"
-      :title="isEditMode ? '編輯課程' : '新增課程'"
-      @close="courseDialogVisible = false"
+      :title="isEditMode ? '編輯課程種類' : '新增課程種類'"
+      :loading="saving"
     >
       <div class="course-form">
+        <!-- 確保表單不會自動提交 Ensure form doesn't auto-submit -->
         <div class="form-group">
           <AppInput
-            label="課程名稱"
-            v-model="courseForm.name"
-            placeholder="請輸入課程名稱"
+            label="課程種類"
+            v-model="courseForm.category"
+            placeholder="請輸入課程種類"
             required
           />
         </div>
@@ -142,7 +143,7 @@
         </AppButton>
         <AppButton 
           type="primary"
-          @click="saveCourse"
+          @click.once="saveCourse"
           :loading="saving"
         >
           {{ isEditMode ? '更新' : '新增' }}
@@ -157,7 +158,7 @@
       @close="deleteDialogVisible = false"
     >
       <div class="delete-confirmation">
-        <p>確定要刪除課程「{{ currentCourse.name }}」嗎？此操作無法撤銷。</p>
+        <p>確定要刪除課程種類「{{ currentCourse.category }}」嗎？此操作無法撤銷。</p>
       </div>
       <template #footer>
         <AppButton 
