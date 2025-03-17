@@ -1,7 +1,7 @@
 // 導入依賴 Import dependencies
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { teacherAPI, authAPI } from '@/utils/api';
+import { teacherAPI, authAPI, courseAPI } from '@/utils/api';
 import Message from '@/utils/message';
 
 /**
@@ -49,16 +49,41 @@ export default {
     });
     
     // 教學種類選項 Teaching category options
-    const categoryOptions = [
-      { value: '鋼琴', label: '鋼琴' },
-      { value: '小提琴', label: '小提琴' },
-      { value: '吉他', label: '吉他' },
-      { value: '長笛', label: '長笛' },
-      { value: '聲樂', label: '聲樂' },
-      { value: '繪畫', label: '繪畫' },
-      { value: '書法', label: '書法' },
-      { value: '舞蹈', label: '舞蹈' }
-    ];
+    const categoryOptions = ref([]);
+    
+    // 獲取課程類別 Get course categories
+    const fetchCourseCategories = async () => {
+      try {
+        loading.value = true;
+        console.log('獲取課程類別 Get course categories');
+        
+        // 調用課程API獲取課程列表 Call course API to get course list
+        const response = await courseAPI.getAllCourses();
+        
+        if (response.success) {
+          // 從課程列表中提取不重複的類別 Extract unique categories from course list
+          const categories = [...new Set(response.data.map(course => 
+            course.dataValues ? course.dataValues.category : course.category
+          ))];
+          
+          // 轉換為選項格式 Convert to options format
+          categoryOptions.value = categories.map(category => ({
+            value: category,
+            label: category
+          }));
+          
+          console.log('獲取課程類別成功 Get course categories successfully:', categoryOptions.value);
+        } else {
+          Message.error(response.message || '獲取課程類別失敗');
+        }
+        
+        loading.value = false;
+      } catch (error) {
+        console.error('獲取課程類別失敗 Failed to get course categories:', error);
+        Message.error('獲取課程類別失敗');
+        loading.value = false;
+      }
+    };
     
     // 縣市選項 County options
     const countyOptions = [
@@ -187,24 +212,13 @@ export default {
           Message.error(errorMessage);
           router.push('/teachers');
         }
-      } catch (error) {
-        console.error('獲取老師數據出錯 Error fetching teacher data:', error);
         
-        // 檢查是否是認證錯誤 Check if it's an authentication error
-        if (error.message && error.message.includes('認證令牌')) {
-          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
-          // 清除認證狀態 Clear authentication state
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('isAuthenticated');
-          // 導航到登入頁面 Navigate to login page
-          router.push('/login');
-        } else {
-          Message.error('獲取老師數據出錯 Error fetching teacher data');
-          router.push('/teachers');
-        }
-      } finally {
         loading.value = false;
+      } catch (error) {
+        console.error('獲取老師數據失敗 Failed to fetch teacher data:', error);
+        Message.error('獲取老師數據失敗 Failed to fetch teacher data');
+        loading.value = false;
+        router.push('/teachers');
       }
     };
     
@@ -296,26 +310,13 @@ export default {
         
         loading.value = false;
       } catch (error) {
-        console.error('保存老師出錯 Error saving teacher:', error);
-        
-        // 檢查是否是認證錯誤 Check if it's an authentication error
-        if (error.message && error.message.includes('認證令牌')) {
-          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
-          // 清除認證狀態 Clear authentication state
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('isAuthenticated');
-          // 導航到登入頁面 Navigate to login page
-          router.push('/login');
-        } else {
-          Message.error('保存老師出錯 Error saving teacher');
-        }
-        
+        console.error('保存老師失敗 Failed to save teacher:', error);
+        Message.error('保存老師失敗 Failed to save teacher');
         loading.value = false;
       }
     };
     
-    // 返回列表 Go back to list
+    // 返回列表頁 Return to list page
     const goBack = () => {
       router.push('/teachers');
     };
@@ -338,6 +339,7 @@ export default {
         router.push('/login');
       } catch (error) {
         console.error('登出失敗 Logout failed:', error);
+        Message.error('登出失敗 Logout failed');
         isLoggingOut.value = false;
       }
     };
@@ -358,6 +360,9 @@ export default {
           router.push('/login');
           return;
         }
+        
+        // 獲取課程類別 Get course categories
+        await fetchCourseCategories();
         
         // 如果 URL 中有老師 ID，則獲取老師數據
         // If there is a teacher ID in the URL, fetch teacher data
