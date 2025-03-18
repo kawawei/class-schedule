@@ -1,113 +1,111 @@
 // 導入依賴 Import dependencies
-import { authAPI } from '../../utils/api';
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import { authAPI } from '@/utils/api';
+import Message from '@/utils/message';
 
 // 登入頁面腳本 Login page script
-
-/**
- * 登入頁面組件導出 Login page component export
- * @returns {Object} 登入頁面組件配置 Login page component configuration
- */
 export default {
   name: 'Login',
-  data() {
-    return {
-      // 表單數據 Form data
-      form: {
-        username: '',
-        password: ''
-      },
-      // 表單錯誤 Form errors
-      errors: {
-        username: '',
-        password: ''
-      },
-      // 登入錯誤 Login error
-      loginError: '',
-      // 提交狀態 Submission state
-      isSubmitting: false
-    };
-  },
-  methods: {
+  
+  setup() {
+    const router = useRouter();
+    
+    // 表單數據 Form data
+    const form = reactive({
+      companyCode: '',
+      username: '',
+      password: ''
+    });
+    
+    // 錯誤信息 Error messages
+    const errors = reactive({
+      companyCode: '',
+      username: '',
+      password: ''
+    });
+    
+    // 登入錯誤 Login error
+    const loginError = ref('');
+    
+    // 提交狀態 Submit state
+    const isSubmitting = ref(false);
+    
     /**
      * 驗證表單 Validate form
-     * @returns {Boolean} 表單是否有效 Whether form is valid
+     * @returns {boolean} 是否有效 Is valid
      */
-    validateForm() {
-      // 重置錯誤 Reset errors
-      this.errors = {
-        username: '',
-        password: ''
-      };
-      
+    const validateForm = () => {
       let isValid = true;
       
-      // 驗證用戶名 Validate username
-      if (!this.form.username) {
-        this.errors.username = '請輸入用戶名'; // Please enter username
+      // 重置錯誤信息 Reset error messages
+      Object.keys(errors).forEach(key => errors[key] = '');
+      
+      // 驗證公司代碼 Validate company code
+      if (!form.companyCode.trim()) {
+        errors.companyCode = '請輸入公司代碼';
         isValid = false;
-      } else if (this.form.username.length < 3) {
-        this.errors.username = '用戶名至少需要3個字符'; // Username must be at least 3 characters
+      }
+      
+      // 驗證用戶名 Validate username
+      if (!form.username.trim()) {
+        errors.username = '請輸入用戶名';
         isValid = false;
       }
       
       // 驗證密碼 Validate password
-      if (!this.form.password) {
-        this.errors.password = '請輸入密碼'; // Please enter password
-        isValid = false;
-      } else if (this.form.password.length < 6) {
-        this.errors.password = '密碼至少需要6個字符'; // Password must be at least 6 characters
+      if (!form.password) {
+        errors.password = '請輸入密碼';
         isValid = false;
       }
       
       return isValid;
-    },
+    };
     
     /**
-     * 提交表單 Submit form
+     * 處理表單提交 Handle form submission
      */
-    async handleSubmit() {
-      // 重置登入錯誤 Reset login error
-      this.loginError = '';
-      
-      // 驗證表單 Validate form
-      if (!this.validateForm()) {
+    const handleSubmit = async () => {
+      if (!validateForm()) {
         return;
       }
       
-      // 設置提交狀態 Set submission state
-      this.isSubmitting = true;
+      isSubmitting.value = true;
+      loginError.value = '';
       
       try {
         // 調用登入 API Call login API
-        const response = await authAPI.login(this.form.username, this.form.password);
+        const response = await authAPI.login({
+          companyCode: form.companyCode,
+          username: form.username,
+          password: form.password
+        });
         
-        // 存儲令牌 Store token
-        localStorage.setItem('token', response.data.token);
-        
-        // 確保用戶名稱是正確的中文 Ensure user name is correct Chinese
-        if (response.data.user && response.data.user.name) {
-          // 如果名稱是亂碼，使用默認名稱 If name is garbled, use default name
-          if (response.data.user.name.includes('') || response.data.user.name.includes('ç')) {
-            response.data.user.name = '管理員';
-          }
+        if (response.success) {
+          // 存儲令牌和用戶信息 Store token and user info
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          localStorage.setItem('companyCode', form.companyCode);
+          
+          // 導航到儀表板 Navigate to dashboard
+          router.push('/dashboard');
+        } else {
+          loginError.value = response.message || '登入失敗，請檢查輸入信息';
         }
-        
-        // 存儲用戶信息 Store user information
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // 設置身份驗證狀態 Set authentication state
-        localStorage.setItem('isAuthenticated', 'true');
-        
-        // 導航到儀表板 Navigate to dashboard
-        this.$router.push({ name: 'Dashboard' });
       } catch (error) {
-        // 設置登入錯誤 Set login error
-        this.loginError = error.message || '登入失敗，請檢查用戶名和密碼'; // Login failed, please check username and password
-        console.error('登入錯誤 Login error:', error);
+        console.error('登入錯誤:', error);
+        loginError.value = error.message || '登入失敗，請稍後重試';
       } finally {
-        // 重置提交狀態 Reset submission state
-        this.isSubmitting = false;
+        isSubmitting.value = false;
       }
-    }
+    };
+    
+    return {
+      form,
+      errors,
+      loginError,
+      isSubmitting,
+      handleSubmit
+    };
   }
 }; 

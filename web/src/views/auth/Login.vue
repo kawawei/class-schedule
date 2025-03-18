@@ -19,6 +19,15 @@
           <form class="login-form" @submit.prevent="handleSubmit">
             <div class="form-group">
               <AppInput
+                label="公司代碼"
+                v-model="form.companyCode"
+                placeholder="請輸入公司代碼"
+                :error="errors.companyCode"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <AppInput
                 label="用戶名"
                 v-model="form.username"
                 placeholder="請輸入用戶名"
@@ -52,6 +61,7 @@
         </div>
       </div>
       <div class="login-footer">
+        <p>還沒有帳號？ <router-link to="/register">立即註冊</router-link></p>
         <p>© {{ new Date().getFullYear() }} 才藝老師管理系統 - 版權所有</p>
       </div>
     </div>

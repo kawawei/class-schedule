@@ -16,6 +16,15 @@ const routes = [
     }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/auth/Register.vue'), // 懶加載註冊頁面 Lazy load register page
+    meta: {
+      title: '註冊', // 頁面標題 Page title
+      requiresAuth: false // 不需要身份驗證 No authentication required
+    }
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/dashboard/Dashboard.vue'), // 懶加載儀表板頁面 Lazy load dashboard page

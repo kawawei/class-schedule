@@ -168,28 +168,31 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
 const authAPI = {
   /**
    * 用戶登入 User login
-   * @param {String} username - 用戶名 Username
-   * @param {String} password - 密碼 Password
-   * @returns {Promise} 登入結果 Login result
+   * @param {Object} data - 登入數據 Login data
+   * @param {string} data.companyCode - 公司代碼 Company code
+   * @param {string} data.username - 用戶名 Username
+   * @param {string} data.password - 密碼 Password
+   * @returns {Promise} API響應 API response
    */
-  login: (username, password) => {
-    return apiRequest('/auth/login', 'POST', { username, password });
+  login: async (data) => {
+    return await apiRequest('/auth/login', 'POST', data);
   },
   
   /**
-   * 獲取當前用戶信息 Get current user info
-   * @returns {Promise} 用戶信息 User info
+   * 用戶註冊 User registration
+   * @param {Object} data - 註冊數據 Registration data
+   * @returns {Promise} API響應 API response
    */
-  getCurrentUser: () => {
-    return apiRequest('/auth/me', 'GET', null, true);
+  register: async (data) => {
+    return await apiRequest('/auth/register', 'POST', data);
   },
   
   /**
    * 用戶登出 User logout
-   * @returns {Promise} 登出結果 Logout result
+   * @returns {Promise} API響應 API response
    */
-  logout: () => {
-    return apiRequest('/auth/logout', 'POST', null, true);
+  logout: async () => {
+    return await apiRequest('/auth/logout', 'POST', null, true);
   }
 };
 
