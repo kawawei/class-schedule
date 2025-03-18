@@ -102,6 +102,13 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = fals
     if (token) {
       options.headers['Authorization'] = `Bearer ${token}`;
       console.log('添加認證頭部 Adding Authorization header:', `Bearer ${token.substring(0, 10)}...`);
+      
+      // 添加部門ID到請求頭 Add department ID to request header
+      const departmentId = localStorage.getItem('departmentId');
+      if (departmentId) {
+        options.headers['X-Department-ID'] = departmentId;
+        console.log('添加部門ID頭部 Adding Department ID header:', departmentId);
+      }
     } else {
       console.warn('需要認證但未找到令牌 Authentication required but no token found');
       throw new Error('未找到認證令牌 Authentication token not found');

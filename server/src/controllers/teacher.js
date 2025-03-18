@@ -8,51 +8,25 @@ const Teacher = require('../models/teacher');
  */
 const getAllTeachers = async (req, res) => {
   try {
-    // 獲取查詢參數 Get query parameters
-    const { category, county, district, level, status } = req.query;
-    
-    // 構建查詢條件 Build query conditions
-    const whereClause = {};
-    
-    // 如果指定了狀態，添加到查詢條件 If status is specified, add to query conditions
-    if (status) {
-      whereClause.is_active = status === 'active';
-    }
-    
-    // 獲取所有老師 Get all teachers
-    const teachers = await Teacher.findAll({
-      where: whereClause,
-      order: [['name', 'ASC']]
-    });
-    
-    // 如果指定了類別，過濾結果 If category is specified, filter results
-    let filteredTeachers = teachers;
-    if (category) {
-      filteredTeachers = teachers.filter(teacher => {
-        const categories = teacher.teaching_categories || [];
-        return categories.includes(category);
+    // 從請求頭或用戶對象中獲取部門ID Get department ID from request header or user object
+    const departmentId = req.headers['x-department-id'] || req.user.departmentId;
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
       });
     }
-    
-    // 如果指定了縣市，過濾結果 If county is specified, filter results
-    if (county) {
-      filteredTeachers = filteredTeachers.filter(teacher => teacher.county === county);
-      
-      // 如果指定了區域，進一步過濾結果 If district is specified, further filter results
-      if (district) {
-        filteredTeachers = filteredTeachers.filter(teacher => teacher.district === district);
-      }
-    }
-    
-    // 如果指定了等級，過濾結果 If level is specified, filter results
-    if (level) {
-      filteredTeachers = filteredTeachers.filter(teacher => teacher.level === level);
-    }
+
+    // 獲取所有老師 Get all teachers
+    const teachers = await Teacher.findAll({
+      where: { department_id: departmentId },
+      order: [['id', 'ASC']]
+    });
     
     return res.status(200).json({
       success: true,
       message: '獲取老師列表成功 Get teachers list successfully',
-      data: filteredTeachers
+      data: teachers
     });
   } catch (error) {
     console.error('獲取老師列表失敗 Failed to get teachers list:', error);
@@ -72,9 +46,22 @@ const getAllTeachers = async (req, res) => {
 const getTeacher = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
     
     // 獲取老師 Get teacher
-    const teacher = await Teacher.findByPk(id);
+    const teacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果老師不存在，返回404 If teacher doesn't exist, return 404
     if (!teacher) {
@@ -106,6 +93,15 @@ const getTeacher = async (req, res) => {
  */
 const createTeacher = async (req, res) => {
   try {
+    // 從請求中獲取部門ID Get department ID from request
+    const departmentId = req.user.departmentId;
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
+
     const {
       name,
       phone,
@@ -152,7 +148,8 @@ const createTeacher = async (req, res) => {
       emergency_contact_relation,
       emergency_contact_phone,
       notes,
-      is_active: is_active !== undefined ? is_active : true
+      is_active: is_active !== undefined ? is_active : true,
+      department_id: departmentId
     });
     
     return res.status(201).json({
@@ -178,6 +175,15 @@ const createTeacher = async (req, res) => {
 const updateTeacher = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
+    
     const {
       name,
       phone,
@@ -199,7 +205,12 @@ const updateTeacher = async (req, res) => {
     } = req.body;
     
     // 獲取老師 Get teacher
-    const teacher = await Teacher.findByPk(id);
+    const teacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果老師不存在，返回404 If teacher doesn't exist, return 404
     if (!teacher) {
@@ -239,7 +250,12 @@ const updateTeacher = async (req, res) => {
     });
     
     // 獲取更新後的老師 Get updated teacher
-    const updatedTeacher = await Teacher.findByPk(id);
+    const updatedTeacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     return res.status(200).json({
       success: true,
@@ -264,9 +280,22 @@ const updateTeacher = async (req, res) => {
 const deleteTeacher = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
     
     // 獲取老師 Get teacher
-    const teacher = await Teacher.findByPk(id);
+    const teacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果老師不存在，返回404 If teacher doesn't exist, return 404
     if (!teacher) {
@@ -301,9 +330,22 @@ const deleteTeacher = async (req, res) => {
 const toggleTeacherStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
     
     // 獲取老師 Get teacher
-    const teacher = await Teacher.findByPk(id);
+    const teacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果老師不存在，返回404 If teacher doesn't exist, return 404
     if (!teacher) {
@@ -319,7 +361,12 @@ const toggleTeacherStatus = async (req, res) => {
     });
     
     // 獲取更新後的老師 Get updated teacher
-    const updatedTeacher = await Teacher.findByPk(id);
+    const updatedTeacher = await Teacher.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     return res.status(200).json({
       success: true,

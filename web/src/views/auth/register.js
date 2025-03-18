@@ -105,7 +105,8 @@ export default {
 
     // 處理表單提交
     const handleSubmit = async () => {
-      if (!validateStep2()) {
+      // 重新驗證所有字段
+      if (!validateStep1() || !validateStep2()) {
         return;
       }
 
@@ -115,10 +116,11 @@ export default {
 
         // 調用註冊 API
         const response = await authAPI.register({
-          companyName: form.companyName,
-          companyCode: form.companyCode,
-          username: form.username,
-          password: form.password
+          companyName: form.companyName.trim(),
+          companyCode: form.companyCode.trim(),
+          username: form.username.trim(),
+          password: form.password,
+          confirmPassword: form.confirmPassword
         });
 
         if (response.success) {

@@ -9,66 +9,69 @@ const { sequelize } = require('../../config/database');
  */
 const getAllCourses = async (req, res) => {
   try {
-    // 獲取查詢參數 Get query parameters
-    const { status, search } = req.query;
-    
-    // 構建查詢條件 Build query conditions
-    const where = {};
-    
-    // 添加過濾條件 Add filter conditions
-    if (status !== undefined) {
-      // 將字符串 "true"/"false" 轉換為布爾值 Convert string "true"/"false" to boolean
-      where.is_active = status === 'true';
+    // 從請求頭中獲取部門ID Get department ID from request header
+    const departmentId = req.headers['x-department-id'] || req.user.departmentId;
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
     }
-    
-    // 添加搜索條件 Add search condition
-    if (search) {
-      where.category = { [sequelize.Op.like]: `%${search}%` };
-    }
-    
-    // 查詢課程列表 Query course list
+
+    // 獲取所有課程 Get all courses
     const courses = await Course.findAll({
-      where,
-      order: [['created_at', 'DESC']]
+      where: { department_id: departmentId },
+      order: [['id', 'ASC']]
     });
     
-    // 返回課程列表 Return course list
     return res.status(200).json({
       success: true,
-      message: '獲取課程列表成功 Get course list successfully',
+      message: '獲取課程列表成功 Get courses list successfully',
       data: courses
     });
   } catch (error) {
-    console.error('獲取課程列表失敗 Failed to get course list:', error);
+    console.error('獲取課程列表失敗 Failed to get courses list:', error);
     return res.status(500).json({
       success: false,
-      message: '獲取課程列表失敗 Failed to get course list',
+      message: '獲取課程列表失敗 Failed to get courses list',
       error: error.message
     });
   }
 };
 
 /**
- * 獲取課程 Get course
+ * 獲取單個課程 Get single course
  * @param {Object} req - 請求對象 Request object
  * @param {Object} res - 響應對象 Response object
  */
 const getCourse = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
     
-    // 查詢課程 Query course
-    const course = await Course.findByPk(id);
-    
-    // 如果課程不存在，返回404 If course does not exist, return 404
-    if (!course) {
-      return res.status(404).json({
+    if (!departmentId) {
+      return res.status(400).json({
         success: false,
-        message: '課程不存在 Course does not exist'
+        message: '缺少部門ID Missing department ID'
       });
     }
     
-    // 返回課程信息 Return course information
+    // 獲取課程 Get course
+    const course = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
+    
+    // 如果課程不存在，返回404 If course doesn't exist, return 404
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: '課程不存在 Course not found'
+      });
+    }
+    
     return res.status(200).json({
       success: true,
       message: '獲取課程成功 Get course successfully',
@@ -95,6 +98,15 @@ const createCourse = async (req, res) => {
     console.log('請求體 Request body:', JSON.stringify(req.body));
     console.log('請求頭 Request headers:', JSON.stringify(req.headers));
     
+    // 從請求中獲取部門ID Get department ID from request
+    const departmentId = req.user.departmentId;
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
+    
     const { category, is_active } = req.body;
     
     // 檢查必填字段 Check required fields
@@ -108,7 +120,8 @@ const createCourse = async (req, res) => {
     // 創建課程 Create course
     const course = await Course.create({
       category,
-      is_active: is_active === undefined ? true : is_active
+      is_active: is_active === undefined ? true : is_active,
+      department_id: departmentId
     });
     
     console.log('課程創建成功 Course created successfully:', JSON.stringify(course));
@@ -137,10 +150,24 @@ const createCourse = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
+    
     const { category, is_active } = req.body;
     
     // 查詢課程 Query course
-    const course = await Course.findByPk(id);
+    const course = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果課程不存在，返回404 If course does not exist, return 404
     if (!course) {
@@ -164,11 +191,19 @@ const updateCourse = async (req, res) => {
       is_active: is_active !== undefined ? is_active : course.is_active
     });
     
+    // 獲取更新後的課程 Get updated course
+    const updatedCourse = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
+    
     // 返回更新後的課程 Return updated course
     return res.status(200).json({
       success: true,
       message: '更新課程成功 Update course successfully',
-      data: course
+      data: updatedCourse
     });
   } catch (error) {
     console.error('更新課程失敗 Failed to update course:', error);
@@ -188,9 +223,22 @@ const updateCourse = async (req, res) => {
 const deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
     
     // 查詢課程 Query course
-    const course = await Course.findByPk(id);
+    const course = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果課程不存在，返回404 If course does not exist, return 404
     if (!course) {
@@ -203,7 +251,6 @@ const deleteCourse = async (req, res) => {
     // 刪除課程 Delete course
     await course.destroy();
     
-    // 返回成功信息 Return success message
     return res.status(200).json({
       success: true,
       message: '刪除課程成功 Delete course successfully'
@@ -226,9 +273,22 @@ const deleteCourse = async (req, res) => {
 const toggleCourseStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const departmentId = req.user.departmentId;
+    
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
     
     // 查詢課程 Query course
-    const course = await Course.findByPk(id);
+    const course = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
     
     // 如果課程不存在，返回404 If course does not exist, return 404
     if (!course) {
@@ -238,16 +298,23 @@ const toggleCourseStatus = async (req, res) => {
       });
     }
     
-    // 切換課程狀態 Toggle course status
+    // 切換狀態 Toggle status
     await course.update({
       is_active: !course.is_active
     });
     
-    // 返回更新後的課程 Return updated course
+    // 獲取更新後的課程 Get updated course
+    const updatedCourse = await Course.findOne({
+      where: {
+        id,
+        department_id: departmentId
+      }
+    });
+    
     return res.status(200).json({
       success: true,
       message: '切換課程狀態成功 Toggle course status successfully',
-      data: course
+      data: updatedCourse
     });
   } catch (error) {
     console.error('切換課程狀態失敗 Failed to toggle course status:', error);

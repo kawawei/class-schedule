@@ -86,6 +86,11 @@ export default {
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('user', JSON.stringify(response.data.user));
           localStorage.setItem('companyCode', form.companyCode);
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          // 從 JWT token 中解析 departmentId Parse departmentId from JWT token
+          const tokenPayload = JSON.parse(atob(response.data.token.split('.')[1]));
+          localStorage.setItem('departmentId', tokenPayload.departmentId.toString());
           
           // 導航到儀表板 Navigate to dashboard
           router.push('/dashboard');

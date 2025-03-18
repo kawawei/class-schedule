@@ -34,5 +34,12 @@ router.post('/logout', authenticate, authController.logout);
  */
 router.post('/reset-password', authController.resetPassword);
 
+/**
+ * @route   POST /api/auth/register
+ * @desc    用戶註冊 User registration
+ * @access  Public
+ */
+router.post('/register', authController.register);
+
 // 導出路由器 Export router
 module.exports = router; 

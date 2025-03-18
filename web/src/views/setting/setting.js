@@ -106,7 +106,7 @@ export default {
     const router = useRouter();
     
     // 用戶信息 User information
-    const userName = ref(localStorage.getItem('userName') || '管理員');
+    const userName = ref(JSON.parse(localStorage.getItem('user'))?.name || '管理員');
     const isLoggingOut = ref(false);
     
     // 當前標籤頁 Current tab

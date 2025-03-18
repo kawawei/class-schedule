@@ -11,14 +11,24 @@ const { sequelize } = require('../../config/database');
  */
 const getAllUsers = async (req, res) => {
   try {
-    // 獲取所有用戶 Get all users
+    // 從請求頭或用戶對象中獲取部門ID Get department ID from request header or user object
+    const departmentId = req.headers['x-department-id'] || req.user.departmentId;
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少部門ID Missing department ID'
+      });
+    }
+
+    // 獲取指定部門的所有用戶 Get all users from specified department
     const users = await User.findAll({
       attributes: { exclude: ['password'] }, // 排除密碼字段 Exclude password field
       include: [
         {
           model: Department,
           as: 'departments',
-          through: { attributes: [] } // 不包含中間表字段 Don't include junction table fields
+          through: { attributes: [] }, // 不包含中間表字段 Don't include junction table fields
+          where: { id: departmentId } // 只獲取指定部門的用戶 Only get users from specified department
         }
       ],
       order: [['id', 'ASC']]

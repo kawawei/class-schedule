@@ -20,7 +20,7 @@ export default {
     const router = useRouter();
     
     // 用戶信息 User info
-    const userName = ref('管理員');
+    const userName = ref(JSON.parse(localStorage.getItem('user'))?.name || '管理員');
     const isLoggingOut = ref(false);
     
     // 加載狀態 Loading state

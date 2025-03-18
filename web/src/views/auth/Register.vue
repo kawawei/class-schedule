@@ -59,7 +59,7 @@
               </div>
             </div>
             <div class="form-actions">
-              <AppButton type="submit" :loading="isSubmitting">下一步</AppButton>
+              <AppButton type="primary" :loading="isSubmitting" :disabled="isSubmitting">下一步</AppButton>
             </div>
           </form>
 
@@ -101,8 +101,8 @@
               </div>
             </div>
             <div class="form-actions">
-              <AppButton type="button" variant="secondary" @click="handlePrevStep">上一步</AppButton>
-              <AppButton type="submit" :loading="isSubmitting">註冊</AppButton>
+              <AppButton type="secondary" :disabled="isSubmitting" @click="handlePrevStep">上一步</AppButton>
+              <AppButton type="primary" :loading="isSubmitting" :disabled="isSubmitting">註冊</AppButton>
             </div>
           </form>
         </div>
