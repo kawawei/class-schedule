@@ -98,8 +98,8 @@ const createCourse = async (req, res) => {
     console.log('請求體 Request body:', JSON.stringify(req.body));
     console.log('請求頭 Request headers:', JSON.stringify(req.headers));
     
-    // 從請求中獲取部門ID Get department ID from request
-    const departmentId = req.user.departmentId;
+    // 從請求頭或用戶對象中獲取部門ID Get department ID from request header or user object
+    const departmentId = req.headers['x-department-id'] || req.user.departmentId;
     if (!departmentId) {
       return res.status(400).json({
         success: false,

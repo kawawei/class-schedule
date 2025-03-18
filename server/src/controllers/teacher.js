@@ -93,8 +93,8 @@ const getTeacher = async (req, res) => {
  */
 const createTeacher = async (req, res) => {
   try {
-    // 從請求中獲取部門ID Get department ID from request
-    const departmentId = req.user.departmentId;
+    // 從請求頭或用戶對象中獲取部門ID Get department ID from request header or user object
+    const departmentId = req.headers['x-department-id'] || req.user.departmentId;
     if (!departmentId) {
       return res.status(400).json({
         success: false,

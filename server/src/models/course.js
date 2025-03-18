@@ -22,6 +22,15 @@ const Course = sequelize.define('COURSE', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
     comment: '是否啟用 Is Active'
+  },
+  department_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: '部門ID Department ID',
+    references: {
+      model: 'DEPARTMENT',
+      key: 'id'
+    }
   }
 }, {
   // 設置表名為 COURSE Set table name to COURSE

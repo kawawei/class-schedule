@@ -96,6 +96,15 @@ const Teacher = sequelize.define('TEACHER', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
     comment: '是否啟用 Is Active'
+  },
+  department_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: '部門ID Department ID',
+    references: {
+      model: 'DEPARTMENT',
+      key: 'id'
+    }
   }
 }, {
   // 使用下劃線命名法 Use snake_case for field names
