@@ -1,99 +1,102 @@
 // 導入依賴 Import dependencies
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { sequelize } = require('../../config/database');
-const Department = require('./department');
-const UserDepartment = require('./userDepartment');
 
-// 定義用戶模型 Define User model
-const User = sequelize.define('USER', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-    comment: '用戶ID User ID'
-  },
-  username: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true,
-    comment: '用戶名 Username'
-  },
-  password: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    comment: '密碼 Password'
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    comment: '姓名 Name'
-  },
-  email: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    unique: true,
-    comment: '電子郵件 Email'
-  },
-  role: {
-    type: DataTypes.ENUM('admin', 'teacher', 'user'),
-    defaultValue: 'user',
-    comment: '角色 Role'
-  },
-  avatar: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-    comment: '頭像URL Avatar URL'
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-    comment: '是否啟用 Is Active'
-  },
-  last_login: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    comment: '最後登入時間 Last Login Time'
-  }
-}, {
-  // 添加鉤子方法 Add hooks
-  hooks: {
-    // 在創建用戶前加密密碼 Encrypt password before creating user
-    beforeCreate: async (user) => {
-      if (user.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+/**
+ * 創建用戶模型 Create User model
+ * @param {Object} sequelize - Sequelize 實例 Sequelize instance
+ * @returns {Object} User 模型 User model
+ */
+const createUserModel = (sequelize) => {
+  const User = sequelize.define('USER', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      comment: '用戶ID User ID'
+    },
+    username: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      comment: '用戶名 Username'
+    },
+    password: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      comment: '密碼 Password'
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      comment: '姓名 Name'
+    },
+    email: {
+      type: DataTypes.STRING(100),
+      comment: '電子郵件 Email'
+    },
+    role: {
+      type: DataTypes.ENUM('admin', 'user'),
+      defaultValue: 'user',
+      comment: '角色 Role'
+    },
+    company_code: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      comment: '公司代碼 Company Code'
+    },
+    avatar: {
+      type: DataTypes.STRING(255),
+      comment: '頭像URL Avatar URL'
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      comment: '是否啟用 Is Active'
+    },
+    last_login: {
+      type: DataTypes.DATE,
+      comment: '最後登入時間 Last Login Time'
+    }
+  }, {
+    tableName: 'USER',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    underscored: true,
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
       }
     },
-    // 在更新用戶前加密密碼 (如果密碼被修改) Encrypt password before updating user (if password is changed)
-    beforeUpdate: async (user) => {
-      if (user.changed('password')) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+    indexes: [
+      {
+        unique: true,
+        fields: ['username', 'company_code'],
+        name: 'username_company_unique'
+      },
+      {
+        unique: true,
+        fields: ['email', 'company_code'],
+        name: 'email_company_unique'
       }
-    }
-  }
-});
+    ]
+  });
 
-// 設置用戶與部門的多對多關聯 Set up many-to-many association between User and Department
-User.belongsToMany(Department, {
-  through: UserDepartment,
-  foreignKey: 'user_id',
-  otherKey: 'department_id',
-  as: 'departments'
-});
+  // 添加實例方法 Add instance methods
+  User.prototype.validatePassword = async function(password) {
+    return await bcrypt.compare(password, this.password);
+  };
 
-Department.belongsToMany(User, {
-  through: UserDepartment,
-  foreignKey: 'department_id',
-  otherKey: 'user_id',
-  as: 'users'
-});
-
-// 添加實例方法 Add instance methods
-User.prototype.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return User;
 };
 
-// 導出用戶模型 Export User model
-module.exports = User; 
+// 導出模型創建函數 Export model creation function
+module.exports = createUserModel; 

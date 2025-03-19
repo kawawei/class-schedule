@@ -80,91 +80,59 @@ const parseDateTimeData = (data) => {
 };
 
 /**
- * 發送 API 請求 Send API request
- * @param {String} endpoint - API 端點 API endpoint
+ * API 請求函數 API request function
+ * @param {String} endpoint - API端點 API endpoint
  * @param {String} method - 請求方法 Request method
  * @param {Object} data - 請求數據 Request data
  * @param {Boolean} withAuth - 是否需要認證 Whether authentication is required
  * @returns {Promise} 響應數據 Response data
  */
-const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = false) => {
-  // 請求選項 Request options
-  const options = {
-    method,
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
-  
-  // 如果需要認證，添加 Authorization 頭部 If authentication is required, add Authorization header
-  if (withAuth) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      options.headers['Authorization'] = `Bearer ${token}`;
-      console.log('添加認證頭部 Adding Authorization header:', `Bearer ${token.substring(0, 10)}...`);
-      
-      // 添加部門ID到請求頭 Add department ID to request header
-      const departmentId = localStorage.getItem('departmentId');
-      if (departmentId) {
-        options.headers['X-Department-ID'] = departmentId;
-        console.log('添加部門ID頭部 Adding Department ID header:', departmentId);
-      }
-    } else {
-      console.warn('需要認證但未找到令牌 Authentication required but no token found');
-      throw new Error('未找到認證令牌 Authentication token not found');
-    }
-  }
-  
-  // 如果有請求數據，添加到請求體 If there is request data, add to request body
-  if (data) {
-    // 處理請求數據中的日期時間 Process date time in request data
-    const processedData = processDateTimeData(data);
-    options.body = JSON.stringify(processedData);
-  }
-  
+const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true) => {
   try {
-    console.log(`發送 ${method} 請求到 Sending ${method} request to: ${API_BASE_URL}${endpoint}`);
+    // API基礎URL API base URL
+    const baseURL = 'http://localhost:3004/api';
+    
+    // 請求配置 Request configuration
+    const config = {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    // 如果需要認證，添加令牌 If authentication is required, add token
+    if (withAuth) {
+      const token = localStorage.getItem('token');
+      const companyCode = localStorage.getItem('companyCode');
+      
+      if (!token) {
+        throw new Error('未登入 Not logged in');
+      }
+      
+      config.headers['Authorization'] = `Bearer ${token}`;
+      if (companyCode) {
+        config.headers['x-company-code'] = companyCode;
+      }
+    }
+    
+    // 如果有數據，添加到請求體 If there is data, add to request body
+    if (data) {
+      config.body = JSON.stringify(processDateTimeData(data));
+    }
     
     // 發送請求 Send request
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    
-    // 輸出響應頭部 Log response headers
-    console.log('響應頭部 Response headers:', {
-      'content-type': response.headers.get('content-type'),
-      'content-encoding': response.headers.get('content-encoding'),
-      'status': response.status,
-      'statusText': response.statusText
-    });
-    
-    // 獲取響應文本 Get response text
-    const responseText = await response.text();
-    console.log('響應文本 Response text:', responseText);
-    
-    // 解析響應 Parse response
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-      console.log('解析後的響應數據 Parsed response data:', responseData);
-    } catch (parseError) {
-      console.error('解析響應數據失敗 Failed to parse response data:', parseError);
-      throw new Error('解析響應數據失敗 Failed to parse response data');
-    }
+    const response = await fetch(`${baseURL}${endpoint}`, config);
+    const responseData = await response.json();
     
     // 如果響應不成功，拋出錯誤 If response is not successful, throw error
     if (!response.ok) {
-      const errorMessage = responseData.message || `請求失敗 (${response.status}) Request failed (${response.status})`;
-      console.error('API 響應錯誤 API response error:', errorMessage);
-      throw new Error(errorMessage);
+      throw new Error(responseData.message || '請求失敗 Request failed');
     }
     
-    // 解析響應數據中的日期時間 Parse date time in response data
-    const parsedData = parseDateTimeData(responseData);
-    console.log('處理日期後的響應數據 Response data after date processing:', parsedData);
-    
-    // 返回解析後的響應數據 Return parsed response data
-    return parsedData;
+    // 解析並返回數據 Parse and return data
+    return parseDateTimeData(responseData);
   } catch (error) {
-    console.error('API 請求錯誤 API request error:', error);
+    console.error('API請求錯誤 API request error:', error);
     throw error;
   }
 };

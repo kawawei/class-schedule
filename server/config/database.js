@@ -2,69 +2,167 @@
 const { Sequelize } = require('sequelize');
 const dotenv = require('dotenv');
 
+// 導入模型創建函數 Import model creation functions
+const createUserModel = require('../src/models/user');
+const createDepartmentModel = require('../src/models/department');
+const createUserDepartmentModel = require('../src/models/userDepartment');
+const createTeacherModel = require('../src/models/teacher');
+const createCourseModel = require('../src/models/course');
+
 // 加載環境變量 Load environment variables
 dotenv.config();
 
-// 輸出數據庫配置信息 Output database configuration info
-console.log('數據庫配置信息 Database configuration info:');
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '已設置 (set)' : '未設置 (not set)');
+// 獲取數據庫配置 Get database configuration
+const {
+  DB_HOST,
+  DB_PORT,
+  DB_NAME,
+  DB_USER,
+  DB_PASSWORD
+} = process.env;
 
-// 創建 Sequelize 實例 Create Sequelize instance
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+/**
+ * 創建 Sequelize 實例 Create Sequelize instance
+ * @param {String} schema - 數據庫 schema Database schema
+ * @returns {Object} Sequelize 實例 Sequelize instance
+ */
+const createSequelizeInstance = (schema = 'public') => {
+  // 創建 Sequelize 實例 Create Sequelize instance
+  const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+    host: DB_HOST,
+    port: parseInt(DB_PORT, 10),
     dialect: 'mysql',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    // 添加 dialectOptions 以確保使用正確的字符集 Add dialectOptions to ensure correct character set
+    logging: false,
     dialectOptions: {
-      charset: 'utf8mb4',
-      supportBigNumbers: true,
-      bigNumberStrings: true
-    },
-    pool: {
-      max: 5, // 連接池最大連接數 Maximum number of connections in pool
-      min: 0, // 連接池最小連接數 Minimum number of connections in pool
-      acquire: 30000, // 獲取連接的最大等待時間 (毫秒) Maximum time to acquire a connection (ms)
-      idle: 10000 // 連接在釋放前可以空閒的最大時間 (毫秒) Maximum time a connection can be idle before being released (ms)
+      charset: 'utf8mb4'
     },
     define: {
-      timestamps: true, // 自動添加 createdAt 和 updatedAt 字段 Automatically add createdAt and updatedAt fields
-      underscored: true, // 使用下劃線命名法 (例如: created_at) Use snake_case for field names (e.g., created_at)
-      freezeTableName: true, // 表名與模型名相同，不自動轉為複數 Table name will be the same as the model name, not pluralized
-      charset: 'utf8mb4', // 字符集 Character set
-      collate: 'utf8mb4_unicode_ci' // 排序規則 Collation
+      charset: 'utf8mb4',
+      timestamps: true,
+      underscored: true
+    },
+    retry: {
+      match: [
+        /Deadlock/i,
+        /SequelizeConnectionError/,
+        /SequelizeConnectionRefusedError/,
+        /SequelizeHostNotFoundError/,
+        /SequelizeHostNotReachableError/,
+        /SequelizeInvalidConnectionError/,
+        /SequelizeConnectionTimedOutError/,
+        /TimeoutError/,
+        /ConnectionRefusedError/
+      ],
+      max: 5,
+      backoffBase: 1000,
+      backoffExponent: 1.5
     }
-  }
-);
+  });
 
-// 測試數據庫連接 Test database connection
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    // 設置連接字符集 Set connection character set
-    await sequelize.query('SET NAMES utf8mb4');
-    await sequelize.query('SET CHARACTER SET utf8mb4');
-    await sequelize.query('SET character_set_client = utf8mb4');
-    await sequelize.query('SET character_set_connection = utf8mb4');
-    await sequelize.query('SET character_set_results = utf8mb4');
-    console.log('數據庫連接成功。 Database connection has been established successfully.');
-    return true;
-  } catch (error) {
-    console.error('無法連接到數據庫: Database connection error:', error);
-    return false;
-  }
+  // 設置 schema Set schema
+  sequelize.schema = schema;
+
+  return sequelize;
 };
 
-// 導出 Sequelize 實例和測試連接函數 Export Sequelize instance and test connection function
+/**
+ * 初始化租戶模型 Initialize tenant models
+ * @param {Object} sequelize - Sequelize 實例 Sequelize instance
+ * @returns {Object} 初始化的模型 Initialized models
+ */
+const initializeTenantModels = (sequelize) => {
+  // 創建模型 Create models
+  const Department = createDepartmentModel(sequelize);
+  const Teacher = createTeacherModel(sequelize);
+  const Course = createCourseModel(sequelize);
+
+  // 設置關聯 Set up associations
+  Teacher.hasMany(Course, {
+    foreignKey: 'teacher_id',
+    as: 'courses'
+  });
+
+  Course.belongsTo(Teacher, {
+    foreignKey: 'teacher_id',
+    as: 'teacher'
+  });
+
+  // 返回所有模型 Return all models
+  return {
+    Department,
+    Teacher,
+    Course
+  };
+};
+
+/**
+ * 初始化公共模型 Initialize public models
+ * @param {Object} sequelize - Sequelize 實例 Sequelize instance
+ * @returns {Object} 初始化的模型 Initialized models
+ */
+const initializePublicModels = (sequelize) => {
+  // 創建模型 Create models
+  const User = createUserModel(sequelize);
+
+  // 返回所有模型 Return all models
+  return {
+    User
+  };
+};
+
+/**
+ * 測試數據庫連接 Test database connection
+ * @param {String} schema - 數據庫 schema Database schema
+ * @returns {Promise<Object>} 連接結果 Connection result
+ */
+const testConnection = async (schema = 'public') => {
+  let retries = 5;
+  let lastError = null;
+
+  while (retries > 0) {
+    try {
+      // 創建 Sequelize 實例 Create Sequelize instance
+      const sequelize = createSequelizeInstance(schema);
+
+      // 測試連接 Test connection
+      await sequelize.authenticate();
+      console.log('數據庫連接成功 Database connection successful');
+
+      // 初始化模型 Initialize models
+      let models;
+      if (schema === 'public') {
+        models = initializePublicModels(sequelize);
+      } else {
+        models = initializeTenantModels(sequelize);
+      }
+
+      // 同步模型到數據庫 Sync models to database
+      await sequelize.sync();
+
+      return {
+        sequelize,
+        models
+      };
+    } catch (error) {
+      lastError = error;
+      console.error(`數據庫連接失敗 (${6 - retries}/5): ${error.message}`);
+      
+      if (retries > 1) {
+        console.log('等待 5 秒後重試...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+      
+      retries--;
+    }
+  }
+
+  throw new Error(`無法連接到數據庫: ${lastError.message}`);
+};
+
+// 導出函數 Export functions
 module.exports = {
-  sequelize,
+  createSequelizeInstance,
+  initializeTenantModels,
+  initializePublicModels,
   testConnection
 }; 

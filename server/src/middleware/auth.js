@@ -1,6 +1,6 @@
 // 導入依賴 Import dependencies
 const { verifyToken, getTokenFromHeader } = require('../utils/jwt');
-const User = require('../models/user');
+const { createSequelizeInstance } = require('../../config/database');
 
 /**
  * 認證中間件 Authentication middleware
@@ -31,8 +31,22 @@ const authenticate = async (req, res, next) => {
         message: '無效的認證令牌 Invalid authentication token'
       });
     }
+
+    // 獲取公司代碼 Get company code
+    const companyCode = decoded.company_code;
+    if (!companyCode) {
+      return res.status(401).json({
+        success: false,
+        message: '無效的認證令牌：缺少公司代碼 Invalid authentication token: missing company code'
+      });
+    }
+
+    // 創建租戶 Sequelize 實例 Create tenant Sequelize instance
+    const schema = `tenant_${companyCode.toLowerCase()}`;
+    const tenantSequelize = createSequelizeInstance(schema);
     
     // 查找用戶 Find user
+    const User = tenantSequelize.models.USER;
     const user = await User.findByPk(decoded.id);
     
     // 如果用戶不存在或未啟用，返回未授權錯誤 If user doesn't exist or is not active, return unauthorized error
@@ -43,8 +57,9 @@ const authenticate = async (req, res, next) => {
       });
     }
     
-    // 將用戶信息添加到請求對象 Add user info to request object
+    // 將用戶信息和租戶 Sequelize 實例添加到請求對象 Add user info and tenant Sequelize instance to request object
     req.user = user;
+    req.tenantSequelize = tenantSequelize;
     
     // 繼續下一個中間件 Continue to next middleware
     next();
