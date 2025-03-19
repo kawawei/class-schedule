@@ -16,7 +16,7 @@
           </svg>
         </button>
         <slot name="left">
-          <h1 class="header-title">{{ title }}</h1>
+          <h1 class="header-title">{{ companyName }}</h1>
         </slot>
       </div>
       <div class="header-right d-flex align-items-center">

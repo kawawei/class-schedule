@@ -98,6 +98,14 @@ export default {
           role: response.data.user.role
         };
         localStorage.setItem('user', JSON.stringify(userData));
+
+        // 保存公司資料 Save company data
+        const companyData = {
+          company_name: response.data.company.company_name,
+          company_code: response.data.company.company_code,
+          status: response.data.company.status
+        };
+        localStorage.setItem('companyData', JSON.stringify(companyData));
         
         // 跳轉到儀表板 Redirect to dashboard
         router.push('/dashboard');

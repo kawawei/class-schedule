@@ -23,14 +23,14 @@ services:
       context: ../../server
       dockerfile: Dockerfile.prod
     ports:
-      - "3004:3004"
+      - "3006:3006"
     environment:
       - NODE_ENV=production
-      - PORT=3004
+      - PORT=3006
       - DB_HOST=database
-      - DB_PORT=3306
-      - DB_NAME=Talent_teacher_db
-      - DB_USER=root
+      - DB_PORT=5432
+      - DB_NAME=class_schedule
+      - DB_USER=postgres
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
@@ -42,27 +42,25 @@ services:
 
   # 數據庫服務 Database service
   database:
-    container_name: talent-mysql-prod
-    image: mysql:8.0
+    container_name: talent-postgres-prod
+    image: postgres:15-alpine
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - talent-mysql-data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - talent-postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=Talent_teacher_db
-      - MYSQL_USER=talent_user
-      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=class_schedule
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     networks:
       - talent-network
     restart: always
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 # 卷定義 Volumes definition
 volumes:
-  talent-mysql-data:
-    name: talent-mysql-data-prod
+  talent-postgres-data:
+    name: talent-postgres-data-prod
 
 # 網絡定義 Networks definition
 networks:

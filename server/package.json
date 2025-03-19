@@ -1,34 +1,25 @@
 {
-  "name": "talent-teacher-management-server",
+  "name": "class-schedule-server",
   "version": "1.0.0",
-  "description": "才藝老師管理系統後端服務",
+  "description": "Class Schedule Management System Backend",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
-  "keywords": [
-    "express",
-    "mysql",
-    "sequelize",
-    "teacher",
-    "management"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "iconv-lite": "^0.6.3",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "moment-timezone": "^0.5.43",
-    "mysql2": "^3.6.1",
-    "sequelize": "^6.33.0"
+    "cors": "^2.8.5",
+    "express-validator": "^7.0.1",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0"
   }
-}
+} 

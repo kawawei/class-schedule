@@ -2,7 +2,7 @@
 import { toISOString, parseISOString } from './timezone';
 
 // API 基礎 URL API Base URL
-const API_BASE_URL = 'http://localhost:3004/api';
+const API_BASE_URL = 'http://localhost:3006/api';
 
 /**
  * 處理日期時間數據 Process date time data
@@ -90,7 +90,7 @@ const parseDateTimeData = (data) => {
 const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true) => {
   try {
     // API基礎URL API base URL
-    const baseURL = 'http://localhost:3004/api';
+    const baseURL = 'http://localhost:3006/api';
     
     // 請求配置 Request configuration
     const config = {
@@ -159,7 +159,7 @@ const authAPI = {
    * @returns {Promise} API響應 API response
    */
   register: async (data) => {
-    return await apiRequest('/auth/register', 'POST', data, false);
+    return await apiRequest('/tenants/register', 'POST', data, false);
   },
   
   /**

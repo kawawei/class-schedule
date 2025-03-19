@@ -1,24 +1,20 @@
-# 使用 Node.js 16 作為基礎映像 Use Node.js 16 as base image
-FROM node:16-alpine
+# 使用 Node.js 官方鏡像作為基礎鏡像
+FROM node:18-alpine
 
-# 設置工作目錄 Set working directory
+# 設置工作目錄
 WORKDIR /app
 
-# 複製 package.json 和 package-lock.json 文件 Copy package.json and package-lock.json
+# 複製 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安裝依賴 Install dependencies
+# 安裝依賴（包含開發依賴）
 RUN npm install
 
-# 複製所有文件 Copy all files
+# 複製源代碼
 COPY . .
 
-# 設置環境變量 Set environment variables
-ENV NODE_ENV=development
-ENV PORT=3004
+# 暴露端口
+EXPOSE 3006
 
-# 暴露端口 Expose port
-EXPOSE 3004
-
-# 啟動開發服務器 Start development server
+# 啟動開發服務器
 CMD ["npm", "run", "dev"] 

@@ -34,16 +34,31 @@ export default {
 
   computed: {
     /**
-     * 獲取用戶姓名 Get user name
-     * @returns {String} 用戶姓名 User name
+     * 獲取用戶顯示名稱 Get user display name
+     * 優先顯示用戶姓名，如果沒有則顯示用戶名
+     * @returns {String} 用戶顯示名稱 User display name
      */
     userName() {
       try {
         const userData = JSON.parse(localStorage.getItem('user'));
-        return userData?.name || '管理員';
+        return userData?.name || userData?.username || '管理員';
       } catch (error) {
         console.error('解析用戶數據失敗 Failed to parse user data:', error);
         return '管理員';
+      }
+    },
+
+    /**
+     * 獲取公司名稱 Get company name
+     * @returns {String} 公司名稱 Company name
+     */
+    companyName() {
+      try {
+        const companyData = JSON.parse(localStorage.getItem('companyData'));
+        return companyData?.company_name || this.title;
+      } catch (error) {
+        console.error('獲取公司名稱失敗 Failed to get company name:', error);
+        return this.title;
       }
     }
   },
