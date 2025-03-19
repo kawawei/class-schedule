@@ -4,7 +4,6 @@
     <!-- 頂部導航欄 Top navigation bar -->
     <AppHeader 
       :title="isEditMode ? '編輯老師' : '新增老師'" 
-      :userName="userName" 
       :isLoggingOut="isLoggingOut"
       @logout="handleLogout"
     />

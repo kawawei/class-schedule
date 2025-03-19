@@ -3,7 +3,6 @@
     <!-- 添加頂部導航欄 Add top navigation bar -->
     <AppHeader 
       title="排課管理" 
-      :userName="userName" 
       :isLoggingOut="isLoggingOut"
       @logout="handleLogout"
     />
@@ -226,7 +225,6 @@ export default defineComponent({
     const currentView = ref('month'); // 默認月視圖 Default to month view
     
     // 用戶信息 User information
-    const userName = ref(localStorage.getItem('userName') || '管理員');
     const isLoggingOut = ref(false);
     
     // 對話框狀態 Dialog states
@@ -513,7 +511,6 @@ export default defineComponent({
       resetCourseForm,
       resetFilters,
       applyFilters,
-      userName,
       isLoggingOut,
       handleLogout,
       currentYear,

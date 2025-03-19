@@ -3,7 +3,6 @@
     <!-- 頂部導航欄 Top navigation bar -->
     <AppHeader 
       title="才藝老師管理系統" 
-      :userName="user.name" 
       :userAvatar="user.avatar"
       :isLoggingOut="isLoggingOut"
       @logout="logout"

@@ -4,7 +4,6 @@
     <!-- 頂部導航欄 Top navigation bar -->
     <AppHeader 
       title="老師管理" 
-      :userName="userName" 
       :isLoggingOut="isLoggingOut"
       @logout="handleLogout"
     />
