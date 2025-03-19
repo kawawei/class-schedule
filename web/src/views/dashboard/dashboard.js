@@ -101,24 +101,11 @@ export default {
         // 調用登出 API Call logout API
         await authAPI.logout();
         
-        // API 調用成功後，清除身份驗證狀態 After successful API call, clear authentication state
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isAuthenticated');
-        
         // 導航到登入頁面 Navigate to login page
         this.$router.push({ name: 'Login' });
       } catch (error) {
         console.error('登出時出錯:', error); // Error during logout
-        
-        // 即使 API 調用失敗，仍然清除本地存儲並導航到登入頁面
-        // Even if API call fails, still clear local storage and navigate to login page
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isAuthenticated');
-        this.$router.push({ name: 'Login' });
       } finally {
-        // 重置登出狀態 Reset logout state
         this.isLoggingOut = false;
       }
     }

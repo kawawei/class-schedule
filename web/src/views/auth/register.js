@@ -116,11 +116,9 @@ export default {
 
         // 調用註冊 API
         const response = await authAPI.register({
-          companyName: form.companyName.trim(),
-          companyCode: form.companyCode.trim(),
           username: form.username.trim(),
           password: form.password,
-          confirmPassword: form.confirmPassword
+          company_code: form.companyCode.trim()  // 修改為後端期望的 company_code
         });
 
         if (response.success) {

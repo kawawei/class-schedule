@@ -1,7 +1,7 @@
 // 導入依賴 Import dependencies
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import apiRequest from '@/utils/api';
+import { authAPI } from '@/utils/api';
 import Message from '@/utils/message';
 
 // 登入頁面腳本 Login page script
@@ -78,15 +78,26 @@ export default {
         isSubmitting.value = true;
         
         // 發送登入請求 Send login request
-        const response = await apiRequest('/auth/login', 'POST', {
+        const response = await authAPI.login({
           company_code: form.value.companyCode,
           username: form.value.username,
           password: form.value.password
-        }, false);
+        });
         
         // 保存令牌和公司代碼 Save token and company code
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('companyCode', form.value.companyCode);
+        localStorage.setItem('isAuthenticated', 'true');
+        
+        // 保存用戶資料 Save user data
+        const userData = {
+          id: response.data.user.id,
+          username: response.data.user.username,
+          name: response.data.user.name,
+          email: response.data.user.email,
+          role: response.data.user.role
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
         
         // 跳轉到儀表板 Redirect to dashboard
         router.push('/dashboard');

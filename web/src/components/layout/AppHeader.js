@@ -11,11 +11,6 @@ export default {
       type: String,
       default: '才藝老師管理系統'
     },
-    // 用戶名稱 User name
-    userName: {
-      type: String,
-      default: '管理員'
-    },
     // 用戶頭像 User avatar
     userAvatar: {
       type: String,
@@ -35,6 +30,22 @@ export default {
       // 菜單是否可見 Menu visibility
       menuVisible: false
     };
+  },
+
+  computed: {
+    /**
+     * 獲取用戶姓名 Get user name
+     * @returns {String} 用戶姓名 User name
+     */
+    userName() {
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        return userData?.name || '管理員';
+      } catch (error) {
+        console.error('解析用戶數據失敗 Failed to parse user data:', error);
+        return '管理員';
+      }
+    }
   },
   
   methods: {

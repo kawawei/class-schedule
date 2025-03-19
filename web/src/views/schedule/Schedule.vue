@@ -200,6 +200,7 @@
 import { ref, computed, onMounted, defineComponent } from 'vue';
 import { format, addDays, addWeeks, addMonths, startOfWeek, startOfMonth } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import { useRouter } from 'vue-router';
 
 // 導入日曆視圖組件 Import calendar view components
 import DayView from '@/components/calendar/DayView.vue';
@@ -464,15 +465,12 @@ export default defineComponent({
     };
     
     // 處理登出 Handle logout
+    const router = useRouter();
     const handleLogout = async () => {
       try {
         isLoggingOut.value = true;
-        // 這裡可以添加登出邏輯，例如調用 API 等 Add logout logic here, such as calling API
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 模擬 API 調用 Simulate API call
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userName');
-        // 重定向到登入頁面 Redirect to login page
-        window.location.href = '/login';
+        await authAPI.logout();
+        router.push('/login');
       } catch (error) {
         console.error('登出失敗 Logout failed:', error);
       } finally {

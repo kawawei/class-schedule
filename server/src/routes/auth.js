@@ -23,10 +23,10 @@ const createAuthRoutes = (models) => {
    */
   router.post('/register', async (req, res) => {
     try {
-      const { username, password, name, email, company_code } = req.body;
+      const { username, password, company_code } = req.body;
 
       // 驗證必填字段 Validate required fields
-      if (!username || !password || !name || !company_code) {
+      if (!username || !password || !company_code) {
         return res.status(400).json({
           success: false,
           message: '缺少必填字段 Missing required fields'
@@ -65,29 +65,11 @@ const createAuthRoutes = (models) => {
         });
       }
 
-      // 如果提供了郵箱，檢查郵箱是否已存在於該租戶 If email provided, check if it exists in tenant
-      if (email) {
-        const existingEmail = await User.findOne({
-          where: { 
-            email,
-            company_code
-          }
-        });
-
-        if (existingEmail) {
-          return res.status(400).json({
-            success: false,
-            message: '郵箱已存在 Email already exists'
-          });
-        }
-      }
-
       // 創建用戶 Create user
       const user = await User.create({
         username,
-        password, // 密碼會通過模型的 hooks 自動加密 Password will be encrypted automatically through model hooks
-        name,
-        email,
+        password,
+        name: username,  // 使用用戶名作為默認姓名
         company_code,
         role: 'admin' // 第一個用戶設為管理員 Set first user as admin
       });
@@ -109,8 +91,6 @@ const createAuthRoutes = (models) => {
           user: {
             id: user.id,
             username: user.username,
-            name: user.name,
-            email: user.email,
             role: user.role,
             company_code: user.company_code
           }

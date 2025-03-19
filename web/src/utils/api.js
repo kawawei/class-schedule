@@ -150,7 +150,7 @@ const authAPI = {
    * @returns {Promise} API響應 API response
    */
   login: async (data) => {
-    return await apiRequest('/auth/login', 'POST', data);
+    return await apiRequest('/auth/login', 'POST', data, false);
   },
   
   /**
@@ -159,7 +159,7 @@ const authAPI = {
    * @returns {Promise} API響應 API response
    */
   register: async (data) => {
-    return await apiRequest('/auth/register', 'POST', data);
+    return await apiRequest('/auth/register', 'POST', data, false);
   },
   
   /**
@@ -167,7 +167,28 @@ const authAPI = {
    * @returns {Promise} API響應 API response
    */
   logout: async () => {
-    return await apiRequest('/auth/logout', 'POST', null, true);
+    try {
+      // 調用登出 API Call logout API
+      const response = await apiRequest('/auth/logout', 'POST', null, true);
+      
+      // 清除所有身份驗證相關的本地存儲
+      // Clear all authentication-related local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('companyCode');
+      
+      return response;
+    } catch (error) {
+      // 即使 API 調用失敗，也要清除本地存儲
+      // Clear local storage even if API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('companyCode');
+      
+      throw error;
+    }
   }
 };
 
