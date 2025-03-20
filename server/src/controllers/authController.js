@@ -40,6 +40,14 @@ const authController = {
 
             const user = userResult.rows[0];
 
+            // 檢查用戶是否被禁用 Check if user is disabled
+            if (!user.is_active) {
+                return res.status(401).json({
+                    success: false,
+                    message: '帳號已被禁用'
+                });
+            }
+
             // 驗證密碼
             const isValidPassword = await bcrypt.compare(password, user.password);
             if (!isValidPassword) {
@@ -55,7 +63,8 @@ const authController = {
                     userId: user.id,
                     username: user.username,
                     role: user.role,
-                    companyCode: company_code
+                    companyCode: company_code,
+                    permissions: user.permissions || []
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN }
@@ -72,7 +81,8 @@ const authController = {
                         username: user.username,
                         name: user.name,
                         email: user.email,
-                        role: user.role
+                        role: user.role,
+                        permissions: user.permissions || []
                     },
                     company: {
                         id: company.id,

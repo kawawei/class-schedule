@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { checkPermission } = require('../middlewares/permissionMiddleware');
 
 // 所有路由都需要認證 All routes require authentication
 router.use(authMiddleware);
@@ -13,13 +14,13 @@ router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUser);
 
 // 創建用戶 Create user
-router.post('/', userController.createUser);
+router.post('/', checkPermission('create_user'), userController.createUser);
 
 // 更新用戶 Update user
-router.put('/:id', userController.updateUser);
+router.put('/:id', checkPermission('update_user'), userController.updateUser);
 
 // 刪除用戶 Delete user
-router.delete('/:id', userController.deleteUser);
+router.delete('/:id', checkPermission('delete_user'), userController.deleteUser);
 
 module.exports = router;
 
