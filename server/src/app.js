@@ -3,6 +3,7 @@ const cors = require('cors');
 const { mainPool } = require('./config/database');
 const tenantRoutes = require('./routes/tenantRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // 創建 Express 應用
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 // 路由
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
