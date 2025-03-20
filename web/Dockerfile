@@ -1,6 +1,10 @@
 # 使用 Node.js 16 作為基礎映像 Use Node.js 16 as base image
 FROM node:16-alpine
 
+# 安裝時區數據包並設置時區 Install timezone data and set timezone
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Taipei
+
 # 設置工作目錄 Set working directory
 WORKDIR /app
 

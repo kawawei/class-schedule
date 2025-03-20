@@ -88,11 +88,16 @@ const parseDateTimeData = (data) => {
  * @returns {Promise} 響應數據 Response data
  */
 const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true) => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${new Date().toISOString()}] [Request ${requestId}] 開始 API 請求 Starting API request:`, {
+    endpoint,
+    method,
+    withAuth
+  });
+
   try {
-    // API基礎URL API base URL
     const baseURL = 'http://localhost:3006/api';
     
-    // 請求配置 Request configuration
     const config = {
       method,
       headers: {
@@ -100,12 +105,12 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
       }
     };
     
-    // 如果需要認證，添加令牌 If authentication is required, add token
     if (withAuth) {
       const token = localStorage.getItem('token');
       const companyCode = localStorage.getItem('companyCode');
       
       if (!token) {
+        console.log(`[${new Date().toISOString()}] [Request ${requestId}] 未找到認證令牌 Authentication token not found`);
         throw new Error('未登入 Not logged in');
       }
       
@@ -113,29 +118,45 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
       if (companyCode) {
         config.headers['x-company-code'] = companyCode;
       }
+      console.log(`[${new Date().toISOString()}] [Request ${requestId}] 已添加認證信息 Added authentication information`);
     }
     
-    // 如果有數據，添加到請求體 If there is data, add to request body
     if (data) {
-      config.body = JSON.stringify(processDateTimeData(data));
+      const processedData = processDateTimeData(data);
+      config.body = JSON.stringify(processedData);
+      console.log(`[${new Date().toISOString()}] [Request ${requestId}] 請求數據 Request data:`, processedData);
     }
     
-    // 發送請求 Send request
+    console.log(`[${new Date().toISOString()}] [Request ${requestId}] 發送請求 Sending request to: ${baseURL}${endpoint}`);
     const response = await fetch(`${baseURL}${endpoint}`, config);
     const responseData = await response.json();
     
-    // 如果響應不成功，返回錯誤對象 If response is not successful, return error object
+    console.log(`[${new Date().toISOString()}] [Request ${requestId}] 收到響應 Received response:`, {
+      status: response.status,
+      statusText: response.statusText,
+      data: responseData
+    });
+    
     if (!response.ok) {
+      console.error(`[${new Date().toISOString()}] [Request ${requestId}] 請求失敗 Request failed:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: responseData
+      });
       return {
         success: false,
         message: responseData.message || '請求失敗 Request failed'
       };
     }
     
-    // 解析並返回數據 Parse and return data
-    return parseDateTimeData(responseData);
+    const parsedData = parseDateTimeData(responseData);
+    console.log(`[${new Date().toISOString()}] [Request ${requestId}] 請求完成 Request completed successfully`);
+    return parsedData;
   } catch (error) {
-    console.error('API請求錯誤 API request error:', error);
+    console.error(`[${new Date().toISOString()}] [Request ${requestId}] 請求出錯 Request error:`, {
+      error: error.message,
+      stack: error.stack
+    });
     return {
       success: false,
       message: error.message || '請求失敗 Request failed'
@@ -229,8 +250,24 @@ const userAPI = {
    * @param {Number} id - 用戶ID User ID
    * @returns {Promise} 刪除結果 Deletion result
    */
-  deleteUser: (id) => {
-    return apiRequest(`/users/${id}`, 'DELETE', null, true);
+  deleteUser: async (id) => {
+    console.log(`[${new Date().toISOString()}] 開始刪除用戶 Starting user deletion:`, { userId: id });
+    try {
+      const result = await apiRequest(`/users/${id}`, 'DELETE', null, true);
+      console.log(`[${new Date().toISOString()}] 刪除用戶請求完成 User deletion request completed:`, {
+        userId: id,
+        success: result.success,
+        message: result.message
+      });
+      return result;
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] 刪除用戶請求失敗 User deletion request failed:`, {
+        userId: id,
+        error: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
   }
 };
 

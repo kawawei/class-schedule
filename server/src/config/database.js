@@ -21,6 +21,9 @@ const createTenantSchema = async (schemaName) => {
         // 創建 Schema
         await client.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`);
         
+        // 設置時區
+        await client.query(`SET timezone = 'Asia/Taipei'`);
+        
         // 創建用戶表
         await client.query(`
             CREATE TABLE IF NOT EXISTS ${schemaName}.users (
@@ -42,8 +45,8 @@ const createTenantSchema = async (schemaName) => {
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
@@ -53,10 +56,10 @@ const createTenantSchema = async (schemaName) => {
                 id SERIAL PRIMARY KEY,
                 course_id INTEGER REFERENCES ${schemaName}.courses(id),
                 teacher_id INTEGER REFERENCES ${schemaName}.users(id),
-                start_time TIMESTAMP NOT NULL,
-                end_time TIMESTAMP NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
@@ -79,7 +82,9 @@ const createTenantSchema = async (schemaName) => {
 const setTenantSchema = async (schemaName) => {
     const client = await mainPool.connect();
     try {
+        // 設置 schema 和時區
         await client.query(`SET search_path TO ${schemaName}`);
+        await client.query(`SET timezone = 'Asia/Taipei'`);
         return true;
     } catch (error) {
         throw error;

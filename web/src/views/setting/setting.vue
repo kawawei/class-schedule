@@ -169,14 +169,35 @@
     <AppDialog
       v-model="deleteDialogVisible"
       title="確認刪除"
+      size="sm"
       :loading="loading"
       @confirm="handleDeleteConfirm"
-      @close="handleDeleteCancel"
+      @cancel="handleDeleteCancel"
     >
-      <div class="delete-confirm-content">
-        <p>確定要刪除用戶 "{{ userToDelete?.name }}" 嗎？</p>
-        <p class="text-danger">此操作無法撤銷。</p>
-      </div>
+      <template #default>
+        <div class="delete-confirm-content">
+          <p>確定要刪除用戶 "{{ userToDelete?.name }}" 嗎？此操作無法撤銷。</p>
+          <p>Are you sure you want to delete user "{{ userToDelete?.name }}"? This action cannot be undone.</p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="action-buttons">
+          <button 
+            class="btn btn-danger" 
+            @click.stop="handleDeleteConfirm"
+            :disabled="loading"
+          >
+            <i class="fas fa-trash"></i> 刪除 Delete
+          </button>
+          <button 
+            class="btn btn-secondary" 
+            @click.stop="handleDeleteCancel"
+            :disabled="loading"
+          >
+            <i class="fas fa-times"></i> 取消 Cancel
+          </button>
+        </div>
+      </template>
     </AppDialog>
   </div>
 </template>

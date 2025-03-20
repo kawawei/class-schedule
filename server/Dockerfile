@@ -1,6 +1,10 @@
 # 使用 Node.js 官方鏡像作為基礎鏡像
 FROM node:18-alpine
 
+# 安裝時區數據包並設置時區 Install timezone data and set timezone
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Taipei
+
 # 設置工作目錄
 WORKDIR /app
 

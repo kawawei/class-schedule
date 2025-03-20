@@ -117,7 +117,9 @@ const userController = {
             const result = await client.query(
                 `INSERT INTO ${companyCode}.users (username, password, name, email, role, is_active)
                  VALUES ($1, $2, $3, $4, $5, true)
-                 RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
+                 RETURNING id, username, name, email, role, is_active, 
+                 to_char(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') as created_at,
+                 to_char(updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') as updated_at`,
                 [username, hashedPassword, name, email, role]
             );
             
@@ -262,8 +264,13 @@ const userController = {
             const { id } = req.params;
             const companyCode = req.user.companyCode;
             
+            console.log(`[DELETE USER] 開始刪除用戶 Starting user deletion - User ID: ${id}, Company Code: ${companyCode}`);
+            console.log(`[DELETE USER] 請求來源 Request source - IP: ${req.ip}, Method: ${req.method}, Path: ${req.path}`);
+            console.log(`[DELETE USER] 請求標頭 Request headers:`, req.headers);
+            
             // 檢查是否為超級管理員 Check if super admin
             if (id === '1') {
+                console.log(`[DELETE USER] 嘗試刪除超級管理員 Attempt to delete super admin - Rejected`);
                 return res.status(403).json({
                     success: false,
                     message: '不能刪除超級管理員'
@@ -271,30 +278,35 @@ const userController = {
             }
             
             // 刪除用戶 Delete user
+            console.log(`[DELETE USER] 執行刪除查詢 Executing delete query`);
             const result = await client.query(
                 `DELETE FROM ${companyCode}.users WHERE id = $1 RETURNING id`,
                 [id]
             );
             
             if (result.rows.length === 0) {
+                console.log(`[DELETE USER] 用戶不存在 User not found - ID: ${id}`);
                 return res.status(404).json({
                     success: false,
                     message: '用戶不存在'
                 });
             }
             
+            console.log(`[DELETE USER] 用戶刪除成功 User deleted successfully - ID: ${id}`);
             res.json({
                 success: true,
                 message: '用戶已刪除'
             });
         } catch (error) {
-            console.error('刪除用戶失敗:', error);
+            console.error(`[DELETE USER] 刪除用戶時發生錯誤 Error deleting user:`, error);
+            console.error(`[DELETE USER] 錯誤堆棧 Error stack:`, error.stack);
             res.status(500).json({
                 success: false,
                 message: '刪除用戶失敗'
             });
         } finally {
             client.release();
+            console.log(`[DELETE USER] 數據庫連接已釋放 Database connection released`);
         }
     }
 };

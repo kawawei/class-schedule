@@ -67,10 +67,33 @@ export default {
      * 確認操作 Confirm operation
      */
     confirmDialog() {
+      // 防止重複觸發 Prevent duplicate triggers
+      if (this.isConfirming) return;
+      this.isConfirming = true;
+      
       console.log('確認操作 Confirm operation');
       this.$emit('confirm');
-      // 不要在這裡關閉對話框，讓父組件決定何時關閉
-      // Don't close the dialog here, let the parent component decide when to close
+      
+      // 使用 setTimeout 確保事件處理完成後再重置狀態
+      // Use setTimeout to ensure state is reset after event handling
+      setTimeout(() => {
+        this.isConfirming = false;
+      }, 300);
+    },
+
+    cancelDialog() {
+      // 防止重複觸發 Prevent duplicate triggers
+      if (this.isCanceling) return;
+      this.isCanceling = true;
+      
+      console.log('取消操作 Cancel operation');
+      this.$emit('cancel');
+      
+      // 使用 setTimeout 確保事件處理完成後再重置狀態
+      // Use setTimeout to ensure state is reset after event handling
+      setTimeout(() => {
+        this.isCanceling = false;
+      }, 300);
     }
   }
 }

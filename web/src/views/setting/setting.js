@@ -433,7 +433,17 @@ export default {
 
     // 顯示刪除確認對話框 Show delete confirmation dialog
     const showDeleteConfirm = (user) => {
-      if (!user) return;
+      if (!user) {
+        console.log('嘗試刪除無效用戶 Attempting to delete invalid user:', user);
+        return;
+      }
+      console.log(`[${new Date().toISOString()}] 顯示刪除確認對話框 Showing delete confirmation dialog`);
+      console.log('要刪除的用戶信息 User information to delete:', {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role
+      });
       userToDelete.value = user;
       deleteDialogVisible.value = true;
     };
@@ -441,33 +451,64 @@ export default {
     // 處理刪除確認 Handle delete confirmation
     const handleDeleteConfirm = async () => {
       if (!userToDelete.value) {
+        console.log('刪除確認時沒有選中的用戶 No user selected during delete confirmation');
         deleteDialogVisible.value = false;
         return;
       }
 
+      console.log(`[${new Date().toISOString()}] 開始刪除用戶操作 Starting user deletion operation`);
+      console.log('當前要刪除的用戶 Current user to delete:', {
+        id: userToDelete.value.id,
+        username: userToDelete.value.username,
+        name: userToDelete.value.name,
+        role: userToDelete.value.role
+      });
+
       try {
         loading.value = true;
+        console.log('調用刪除用戶 API Calling delete user API...');
         const response = await userAPI.deleteUser(userToDelete.value.id);
         
+        console.log('API 響應 API response:', response);
+        
         if (response.success) {
-          // 直接從本地列表中移除用戶
+          console.log('刪除用戶成功 User deletion successful');
+          // 直接從本地列表中移除用戶 Remove user from local list
+          const previousLength = users.value.length;
           users.value = users.value.filter(u => u.id !== userToDelete.value.id);
-          showMessage('success', '用戶已成功刪除');
+          console.log(`本地用戶列表更新：從 ${previousLength} 條記錄更新為 ${users.value.length} 條 Local user list updated: from ${previousLength} records to ${users.value.length} records`);
+          
+          showMessage('success', '用戶已成功刪除 User has been successfully deleted');
           deleteDialogVisible.value = false;
         } else {
-          showMessage('error', response.message || '刪除失敗');
+          console.error('刪除失敗 Deletion failed:', response.message);
+          showMessage('error', response.message || '刪除失敗 Deletion failed');
         }
       } catch (error) {
-        console.error('刪除用戶失敗:', error);
-        showMessage('error', '刪除用戶失敗');
+        console.error('刪除用戶時發生錯誤 Error occurred while deleting user:', error);
+        console.error('錯誤詳情 Error details:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response
+        });
+        showMessage('error', `刪除用戶失敗: ${error.message} Failed to delete user: ${error.message}`);
       } finally {
         loading.value = false;
+        console.log(`[${new Date().toISOString()}] 刪除操作完成 Deletion operation completed`);
         userToDelete.value = null;
       }
     };
 
     // 取消刪除 Cancel delete
     const handleDeleteCancel = () => {
+      console.log(`[${new Date().toISOString()}] 取消刪除操作 Canceling deletion operation`);
+      if (userToDelete.value) {
+        console.log('取消刪除的用戶信息 Canceled user deletion information:', {
+          id: userToDelete.value.id,
+          username: userToDelete.value.username,
+          name: userToDelete.value.name
+        });
+      }
       deleteDialogVisible.value = false;
       userToDelete.value = null;
     };
