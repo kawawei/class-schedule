@@ -13,8 +13,11 @@ services:
     volumes:
       - ../../web:/app
       - /app/node_modules
+      # 掛載主機時間文件 Mount host timezone file
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - NODE_ENV=development
+      - TZ=Asia/Taipei
     depends_on:
       - backend
     networks:
@@ -33,6 +36,8 @@ services:
     volumes:
       - ../../server:/app
       - /app/node_modules
+      # 掛載主機時間文件 Mount host timezone file
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - NODE_ENV=development
       - PORT=3006
@@ -60,12 +65,16 @@ services:
     volumes:
       - talent-postgres-data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
+      # 掛載主機時間文件 Mount host timezone file
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - POSTGRES_DB=class_schedule
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=talent_password
       - TZ=Asia/Taipei
       - PGTZ=Asia/Taipei
+    # 添加命令行參數來設置時區 Add command line arguments to set timezone
+    command: postgres -c timezone=Asia/Taipei
     networks:
       - talent-network
 
