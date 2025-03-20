@@ -100,7 +100,7 @@ const userController = {
             if (existingUser.rows.length > 0) {
                 return res.status(400).json({
                     success: false,
-                    message: '用戶名已存在'
+                    message: '用戶名已存在 Username already exists'
                 });
             }
             
@@ -108,7 +108,7 @@ const userController = {
             if (userRole !== 'tenant' && role === 'tenant') {
                 return res.status(403).json({
                     success: false,
-                    message: '沒有權限創建租戶帳號'
+                    message: '沒有權限創建租戶帳號 No permission to create tenant account'
                 });
             }
             
@@ -128,10 +128,19 @@ const userController = {
                 data: result.rows[0]
             });
         } catch (error) {
-            console.error('創建用戶失敗:', error);
+            console.error('創建用戶失敗 Create user failed:', error);
+            
+            // 處理重複用戶名錯誤 Handle duplicate username error
+            if (error.code === '23505' && error.constraint === 'users_username_key') {
+                return res.status(400).json({
+                    success: false,
+                    message: '用戶名已存在 Username already exists'
+                });
+            }
+            
             res.status(500).json({
                 success: false,
-                message: '創建用戶失敗'
+                message: '創建用戶失敗 Create user failed'
             });
         } finally {
             client.release();
@@ -236,7 +245,7 @@ const userController = {
                 valueIndex++;
             }
             
-            updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+            updateFields.push(`updated_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei'`);
             
             updateQuery += updateFields.join(', ');
             updateQuery += ` WHERE id = $${valueIndex} RETURNING id, username, name, email, role, permissions, is_active, created_at, updated_at`;

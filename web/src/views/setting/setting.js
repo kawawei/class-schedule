@@ -267,14 +267,25 @@ export default {
     
     // 格式化日期 Format date
     const formatDate = (date) => {
-      return format(new Date(date), 'yyyy/MM/dd HH:mm', { locale: zhTW });
+      if (!date) return '-';
+      try {
+        // 確保日期是 UTC 格式 Ensure date is in UTC format
+        const utcDate = new Date(date);
+        return format(utcDate, 'yyyy/MM/dd HH:mm', { 
+          locale: zhTW,
+          timeZone: 'Asia/Taipei'
+        });
+      } catch (error) {
+        console.error('日期格式化錯誤:', error);
+        return '-';
+      }
     };
     
     // 獲取角色名稱 Get role name
     const getRoleName = (role) => {
       const roleMap = {
         admin: '管理員',
-        teacher: '老師'
+        user: '用戶'
       };
       return roleMap[role] || role;
     };
@@ -342,12 +353,20 @@ export default {
     };
     
     // 保存用戶 Save user
+    const isSubmitting = ref(false); // 添加提交狀態標記 Add submission state flag
+    
     const saveUser = async () => {
       if (!validateUserForm()) {
         return;
       }
       
+      // 如果正在提交，則返回 If already submitting, return
+      if (isSubmitting.value) {
+        return;
+      }
+      
       try {
+        isSubmitting.value = true; // 設置提交狀態 Set submission state
         loading.value = true;
         
         // 準備用戶數據 Prepare user data
@@ -360,24 +379,44 @@ export default {
           delete userData.password;
         }
         
+        let response;
         if (isEditMode.value) {
           // 更新用戶 Update user
-          await userAPI.updateUser(userData.id, userData);
+          response = await userAPI.updateUser(userData.id, userData);
+          if (response && response.success) {
+            // 更新本地用戶數據 Update local user data
+            const index = users.value.findIndex(u => u.id === userData.id);
+            if (index !== -1) {
+              users.value[index] = response.data;
+            }
+          }
         } else {
           // 創建用戶 Create user
-          await userAPI.createUser(userData);
+          response = await userAPI.createUser(userData);
+          if (response && response.success) {
+            // 添加新用戶到本地列表 Add new user to local list
+            users.value.push(response.data);
+          }
         }
         
-        // 關閉對話框 Close dialog
-        userDialogVisible.value = false;
-        
-        // 重新獲取用戶列表 Fetch user list again
-        await fetchUsers();
+        // 檢查響應狀態 Check response status
+        if (response && response.success) {
+          // 關閉對話框 Close dialog
+          userDialogVisible.value = false;
+        } else {
+          throw new Error(response?.message || '操作失敗 Operation failed');
+        }
       } catch (error) {
         console.error('保存用戶失敗 Failed to save user:', error);
-        alert(`保存用戶失敗: ${error.message} Failed to save user: ${error.message}`);
+        // 檢查是否為重複用戶名錯誤 Check if it's a duplicate username error
+        if (error.message.includes('用戶名已存在')) {
+          alert('用戶名已存在 Username already exists');
+        } else {
+          alert(`保存用戶失敗: ${error.message} Failed to save user: ${error.message}`);
+        }
       } finally {
         loading.value = false;
+        isSubmitting.value = false; // 重置提交狀態 Reset submission state
       }
     };
     
@@ -391,11 +430,18 @@ export default {
       if (confirm(`確定要刪除用戶 "${user.name}" 嗎？ Are you sure you want to delete user "${user.name}"?`)) {
         try {
           loading.value = true;
-          await userAPI.deleteUser(user.id);
-          // 刪除成功後重新獲取用戶列表 Fetch user list after successful deletion
-          await fetchUsers();
+          const response = await userAPI.deleteUser(user.id);
+          
+          // 檢查響應狀態 Check response status
+          if (response && response.success) {
+            // 從本地列表中移除用戶 Remove user from local list
+            users.value = users.value.filter(u => u.id !== user.id);
+          } else {
+            throw new Error(response?.message || '刪除失敗 Delete failed');
+          }
         } catch (error) {
           console.error('刪除用戶失敗 Failed to delete user:', error);
+          alert(`刪除用戶失敗: ${error.message} Failed to delete user: ${error.message}`);
         } finally {
           loading.value = false;
         }

@@ -9,7 +9,9 @@ const mainPool = new Pool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     // 設置默認 Schema
-    search_path: 'public'
+    search_path: 'public',
+    // 設置時區為台北時間 Set timezone to Taipei
+    timezone: 'Asia/Taipei'
 });
 
 // 創建租戶 Schema 的函數
@@ -32,8 +34,8 @@ const createTenantSchema = async (schemaName) => {
                 role VARCHAR(20) NOT NULL DEFAULT 'user',
                 permissions JSONB DEFAULT '{}',
                 is_active BOOLEAN DEFAULT true,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei',
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei'
             )
         `);
         
@@ -43,8 +45,8 @@ const createTenantSchema = async (schemaName) => {
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei',
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei'
             )
         `);
         
