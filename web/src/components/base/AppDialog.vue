@@ -69,6 +69,8 @@ export default {
     confirmDialog() {
       console.log('確認操作 Confirm operation');
       this.$emit('confirm');
+      // 不要在這裡關閉對話框，讓父組件決定何時關閉
+      // Don't close the dialog here, let the parent component decide when to close
     }
   }
 }

@@ -79,9 +79,9 @@
                 <template #actions="{ row }">
                   <div class="action-buttons">
                     <AppButton
-                      type="secondary"
+                      type="primary"
                       class="edit-btn"
-                      @click="handleEdit(row)"
+                      @click.stop="handleEdit(row)"
                       title="編輯用戶"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -92,7 +92,7 @@
                     <AppButton
                       type="danger"
                       class="delete-btn"
-                      @click="handleDelete(row)"
+                      @click.stop="showDeleteConfirm(row)"
                       title="刪除用戶"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -162,6 +162,20 @@
             placeholder="請選擇角色"
           />
         </div>
+      </div>
+    </AppDialog>
+
+    <!-- 刪除確認對話框 Delete confirmation dialog -->
+    <AppDialog
+      v-model="deleteDialogVisible"
+      title="確認刪除"
+      :loading="loading"
+      @confirm="handleDeleteConfirm"
+      @close="handleDeleteCancel"
+    >
+      <div class="delete-confirm-content">
+        <p>確定要刪除用戶 "{{ userToDelete?.name }}" 嗎？</p>
+        <p class="text-danger">此操作無法撤銷。</p>
       </div>
     </AppDialog>
   </div>
@@ -267,6 +281,17 @@ export default {
         box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
       }
     }
+  }
+}
+
+.delete-confirm-content {
+  text-align: center;
+  padding: var(--spacing-md) 0;
+  
+  .text-danger {
+    color: var(--color-danger);
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
   }
 }
 </style> 

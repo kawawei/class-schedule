@@ -124,16 +124,22 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
     const response = await fetch(`${baseURL}${endpoint}`, config);
     const responseData = await response.json();
     
-    // 如果響應不成功，拋出錯誤 If response is not successful, throw error
+    // 如果響應不成功，返回錯誤對象 If response is not successful, return error object
     if (!response.ok) {
-      throw new Error(responseData.message || '請求失敗 Request failed');
+      return {
+        success: false,
+        message: responseData.message || '請求失敗 Request failed'
+      };
     }
     
     // 解析並返回數據 Parse and return data
     return parseDateTimeData(responseData);
   } catch (error) {
     console.error('API請求錯誤 API request error:', error);
-    throw error;
+    return {
+      success: false,
+      message: error.message || '請求失敗 Request failed'
+    };
   }
 };
 

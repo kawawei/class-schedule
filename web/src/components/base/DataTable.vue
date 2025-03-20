@@ -24,7 +24,7 @@
               <p>{{ emptyText }}</p>
             </td>
           </tr>
-          <tr v-for="(row, index) in data" :key="getRowKey(row, index)" @click="onRowClick(row, index)" :class="{ 'clickable': rowClickable }">
+          <tr v-for="(row, index) in data" :key="getRowKey(row, index)" @click="onRowClick($event, row, index)" :class="{ 'clickable': rowClickable }">
             <td v-for="column in columns" :key="column.key" :style="getColumnStyle(column)">
               <slot :name="column.key" :row="row" :index="index">
                 {{ getColumnValue(row, column) }}
@@ -109,7 +109,13 @@ export default {
       return style;
     },
     // 行點擊事件 Row click event
-    onRowClick(row, index) {
+    onRowClick(event, row, index) {
+      // 如果點擊的是按鈕或者按鈕內的元素，不觸發行點擊事件
+      // If clicking on a button or elements inside a button, don't trigger row click event
+      if (event.target.closest('.action-buttons')) {
+        return;
+      }
+      
       if (this.rowClickable) {
         this.$emit('row-click', row, index);
       }

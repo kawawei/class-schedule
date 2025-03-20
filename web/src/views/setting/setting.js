@@ -4,6 +4,9 @@ import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { useRouter } from 'vue-router'; // 導入 useRouter 用於頁面導航 Import useRouter for navigation
 import { authAPI, userAPI, departmentAPI } from '@/utils/api'; // 導入 API Import API
+import { createApp } from 'vue';
+import AppMessage from '@/components/base/AppMessage.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
 
 // 標籤頁圖標組件 Tab Icon Components (使用渲染函數代替模板 Using render function instead of template)
 const UserIcon = {
@@ -99,7 +102,8 @@ export default {
     UserIcon,
     SecurityIcon,
     BackupIcon,
-    LogIcon
+    LogIcon,
+    AppDialog
   },
   setup() {
     // 獲取路由器 Get router
@@ -267,7 +271,22 @@ export default {
     
     // 格式化日期 Format date
     const formatDate = (date) => {
-      return format(new Date(date), 'yyyy/MM/dd HH:mm', { locale: zhTW });
+      if (!date) return '-';
+      try {
+        // 確保日期是有效的
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+          console.error('無效的日期格式:', date);
+          return '-';
+        }
+        return format(parsedDate, 'yyyy/MM/dd HH:mm', { 
+          locale: zhTW,
+          timeZone: 'Asia/Taipei'
+        });
+      } catch (error) {
+        console.error('日期格式化錯誤:', error);
+        return '-';
+      }
     };
     
     // 獲取角色名稱 Get role name
@@ -386,20 +405,71 @@ export default {
       openEditUserDialog(user);
     };
     
-    // 刪除用戶 Delete user
-    const handleDelete = async (user) => {
-      if (confirm(`確定要刪除用戶 "${user.name}" 嗎？ Are you sure you want to delete user "${user.name}"?`)) {
-        try {
-          loading.value = true;
-          await userAPI.deleteUser(user.id);
-          // 刪除成功後重新獲取用戶列表 Fetch user list after successful deletion
-          await fetchUsers();
-        } catch (error) {
-          console.error('刪除用戶失敗 Failed to delete user:', error);
-        } finally {
-          loading.value = false;
+    // 顯示消息的函數 Function to show message
+    const showMessage = (type, message) => {
+      // 創建一個新的 div 元素作為消息容器 Create a new div element as message container
+      const messageContainer = document.createElement('div');
+      document.body.appendChild(messageContainer);
+      
+      // 創建消息組件實例 Create message component instance
+      const messageInstance = createApp(AppMessage, {
+        type,
+        message,
+        duration: 3000,
+        onClose: () => {
+          // 當消息關閉時，移除組件和容器 When message closes, remove component and container
+          messageInstance.unmount();
+          document.body.removeChild(messageContainer);
         }
+      });
+      
+      // 掛載消息組件 Mount message component
+      messageInstance.mount(messageContainer);
+    };
+    
+    // 刪除對話框狀態 Delete dialog state
+    const deleteDialogVisible = ref(false);
+    const userToDelete = ref(null);
+
+    // 顯示刪除確認對話框 Show delete confirmation dialog
+    const showDeleteConfirm = (user) => {
+      if (!user) return;
+      userToDelete.value = user;
+      deleteDialogVisible.value = true;
+    };
+
+    // 處理刪除確認 Handle delete confirmation
+    const handleDeleteConfirm = async () => {
+      if (!userToDelete.value) {
+        deleteDialogVisible.value = false;
+        return;
       }
+
+      try {
+        loading.value = true;
+        const response = await userAPI.deleteUser(userToDelete.value.id);
+        
+        if (response.success) {
+          // 直接從本地列表中移除用戶
+          users.value = users.value.filter(u => u.id !== userToDelete.value.id);
+          showMessage('success', '用戶已成功刪除');
+          deleteDialogVisible.value = false;
+        } else {
+          showMessage('error', response.message || '刪除失敗');
+        }
+      } catch (error) {
+        console.error('刪除用戶失敗:', error);
+        showMessage('error', '刪除用戶失敗');
+      } finally {
+        loading.value = false;
+        userToDelete.value = null;
+      }
+    };
+
+    // 取消刪除 Cancel delete
+    const handleDeleteCancel = () => {
+      deleteDialogVisible.value = false;
+      userToDelete.value = null;
     };
     
     /**
@@ -480,10 +550,14 @@ export default {
       getStatusName,
       openAddUserDialog,
       handleEdit,
-      handleDelete,
+      showDeleteConfirm,
       handleLogout,
       saveUser,
-      toggleUserStatus
+      toggleUserStatus,
+      deleteDialogVisible,
+      userToDelete,
+      handleDeleteConfirm,
+      handleDeleteCancel
     };
   }
 }; 
