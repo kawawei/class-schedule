@@ -13,7 +13,7 @@ const checkPermission = (permission) => {
         try {
             // 獲取用戶角色和權限 Get user role and permissions
             const userRole = req.user.role;
-            const userPermissions = req.user.permissions || [];
+            const userPermissions = req.user.permissions || {};
 
             // 租戶擁有所有權限 Tenant has all permissions
             if (userRole === 'tenant') {
@@ -21,7 +21,7 @@ const checkPermission = (permission) => {
             }
 
             // 檢查用戶是否有特定權限 Check if user has specific permission
-            if (!userPermissions.includes(permission)) {
+            if (!userPermissions[permission]) {
                 return res.status(403).json({
                     success: false,
                     message: '沒有權限執行此操作'
