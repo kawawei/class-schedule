@@ -40,11 +40,11 @@ const authController = {
 
             const user = userResult.rows[0];
 
-            // 檢查用戶是否被禁用 Check if user is disabled
+            // 檢查用戶是否被停用
             if (!user.is_active) {
                 return res.status(401).json({
                     success: false,
-                    message: '帳號已被禁用'
+                    message: '該帳號已被停用'
                 });
             }
 
@@ -63,8 +63,7 @@ const authController = {
                     userId: user.id,
                     username: user.username,
                     role: user.role,
-                    companyCode: company_code,
-                    permissions: user.permissions || {}
+                    companyCode: company_code
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN }
@@ -81,8 +80,7 @@ const authController = {
                         username: user.username,
                         name: user.name,
                         email: user.email,
-                        role: user.role,
-                        permissions: user.permissions || []
+                        role: user.role
                     },
                     company: {
                         id: company.id,

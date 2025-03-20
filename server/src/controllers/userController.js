@@ -13,13 +13,12 @@ const userController = {
     getAllUsers: async (req, res) => {
         const client = await mainPool.connect();
         try {
-            // 從請求中獲取公司代碼和用戶角色 Get company code and user role from request
+            // 從請求中獲取公司代碼 Get company code from request
             const companyCode = req.user.companyCode;
-            const userRole = req.user.role;
             
             // 查詢用戶列表 Query user list
             const result = await client.query(
-                `SELECT id, username, name, email, role, permissions, is_active, created_at, updated_at 
+                `SELECT id, username, name, email, role, is_active, created_at, updated_at 
                  FROM ${companyCode}.users 
                  ORDER BY id ASC`
             );
@@ -51,7 +50,7 @@ const userController = {
             const companyCode = req.user.companyCode;
             
             const result = await client.query(
-                `SELECT id, username, name, email, role, permissions, is_active, created_at, updated_at 
+                `SELECT id, username, name, email, role, is_active, created_at, updated_at 
                  FROM ${companyCode}.users 
                  WHERE id = $1`,
                 [id]
@@ -87,10 +86,17 @@ const userController = {
     createUser: async (req, res) => {
         const client = await mainPool.connect();
         try {
-            const { username, password, name, email, role, permissions } = req.body;
+            const { username, password, name, email, role } = req.body;
             const companyCode = req.user.companyCode;
-            const userRole = req.user.role;
             
+            // 檢查權限
+            if (!['tenant', 'admin'].includes(req.user.role)) {
+                return res.status(403).json({
+                    success: false,
+                    message: '權限不足'
+                });
+            }
+
             // 檢查用戶名是否已存在 Check if username exists
             const existingUser = await client.query(
                 `SELECT id FROM ${companyCode}.users WHERE username = $1`,
@@ -100,15 +106,7 @@ const userController = {
             if (existingUser.rows.length > 0) {
                 return res.status(400).json({
                     success: false,
-                    message: '用戶名已存在 Username already exists'
-                });
-            }
-            
-            // 檢查角色權限 Check role permissions
-            if (userRole !== 'tenant' && role === 'tenant') {
-                return res.status(403).json({
-                    success: false,
-                    message: '沒有權限創建租戶帳號 No permission to create tenant account'
+                    message: '用戶名已存在'
                 });
             }
             
@@ -117,10 +115,10 @@ const userController = {
             
             // 創建用戶 Create user
             const result = await client.query(
-                `INSERT INTO ${companyCode}.users (username, password, name, email, role, permissions, is_active)
-                 VALUES ($1, $2, $3, $4, $5, $6, true)
-                 RETURNING id, username, name, email, role, permissions, is_active, created_at, updated_at`,
-                [username, hashedPassword, name, email, role, permissions]
+                `INSERT INTO ${companyCode}.users (username, password, name, email, role, is_active)
+                 VALUES ($1, $2, $3, $4, $5, true)
+                 RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
+                [username, hashedPassword, name, email, role]
             );
             
             res.status(201).json({
@@ -128,19 +126,10 @@ const userController = {
                 data: result.rows[0]
             });
         } catch (error) {
-            console.error('創建用戶失敗 Create user failed:', error);
-            
-            // 處理重複用戶名錯誤 Handle duplicate username error
-            if (error.code === '23505' && error.constraint === 'users_username_key') {
-                return res.status(400).json({
-                    success: false,
-                    message: '用戶名已存在 Username already exists'
-                });
-            }
-            
+            console.error('創建用戶失敗:', error);
             res.status(500).json({
                 success: false,
-                message: '創建用戶失敗 Create user failed'
+                message: '創建用戶失敗'
             });
         } finally {
             client.release();
@@ -156,13 +145,20 @@ const userController = {
         const client = await mainPool.connect();
         try {
             const { id } = req.params;
-            const { username, password, name, email, role, permissions, is_active } = req.body;
+            const { username, password, name, email, role, is_active } = req.body;
             const companyCode = req.user.companyCode;
-            const userRole = req.user.role;
             
+            // 檢查權限
+            if (!['tenant', 'admin'].includes(req.user.role)) {
+                return res.status(403).json({
+                    success: false,
+                    message: '權限不足'
+                });
+            }
+
             // 檢查用戶是否存在 Check if user exists
             const existingUser = await client.query(
-                `SELECT id, role FROM ${companyCode}.users WHERE id = $1`,
+                `SELECT id FROM ${companyCode}.users WHERE id = $1`,
                 [id]
             );
             
@@ -170,14 +166,6 @@ const userController = {
                 return res.status(404).json({
                     success: false,
                     message: '用戶不存在'
-                });
-            }
-            
-            // 檢查權限 Check permissions
-            if (userRole !== 'tenant' && existingUser.rows[0].role === 'tenant') {
-                return res.status(403).json({
-                    success: false,
-                    message: '沒有權限修改租戶帳號'
                 });
             }
             
@@ -233,22 +221,16 @@ const userController = {
                 valueIndex++;
             }
             
-            if (permissions) {
-                updateFields.push(`permissions = $${valueIndex}`);
-                updateValues.push(permissions);
-                valueIndex++;
-            }
-            
             if (typeof is_active === 'boolean') {
                 updateFields.push(`is_active = $${valueIndex}`);
                 updateValues.push(is_active);
                 valueIndex++;
             }
             
-            updateFields.push(`updated_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei'`);
+            updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
             
             updateQuery += updateFields.join(', ');
-            updateQuery += ` WHERE id = $${valueIndex} RETURNING id, username, name, email, role, permissions, is_active, created_at, updated_at`;
+            updateQuery += ` WHERE id = $${valueIndex} RETURNING id, username, name, email, role, is_active, created_at, updated_at`;
             updateValues.push(id);
             
             // 執行更新 Execute update
@@ -279,34 +261,27 @@ const userController = {
         try {
             const { id } = req.params;
             const companyCode = req.user.companyCode;
-            const userRole = req.user.role;
             
-            // 檢查用戶是否存在 Check if user exists
-            const existingUser = await client.query(
-                `SELECT id, role FROM ${companyCode}.users WHERE id = $1`,
+            // 檢查是否為超級管理員 Check if super admin
+            if (id === '1') {
+                return res.status(403).json({
+                    success: false,
+                    message: '不能刪除超級管理員'
+                });
+            }
+            
+            // 刪除用戶 Delete user
+            const result = await client.query(
+                `DELETE FROM ${companyCode}.users WHERE id = $1 RETURNING id`,
                 [id]
             );
             
-            if (existingUser.rows.length === 0) {
+            if (result.rows.length === 0) {
                 return res.status(404).json({
                     success: false,
                     message: '用戶不存在'
                 });
             }
-            
-            // 檢查權限 Check permissions
-            if (userRole !== 'tenant' && existingUser.rows[0].role === 'tenant') {
-                return res.status(403).json({
-                    success: false,
-                    message: '沒有權限刪除租戶帳號'
-                });
-            }
-            
-            // 執行刪除 Execute delete
-            await client.query(
-                `DELETE FROM ${companyCode}.users WHERE id = $1`,
-                [id]
-            );
             
             res.json({
                 success: true,

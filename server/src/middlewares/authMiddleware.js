@@ -28,8 +28,7 @@ const authMiddleware = async (req, res, next) => {
                 id: decoded.userId,
                 username: decoded.username,
                 role: decoded.role,
-                companyCode: decoded.companyCode,
-                permissions: decoded.permissions || {}
+                companyCode: decoded.companyCode
             };
 
             // 設置租戶 schema Set tenant schema

@@ -157,7 +157,7 @@
             v-model="currentUser.role"
             :options="[
               { value: 'admin', label: '管理員' },
-              { value: 'user', label: '用戶' }
+              { value: 'teacher', label: '老師' }
             ]"
             placeholder="請選擇角色"
           />
