@@ -155,11 +155,9 @@
           <AppSelect
             label="角色"
             v-model="currentUser.role"
-            :options="[
-              { value: 'admin', label: '管理員' },
-              { value: 'teacher', label: '老師' }
-            ]"
+            :options="roleOptions"
             placeholder="請選擇角色"
+            required
           />
         </div>
       </div>

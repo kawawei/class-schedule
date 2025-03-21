@@ -158,9 +158,9 @@ export default {
       password: '',
       name: '',
       email: '',
-      role: 'admin', // 默認角色改為管理員 Default role changed to admin
+      role: 'admin', // 默認角色為管理員 Default role is admin
       is_active: true,
-      departments: [] // 移除 brands 字段 Removed brands field
+      departments: []
     });
     
     // 部門選項 Department options
@@ -293,7 +293,7 @@ export default {
     const getRoleName = (role) => {
       const roleMap = {
         admin: '管理員',
-        teacher: '老師'
+        staff: '工作人員'  // 修改角色映射 Update role mapping
       };
       return roleMap[role] || role;
     };
@@ -314,9 +314,9 @@ export default {
         password: '',
         name: '',
         email: '',
-        role: 'admin', // 默認角色改為管理員 Default role changed to admin
-        is_active: true, // 默認啟用 Default to active
-        departments: [] // 移除 brands 字段 Removed brands field
+        role: 'admin', // 默認角色為管理員 Default role is admin
+        is_active: true,
+        departments: []
       };
       isEditMode.value = false;
     };
@@ -371,7 +371,12 @@ export default {
         
         // 準備用戶數據 Prepare user data
         const userData = {
-          ...currentUser.value
+          username: currentUser.value.username,
+          password: currentUser.value.password,
+          name: currentUser.value.name,
+          email: currentUser.value.email || '',
+          role: currentUser.value.role,
+          is_active: true
         };
         
         // 如果是編輯模式且密碼為空，則刪除密碼字段 If edit mode and password is empty, remove password field
@@ -379,12 +384,16 @@ export default {
           delete userData.password;
         }
         
+        console.log('準備保存的用戶數據 User data to save:', userData);
+        
         if (isEditMode.value) {
           // 更新用戶 Update user
-          await userAPI.updateUser(userData.id, userData);
+          await userAPI.updateUser(currentUser.value.id, userData);
+          showMessage('success', '用戶更新成功 User updated successfully');
         } else {
           // 創建用戶 Create user
           await userAPI.createUser(userData);
+          showMessage('success', '用戶創建成功 User created successfully');
         }
         
         // 關閉對話框 Close dialog
@@ -394,7 +403,14 @@ export default {
         await fetchUsers();
       } catch (error) {
         console.error('保存用戶失敗 Failed to save user:', error);
-        alert(`保存用戶失敗: ${error.message} Failed to save user: ${error.message}`);
+        console.error('錯誤詳情 Error details:', {
+          message: error.message,
+          response: error.response?.data
+        });
+        
+        // 顯示更具體的錯誤信息 Show more specific error message
+        const errorMessage = error.response?.data?.message || error.message;
+        showMessage('error', `保存用戶失敗: ${errorMessage} Failed to save user: ${errorMessage}`);
       } finally {
         loading.value = false;
       }
@@ -573,6 +589,12 @@ export default {
       }
     };
     
+    // 角色選項 Role options
+    const roleOptions = [
+      { value: 'admin', label: '管理員' },
+      { value: 'staff', label: '工作人員' }  // 修改角色選項 Update role options
+    ];
+    
     return {
       userName,
       isLoggingOut,
@@ -598,7 +620,8 @@ export default {
       deleteDialogVisible,
       userToDelete,
       handleDeleteConfirm,
-      handleDeleteCancel
+      handleDeleteCancel,
+      roleOptions
     };
   }
 }; 
