@@ -200,8 +200,11 @@ const authAPI = {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('companyCode');
     
-    // 直接返回成功 Return success directly
-    return true;
+    // 返回標準格式的響應 Return standardized response format
+    return {
+      success: true,
+      message: '登出成功 Logout successful'
+    };
   }
 };
 

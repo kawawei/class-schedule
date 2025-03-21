@@ -17,7 +17,7 @@ const courseController = {
         where: {
           company_code: req.user.companyCode
         },
-        order: [['createdAt', 'DESC']]
+        order: [['created_at', 'DESC']]
       });
 
       const endTime = new Date();

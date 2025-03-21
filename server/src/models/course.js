@@ -34,15 +34,30 @@ const Course = sequelize.define('Course', {
       model: 'tenants',
       key: 'company_code'
     }
+  },
+  // 創建時間 Created time
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  // 更新時間 Updated time
+  updated_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   }
 }, {
   // 模型配置 Model configuration
   tableName: 'courses',
-  timestamps: true, // 自動添加 createdAt 和 updatedAt
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       unique: true,
-      fields: ['category', 'company_code']  // 每個租戶的課程類別名稱都是唯一的
+      fields: ['category', 'company_code'],
+      name: 'courses_category_company_code_unique'
     }
   ]
 });

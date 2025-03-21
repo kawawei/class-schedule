@@ -472,20 +472,20 @@ export default {
         console.log('開始登出流程 Start logout process');
         
         const response = await authAPI.logout();
+        console.log('登出響應 Logout response:', response);
+        
+        // 清除本地存儲 Clear local storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('companyCode');
+        
+        // 重定向到登入頁面 Redirect to login page
+        router.push('/login');
         
         if (response.success) {
-          console.log('登出成功 Logout successful');
-          // 清除本地存儲 Clear local storage
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          // 重定向到登入頁面 Redirect to login page
-          router.push('/login');
-        } else {
-          console.error('登出失敗 Logout failed:', {
-            response: response,
-            message: response.message
-          });
-          Message.error(response.message || '登出失敗');
+          console.log('登出成功 Logout successful:', response.message);
+          Message.success(response.message || '登出成功');
         }
       } catch (error) {
         console.error('登出失敗 Failed to logout:', {
