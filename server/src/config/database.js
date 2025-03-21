@@ -81,6 +81,25 @@ const createTenantSchema = async (schemaName) => {
             )
         `);
         
+        // 創建教師表 Create teachers table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ${schemaName}.teachers (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                phone VARCHAR(20),
+                teaching_categories TEXT[],
+                education TEXT,
+                experience TEXT,
+                certifications TEXT[],
+                availability JSON,
+                hourly_rate DECIMAL(10,2),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
         // 啟用 RLS
         await client.query(`ALTER TABLE ${schemaName}.users ENABLE ROW LEVEL SECURITY`);
         await client.query(`ALTER TABLE ${schemaName}.courses ENABLE ROW LEVEL SECURITY`);
