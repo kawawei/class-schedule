@@ -14,7 +14,6 @@ const Course = sequelize.define('Course', {
   category: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
     validate: {
       notEmpty: {
         msg: '課程種類不能為空 Course category cannot be empty'
@@ -26,6 +25,15 @@ const Course = sequelize.define('Course', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
     allowNull: false
+  },
+  // 公司代碼 Company code
+  company_code: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    references: {
+      model: 'tenants',
+      key: 'company_code'
+    }
   }
 }, {
   // 模型配置 Model configuration
@@ -34,7 +42,7 @@ const Course = sequelize.define('Course', {
   indexes: [
     {
       unique: true,
-      fields: ['category']
+      fields: ['category', 'company_code']  // 每個租戶的課程類別名稱都是唯一的
     }
   ]
 });

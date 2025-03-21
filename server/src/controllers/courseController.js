@@ -14,6 +14,9 @@ const courseController = {
       });
 
       const courses = await Course.findAll({
+        where: {
+          company_code: req.user.companyCode
+        },
         order: [['createdAt', 'DESC']]
       });
 
@@ -54,21 +57,30 @@ const courseController = {
     
     try {
       const { category, is_active = true } = req.body;
+      const company_code = req.user.companyCode;
       
       console.log(`[${startTime.toISOString()}] [Request ${requestId}] 開始創建課程種類 Start creating course category:`, {
         category,
         is_active,
+        company_code,
         user: req.user,
         method: req.method,
         url: req.originalUrl
       });
 
       // 檢查課程種類是否已存在 Check if course category already exists
-      const existingCourse = await Course.findOne({ where: { category } });
+      const existingCourse = await Course.findOne({ 
+        where: { 
+          category,
+          company_code
+        } 
+      });
+      
       if (existingCourse) {
         const endTime = new Date();
         console.log(`[${endTime.toISOString()}] [Request ${requestId}] 課程種類已存在 Course category already exists:`, {
           category,
+          company_code,
           processingTime: endTime - startTime
         });
         return res.status(400).json({
@@ -79,7 +91,8 @@ const courseController = {
 
       const course = await Course.create({
         category,
-        is_active
+        is_active,
+        company_code
       });
 
       const endTime = new Date();
@@ -88,6 +101,7 @@ const courseController = {
           id: course.id,
           category: course.category,
           is_active: course.is_active,
+          company_code: course.company_code,
           createdAt: course.createdAt,
           updatedAt: course.updatedAt
         },
@@ -128,22 +142,31 @@ const courseController = {
     try {
       const { id } = req.params;
       const { category, is_active } = req.body;
+      const company_code = req.user.companyCode;
       
       console.log(`[${startTime.toISOString()}] [Request ${requestId}] 開始更新課程種類 Start updating course category:`, {
         id,
         category,
         is_active,
+        company_code,
         user: req.user,
         method: req.method,
         url: req.originalUrl
       });
 
       // 檢查課程是否存在 Check if course exists
-      const course = await Course.findByPk(id);
+      const course = await Course.findOne({
+        where: {
+          id,
+          company_code
+        }
+      });
+      
       if (!course) {
         const endTime = new Date();
         console.log(`[${endTime.toISOString()}] [Request ${requestId}] 課程種類不存在 Course category does not exist:`, {
           id,
+          company_code,
           processingTime: endTime - startTime
         });
         return res.status(404).json({
@@ -154,11 +177,18 @@ const courseController = {
 
       // 如果更新類別名稱，檢查是否已存在 If updating category name, check if it already exists
       if (category && category !== course.category) {
-        const existingCourse = await Course.findOne({ where: { category } });
+        const existingCourse = await Course.findOne({ 
+          where: { 
+            category,
+            company_code
+          } 
+        });
+        
         if (existingCourse) {
           const endTime = new Date();
           console.log(`[${endTime.toISOString()}] [Request ${requestId}] 課程種類已存在 Course category already exists:`, {
             category,
+            company_code,
             processingTime: endTime - startTime
           });
           return res.status(400).json({
@@ -180,6 +210,7 @@ const courseController = {
           id: course.id,
           category: course.category,
           is_active: course.is_active,
+          company_code: course.company_code,
           updatedAt: course.updatedAt
         },
         processingTime: endTime - startTime
@@ -219,9 +250,11 @@ const courseController = {
     
     try {
       const { id } = req.params;
+      const company_code = req.user.companyCode;
       
       console.log(`[${startTime.toISOString()}] [Request ${requestId}] 開始刪除課程種類 Start deleting course category:`, {
         id,
+        company_code,
         params: req.params,
         headers: req.headers,
         user: req.user,
@@ -230,11 +263,18 @@ const courseController = {
       });
 
       // 檢查課程是否存在 Check if course exists
-      const course = await Course.findByPk(id);
+      const course = await Course.findOne({
+        where: {
+          id,
+          company_code
+        }
+      });
+      
       if (!course) {
         const endTime = new Date();
         console.log(`[${endTime.toISOString()}] [Request ${requestId}] 課程種類不存在 Course category does not exist:`, {
           id,
+          company_code,
           params: req.params,
           processingTime: endTime - startTime
         });
@@ -250,6 +290,7 @@ const courseController = {
           id: course.id,
           category: course.category,
           is_active: course.is_active,
+          company_code: course.company_code,
           createdAt: course.createdAt,
           updatedAt: course.updatedAt
         }
@@ -262,6 +303,7 @@ const courseController = {
       console.log(`[${endTime.toISOString()}] [Request ${requestId}] 成功刪除課程種類 Successfully deleted course category:`, {
         id,
         category: course.category,
+        company_code: course.company_code,
         processingTime: endTime - startTime
       });
 
@@ -271,6 +313,7 @@ const courseController = {
         data: {
           id: course.id,
           category: course.category,
+          company_code: course.company_code,
           deletedAt: new Date().toISOString()
         }
       });
@@ -304,9 +347,11 @@ const courseController = {
     
     try {
       const { id } = req.params;
+      const company_code = req.user.companyCode;
       
       console.log(`[${startTime.toISOString()}] [Request ${requestId}] 開始切換課程狀態 Start toggling course status:`, {
         id,
+        company_code,
         params: req.params,
         user: req.user,
         method: req.method,
@@ -314,11 +359,18 @@ const courseController = {
       });
 
       // 檢查課程是否存在 Check if course exists
-      const course = await Course.findByPk(id);
+      const course = await Course.findOne({
+        where: {
+          id,
+          company_code
+        }
+      });
+      
       if (!course) {
         const endTime = new Date();
         console.log(`[${endTime.toISOString()}] [Request ${requestId}] 課程種類不存在 Course category does not exist:`, {
           id,
+          company_code,
           processingTime: endTime - startTime
         });
         return res.status(404).json({
@@ -338,6 +390,7 @@ const courseController = {
           id: course.id,
           category: course.category,
           is_active: course.is_active,
+          company_code: course.company_code,
           updatedAt: course.updatedAt
         },
         processingTime: endTime - startTime
