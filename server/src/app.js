@@ -4,6 +4,7 @@ const { mainPool } = require('./config/database');
 const tenantRoutes = require('./routes/tenantRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const courseRoutes = require('./routes/courseRoutes');
 
 // 創建 Express 應用
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/courses', courseRoutes);
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {

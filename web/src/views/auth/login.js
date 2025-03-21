@@ -3,10 +3,14 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { authAPI } from '@/utils/api';
 import Message from '@/utils/message';
+import RecentCompanyCodes from '@/components/auth/RecentCompanyCodes.vue';
 
 // 登入頁面腳本 Login page script
 export default {
   name: 'Login',
+  components: {
+    RecentCompanyCodes
+  },
   
   setup() {
     const router = useRouter();
@@ -62,6 +66,35 @@ export default {
     };
     
     /**
+     * 更新最近使用的公司代碼 Update recent company codes
+     * @param {String} companyCode - 公司代碼 Company code
+     */
+    const updateRecentCompanyCodes = (companyCode) => {
+      try {
+        // 獲取現有的最近使用記錄 Get existing recent codes
+        const savedCodes = localStorage.getItem('recentCompanyCodes');
+        let recentCodes = savedCodes ? JSON.parse(savedCodes) : [];
+        
+        // 移除已存在的相同代碼 Remove existing same code
+        recentCodes = recentCodes.filter(code => code.code !== companyCode);
+        
+        // 添加新的代碼到列表開頭 Add new code to the beginning
+        recentCodes.unshift({
+          code: companyCode,
+          lastUsed: new Date().toISOString()
+        });
+        
+        // 限制最多保存5個 Limit to 5 items
+        recentCodes = recentCodes.slice(0, 5);
+        
+        // 保存更新後的列表 Save updated list
+        localStorage.setItem('recentCompanyCodes', JSON.stringify(recentCodes));
+      } catch (error) {
+        console.error('更新最近使用的公司代碼失敗 Failed to update recent company codes:', error);
+      }
+    };
+    
+    /**
      * 處理表單提交 Handle form submit
      */
     const handleSubmit = async () => {
@@ -83,6 +116,9 @@ export default {
           username: form.value.username,
           password: form.value.password
         });
+        
+        // 更新最近使用的公司代碼 Update recent company codes
+        updateRecentCompanyCodes(form.value.companyCode);
         
         // 保存令牌和公司代碼 Save token and company code
         localStorage.setItem('token', response.data.token);
@@ -117,12 +153,21 @@ export default {
       }
     };
     
+    /**
+     * 選擇最近使用的公司代碼 Select recent company code
+     * @param {String} code - 公司代碼 Company code
+     */
+    const handleSelectCompanyCode = (code) => {
+      form.value.companyCode = code;
+    };
+    
     return {
       form,
       errors,
       loginError,
       isSubmitting,
-      handleSubmit
+      handleSubmit,
+      handleSelectCompanyCode
     };
   }
 }; 

@@ -1,5 +1,23 @@
+const { Sequelize } = require('sequelize');
 const { Pool } = require('pg');
 require('dotenv').config();
+
+// 創建 Sequelize 實例
+const sequelize = new Sequelize({
+    dialect: 'postgres',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    schema: 'public',
+    timezone: 'Asia/Taipei',
+    define: {
+        timestamps: true,
+        underscored: true
+    },
+    logging: console.log
+});
 
 // 創建主數據庫連接池
 const mainPool = new Pool({
@@ -43,8 +61,8 @@ const createTenantSchema = async (schemaName) => {
         await client.query(`
             CREATE TABLE IF NOT EXISTS ${schemaName}.courses (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                description TEXT,
+                category VARCHAR(100) NOT NULL UNIQUE,
+                is_active BOOLEAN DEFAULT true,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
@@ -85,6 +103,13 @@ const setTenantSchema = async (schemaName) => {
         // 設置 schema 和時區
         await client.query(`SET search_path TO ${schemaName}`);
         await client.query(`SET timezone = 'Asia/Taipei'`);
+        
+        // 更新 Sequelize 的 schema
+        sequelize.options.schema = schemaName;
+        
+        // 同步 Sequelize 模型
+        await sequelize.sync();
+        
         return true;
     } catch (error) {
         throw error;
@@ -93,7 +118,22 @@ const setTenantSchema = async (schemaName) => {
     }
 };
 
+// 測試數據庫連接
+sequelize.authenticate()
+    .then(() => {
+        console.log('數據庫連接成功 Database connection has been established successfully.');
+        // 同步數據庫模型
+        return sequelize.sync();
+    })
+    .then(() => {
+        console.log('數據庫模型同步成功 Database models have been synchronized successfully.');
+    })
+    .catch(err => {
+        console.error('無法連接到數據庫 Unable to connect to the database:', err);
+    });
+
 module.exports = {
+    sequelize,
     mainPool,
     createTenantSchema,
     setTenantSchema

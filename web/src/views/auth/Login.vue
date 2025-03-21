@@ -58,6 +58,9 @@
               </AppButton>
             </div>
           </form>
+          
+          <!-- 最近使用的公司代碼 Recent Company Codes -->
+          <RecentCompanyCodes @select="handleSelectCompanyCode" />
         </div>
       </div>
       <div class="login-footer">
