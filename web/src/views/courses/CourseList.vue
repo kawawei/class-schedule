@@ -31,63 +31,40 @@
         </div>
         
         <!-- 課程卡片網格 Course card grid -->
-        <div v-if="!loading" class="course-card-grid">
-          <div v-for="course in filteredCourses" :key="course.id" class="course-card-item">
-            <AppCard 
-              :hoverable="true" 
-              :clickable="true"
-              class="course-card" 
-              :class="getCardColorClass(course.category)"
-              @click="editCourse(course)"
-            >
-              <div class="course-card-content">
-                <h3 class="course-name">{{ course.category }}</h3>
-                <div class="course-card-actions">
-                  <AppButton 
-                    type="text" 
-                    @click="editCourse(course)"
-                    class="edit-btn"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </AppButton>
-                  <AppButton 
-                    type="text" 
-                    @click="deleteCourse(course)"
-                    class="delete-btn"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </AppButton>
-                </div>
+        <div v-if="!loading" class="course-cards">
+          <div v-for="course in filteredCourses" 
+               :key="course.id" 
+               class="course-card"
+               :style="{ background: course.gradient }"
+               @click="editCourse(course)">
+            <div class="course-content">
+              <h3>{{ course.category }}</h3>
+              <div class="course-actions">
+                <button class="edit-btn" @click.stop="editCourse(course)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button class="delete-btn" @click.stop="deleteCourse(course)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </div>
-            </AppCard>
+            </div>
           </div>
           
           <!-- 新增課程卡片 Add course card -->
-          <div class="course-card-item">
-            <AppCard 
-              :hoverable="true" 
-              :clickable="true" 
-              class="course-card add-card" 
-              @click="openAddCourseDialog"
-            >
-              <div class="course-card-content">
-                <div class="add-course-content">
-                  <div class="add-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </div>
-                  <p class="course-name">新增課程種類</p>
-                </div>
-              </div>
-            </AppCard>
+          <div class="course-card add-card" @click="openAddCourseDialog">
+            <div class="add-content">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>新增課程種類</span>
+            </div>
           </div>
         </div>
         
@@ -211,4 +188,108 @@ export default {
 
 <style lang="scss" scoped>
 @import './course.scss';
+
+.course-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.course-card {
+  position: relative;
+  min-height: 120px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .course-content {
+    padding: 20px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+  }
+  
+  .course-actions {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    
+    button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+  
+  &:hover .course-actions {
+    opacity: 1;
+  }
+}
+
+.add-card {
+  background: linear-gradient(135deg, #E0E0E0 0%, #F5F5F5 100%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .add-content {
+    text-align: center;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    
+    svg {
+      width: 32px;
+      height: 32px;
+      stroke: #666;
+    }
+    
+    span {
+      font-size: 14px;
+    }
+  }
+  
+  &:hover {
+    background: linear-gradient(135deg, #D0D0D0 0%, #E5E5E5 100%);
+  }
+}
 </style> 
