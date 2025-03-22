@@ -151,12 +151,28 @@ const validationMiddleware = {
         }),
       
       is_active: Joi.boolean()
-        .default(true)
+        .default(true),
+      
+      username: Joi.string()
+        .min(3)
+        .max(50)
+        .messages({
+          'string.min': '帳號長度至少為3個字符 Username must be at least 3 characters long',
+          'string.max': '帳號不能超過50個字符 Username cannot exceed 50 characters'
+        }),
+      
+      password: Joi.string()
+        .min(6)
+        .max(100)
+        .messages({
+          'string.min': '密碼長度至少為6個字符 Password must be at least 6 characters long',
+          'string.max': '密碼不能超過100個字符 Password cannot exceed 100 characters'
+        })
     });
 
     const { error } = schema.validate(req.body, {
       abortEarly: false,
-      allowUnknown: false
+      allowUnknown: true
     });
 
     if (error) {

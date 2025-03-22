@@ -277,13 +277,36 @@ export default {
         if (response.success) {
           // 處理 Sequelize 模型數據，提取 dataValues 屬性
           // Process Sequelize model data, extract dataValues property
-          const processedData = response.data.map(teacher => {
+          teachers.value = response.data.map(teacher => {
             // 檢查是否有 dataValues 屬性，如果有則使用它，否則使用原始對象
             // Check if dataValues property exists, if yes use it, otherwise use the original object
-            return teacher.dataValues ? teacher.dataValues : teacher;
+            const teacherData = teacher.dataValues || teacher;
+            
+            // 確保所有必要的字段都存在 Ensure all required fields exist
+            return {
+              id: teacherData.id,
+              name: teacherData.name,
+              email: teacherData.email,
+              phone: teacherData.phone,
+              line_id: teacherData.line_id,
+              county: teacherData.county,
+              district: teacherData.district,
+              address: teacherData.address,
+              teaching_categories: teacherData.teaching_categories,
+              level: teacherData.level,
+              years_of_experience: teacherData.years_of_experience,
+              specialty: teacherData.specialty,
+              hourly_rate: teacherData.hourly_rate,
+              emergency_contact_name: teacherData.emergency_contact_name,
+              emergency_contact_relation: teacherData.emergency_contact_relation,
+              emergency_contact_phone: teacherData.emergency_contact_phone,
+              notes: teacherData.notes,
+              is_active: teacherData.is_active,
+              created_at: teacherData.created_at,
+              updated_at: teacherData.updated_at
+            };
           });
           
-          teachers.value = processedData;
           console.log('老師列表獲取成功 Teacher list fetched successfully:', teachers.value);
         } else {
           console.error('獲取老師列表失敗 Failed to fetch teacher list:', response.message);
@@ -292,21 +315,8 @@ export default {
         
         loading.value = false;
       } catch (error) {
-        console.error('獲取老師列表出錯 Error fetching teacher list:', error);
-        
-        // 檢查是否是認證錯誤 Check if it's an authentication error
-        if (error.message && error.message.includes('認證令牌')) {
-          console.log('認證令牌無效，重定向到登入頁面 Invalid token, redirecting to login page');
-          // 清除認證狀態 Clear authentication state
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('isAuthenticated');
-          // 導航到登入頁面 Navigate to login page
-          router.push('/login');
-        } else {
-          Message.error('獲取老師列表出錯 Error fetching teacher list');
-        }
-        
+        console.error('獲取老師列表失敗 Failed to fetch teacher list:', error);
+        Message.error('獲取老師列表失敗 Failed to fetch teacher list');
         loading.value = false;
       }
     };

@@ -14,10 +14,10 @@ const teacherController = {
    */
   getAllTeachers: async (req, res, next) => {
     try {
-      const { company } = req.user;
+      const { companyCode } = req.user;
       
       const teachers = await Teacher.findAll({
-        where: { company_id: company.id },
+        where: { company_code: companyCode },
         order: [['name', 'ASC']]
       });
       
@@ -40,12 +40,12 @@ const teacherController = {
   getTeacher: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { company } = req.user;
+      const { companyCode } = req.user;
       
       const teacher = await Teacher.findOne({
         where: { 
           id,
-          company_id: company.id
+          company_code: companyCode
         }
       });
       
@@ -75,14 +75,14 @@ const teacherController = {
    */
   createTeacher: async (req, res, next) => {
     try {
-      const { company } = req.user;
-      const teacherData = { ...req.body, company_id: company.id };
+      const { companyCode } = req.user;
+      const teacherData = { ...req.body, company_code: companyCode };
       
       // 檢查電話是否已存在 Check if phone already exists
       const existingTeacher = await Teacher.findOne({
         where: { 
           phone: teacherData.phone,
-          company_id: company.id
+          company_code: companyCode
         }
       });
       
@@ -118,14 +118,14 @@ const teacherController = {
   updateTeacher: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { company } = req.user;
+      const { companyCode } = req.user;
       const updateData = req.body;
       
       // 檢查老師是否存在 Check if teacher exists
       const teacher = await Teacher.findOne({
         where: { 
           id,
-          company_id: company.id
+          company_code: companyCode
         }
       });
       
@@ -139,7 +139,7 @@ const teacherController = {
         const existingTeacher = await Teacher.findOne({
           where: { 
             phone: updateData.phone,
-            company_id: company.id,
+            company_code: companyCode,
             id: { [Op.ne]: id }
           }
         });
@@ -177,12 +177,12 @@ const teacherController = {
   deleteTeacher: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { company } = req.user;
+      const { companyCode } = req.user;
       
       const teacher = await Teacher.findOne({
         where: { 
           id,
-          company_id: company.id
+          company_code: companyCode
         }
       });
       
@@ -215,12 +215,12 @@ const teacherController = {
   toggleStatus: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { company } = req.user;
+      const { companyCode } = req.user;
       
       const teacher = await Teacher.findOne({
         where: { 
           id,
-          company_id: company.id
+          company_code: companyCode
         }
       });
       

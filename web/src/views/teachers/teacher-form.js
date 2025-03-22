@@ -287,17 +287,48 @@ export default {
         }
         
         loading.value = true;
-        console.log('保存老師數據 Save teacher data:', teacher);
+        
+        // 準備提交數據 Prepare submission data
+        const teacherData = { ...teacher };
+        
+        // 如果是編輯模式，移除 id 字段
+        // If in edit mode, remove id field
+        if (teacherData.id) {
+          delete teacherData.id;
+        }
+        
+        // 如果是編輯模式且密碼為空，移除密碼字段
+        // If in edit mode and password is empty, remove password field
+        if (isEditMode.value && !teacherData.password) {
+          delete teacherData.password;
+        }
+        
+        // 如果是創建模式，確保有 username 和 password
+        // If in create mode, ensure username and password are present
+        if (!isEditMode.value) {
+          if (!teacherData.username) {
+            Message.error('請輸入帳號 Please enter username');
+            loading.value = false;
+            return;
+          }
+          if (!teacherData.password) {
+            Message.error('請輸入密碼 Please enter password');
+            loading.value = false;
+            return;
+          }
+        }
+        
+        console.log('保存老師數據 Save teacher data:', teacherData);
         
         let response;
         
         // 根據是否有ID決定是創建還是更新 Create or update based on whether there is an ID
         if (teacher.id) {
           // 更新老師 Update teacher
-          response = await teacherAPI.updateTeacher(teacher.id, teacher);
+          response = await teacherAPI.updateTeacher(teacher.id, teacherData);
         } else {
           // 創建老師 Create teacher
-          response = await teacherAPI.createTeacher(teacher);
+          response = await teacherAPI.createTeacher(teacherData);
         }
         
         if (response.success) {

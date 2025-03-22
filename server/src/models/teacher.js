@@ -13,10 +13,14 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       comment: '老師 ID Teacher ID'
     },
-    company_id: {
-      type: DataTypes.INTEGER,
+    company_code: {
+      type: DataTypes.STRING(50),
       allowNull: false,
-      comment: '公司 ID Company ID'
+      references: {
+        model: 'tenants',
+        key: 'company_code'
+      },
+      comment: '公司代碼 Company code'
     },
     name: {
       type: DataTypes.STRING,
@@ -162,15 +166,15 @@ module.exports = (sequelize) => {
     paranoid: true,  // 軟刪除，啟用 deletedAt
     indexes: [
       {
-        fields: ['company_id'],
-        name: 'idx_teachers_company_id'
+        fields: ['company_code'],
+        name: 'idx_teachers_company_code'
       },
       {
-        fields: ['company_id', 'name'],
+        fields: ['company_code', 'name'],
         name: 'idx_teachers_company_name'
       },
       {
-        fields: ['company_id', 'phone'],
+        fields: ['company_code', 'phone'],
         name: 'idx_teachers_company_phone'
       }
     ]
