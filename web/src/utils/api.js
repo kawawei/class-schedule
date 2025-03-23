@@ -247,6 +247,16 @@ const userAPI = {
   updateUser: (id, userData) => {
     return apiRequest(`/users/${id}`, 'PUT', userData, true);
   },
+
+  /**
+   * 更新用戶權限 Update user permissions
+   * @param {Number} id - 用戶ID User ID
+   * @param {Object} permissions - 權限設置 Permission settings
+   * @returns {Promise} 更新結果 Update result
+   */
+  updateUserPermissions: (id, permissions) => {
+    return apiRequest(`/users/${id}/permissions`, 'PUT', permissions, true);
+  },
   
   /**
    * 刪除用戶 Delete user

@@ -105,6 +105,21 @@
                 </template>
               </DataTable>
             </div>
+
+            <!-- 權限設置標籤頁 Permission Settings Tab -->
+            <div v-if="currentTab === 'security'" class="security-management">
+              <PermissionSettings />
+            </div>
+
+            <!-- 備份管理標籤頁 Backup Management Tab -->
+            <div v-if="currentTab === 'backup'" class="backup-management">
+              <!-- 備份管理內容將在後續開發 Backup management content will be developed later -->
+            </div>
+
+            <!-- 系統日誌標籤頁 System Log Tab -->
+            <div v-if="currentTab === 'logs'" class="logs-management">
+              <!-- 系統日誌內容將在後續開發 System log content will be developed later -->
+            </div>
           </div>
         </div>
       </div>
@@ -211,6 +226,7 @@ import AppCheckbox from '@/components/base/AppCheckbox.vue';
 import CheckboxGroup from '@/components/base/CheckboxGroup.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
 import ToggleSwitch from '@/components/base/ToggleSwitch.vue';
+import PermissionSettings from './PermissionSettings.vue';
 import settingLogic from './setting.js';
 
 export default {
@@ -225,7 +241,8 @@ export default {
     AppCheckbox,
     CheckboxGroup,
     AppSelect,
-    ToggleSwitch
+    ToggleSwitch,
+    PermissionSettings
   },
   setup() {
     return {

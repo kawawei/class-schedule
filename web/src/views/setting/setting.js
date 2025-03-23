@@ -126,7 +126,7 @@ export default {
       },
       {
         key: 'security',
-        label: '安全設置',
+        label: '權限設置',
         icon: SecurityIcon,
         iconBg: 'rgba(88, 86, 214, 0.1)'
       },
