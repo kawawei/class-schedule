@@ -8,48 +8,58 @@
     @close="handleClose"
   >
     <div class="add-course-form">
-      <!-- 第一行：補習班名稱 First row: School Name -->
-      <AppInput
-        v-model="formData.schoolName"
-        label="補習班名稱 / School Name"
-        placeholder="請輸入補習班名稱"
-        required
-      />
-
-      <!-- 第二行：班級名稱和老師 Second row: Class Name and Teacher -->
+      <!-- 第一行：補習班名稱和班級名稱 First row: School Name and Class Name -->
       <div class="form-row">
+        <AppInput
+          v-model="formData.schoolName"
+          label="補習班名稱 / School Name"
+          placeholder="請輸入補習班名稱"
+          required
+        />
         <AppInput
           v-model="formData.className"
           label="班級名稱 / Class Name"
           placeholder="請輸入班級名稱"
           required
         />
+      </div>
+
+      <!-- 第二行：課程種類和老師 Second row: Course Type and Teacher -->
+      <div class="form-row">
+        <AppSelect
+          v-model="formData.courseType"
+          label="課程種類 / Course Type"
+          :options="courseTypes"
+          placeholder="請選擇課程種類"
+          required
+          @change="handleCourseTypeChange"
+        />
         <AppSelect
           v-model="formData.teacherId"
           label="授課老師 / Teacher"
           :options="teachers"
-          placeholder="請選擇老師"
+          placeholder="請先選擇課程種類"
           required
+          :disabled="!formData.courseType"
         />
       </div>
 
-      <!-- 第三行：課程種類 Third row: Course Type -->
-      <AppSelect
-        v-model="formData.courseType"
-        label="課程種類 / Course Type"
-        :options="courseTypes"
-        placeholder="請選擇課程種類"
-        required
-      />
-
-      <!-- 第四行：日期和時間 Fourth row: Date and Time -->
+      <!-- 第三行：日期和時間 Third row: Date and Time -->
       <div class="time-selection">
         <AppInput
           v-model="formData.date"
-          label="日期 / Date"
+          label="開始日期 / Start Date"
           type="date"
           required
         />
+        <AppInput
+          v-model="formData.endDate"
+          label="結束日期 / End Date"
+          type="date"
+          placeholder="選填 / Optional"
+        />
+      </div>
+      <div class="time-selection">
         <AppInput
           v-model="formData.startTime"
           label="開始時間 / Start Time"
@@ -62,6 +72,20 @@
           type="time"
           required
         />
+      </div>
+
+      <!-- 重複性選項 Recurring Options -->
+      <div v-if="formData.endDate" class="recurring-options">
+        <div class="section-title">重複性 / Recurring</div>
+        <div class="weekday-checkboxes">
+          <label v-for="(day, index) in weekDays" :key="index" class="weekday-checkbox">
+            <input
+              type="checkbox"
+              v-model="formData.recurringDays[index]"
+            >
+            <span>{{ day.label }}</span>
+          </label>
+        </div>
       </div>
 
       <!-- 第五行：課程費用 Fifth row: Course Fees -->
@@ -155,7 +179,10 @@
 </template>
 
 <script>
-import { ref, reactive, nextTick } from 'vue';
+import { ref, reactive, nextTick, onMounted } from 'vue';
+import { format, parseISO, getDay } from 'date-fns';
+import { teacherAPI, courseAPI } from '@/utils/api';
+import Message from '@/utils/message';
 import AppDialog from '../base/AppDialog.vue';
 import AppInput from '../base/AppInput.vue';
 import AppSelect from '../base/AppSelect.vue';
@@ -174,48 +201,154 @@ export default {
   props: {
     visible: {
       type: Boolean,
-      default: false
+      required: true
     }
   },
 
   emits: ['update:visible', 'close', 'submit'],
 
   setup(props, { emit }) {
+    // 加載狀態 Loading state
+    const loading = ref(false);
+    
+    // 星期幾選項 Weekday options
+    const weekDays = [
+      { label: '週一 / Mon', value: 1 },
+      { label: '週二 / Tue', value: 2 },
+      { label: '週三 / Wed', value: 3 },
+      { label: '週四 / Thu', value: 4 },
+      { label: '週五 / Fri', value: 5 },
+      { label: '週六 / Sat', value: 6 },
+      { label: '週日 / Sun', value: 0 }
+    ];
+
     // 表單數據 Form data
     const formData = reactive({
       schoolName: '',
       className: '',
       courseType: '',
       date: '',
+      endDate: '',
       startTime: '',
       endTime: '',
       teacherId: '',
       courseFee: '',
       teacherFee: '',
-      assistants: []  // 改為助教數組
+      assistants: [],
+      recurringDays: Array(7).fill(false)  // 重複性選項 Recurring options
     });
 
     // 課程種類選項 Course type options
-    const courseTypes = ref([
-      { label: '數學 / Math', value: 'math' },
-      { label: '英文 / English', value: 'english' },
-      { label: '國文 / Chinese', value: 'chinese' },
-      { label: '理化 / Science', value: 'science' }
-    ]);
+    const courseTypes = ref([]);
 
     // 老師列表 Teacher list
-    const teachers = ref([
-      { label: '王老師 / Teacher Wang', value: 1 },
-      { label: '李老師 / Teacher Li', value: 2 },
-      { label: '張老師 / Teacher Zhang', value: 3 }
-    ]);
+    const teachers = ref([]);
 
     // 助教列表 Assistant list
-    const assistants = ref([
-      { label: '王助教 / Assistant Wang', value: 1 },
-      { label: '李助教 / Assistant Li', value: 2 },
-      { label: '張助教 / Assistant Zhang', value: 3 }
-    ]);
+    const assistants = ref([]);
+
+    // 獲取老師列表 Get teacher list
+    const fetchTeachers = async () => {
+      try {
+        loading.value = true;
+        const response = await teacherAPI.getAllTeachers();
+        
+        if (response.success) {
+          teachers.value = response.data.map(teacher => {
+            const teacherData = teacher.dataValues || teacher;
+            return {
+              label: `${teacherData.name} / Teacher ${teacherData.name}`,
+              value: teacherData.id
+            };
+          });
+        } else {
+          Message.error(response.message || '獲取老師列表失敗');
+        }
+      } catch (error) {
+        console.error('獲取老師列表失敗:', error);
+        Message.error('獲取老師列表失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 獲取課程種類 Get course types
+    const fetchCourseTypes = async () => {
+      try {
+        loading.value = true;
+        const response = await courseAPI.getAllCourses();
+        
+        if (response.success) {
+          // 從課程列表中提取不重複的類別 Extract unique categories from course list
+          const categories = [...new Set(response.data.map(course => {
+            const courseData = course.dataValues || course;
+            return courseData.category;
+          }))];
+          
+          // 轉換為選項格式 Convert to options format
+          courseTypes.value = categories.map(category => ({
+            label: `${category} / ${category}`,
+            value: category
+          }));
+        } else {
+          Message.error(response.message || '獲取課程種類失敗');
+        }
+      } catch (error) {
+        console.error('獲取課程種類失敗:', error);
+        Message.error('獲取課程種類失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 獲取特定課程種類的老師列表 Get teachers for specific course type
+    const fetchTeachersByCourseType = async (courseType) => {
+      try {
+        loading.value = true;
+        const response = await teacherAPI.getAllTeachers();
+        
+        if (response.success) {
+          // 過濾出教授該課程種類的老師
+          // Filter teachers who teach this course type
+          teachers.value = response.data
+            .filter(teacher => {
+              const teacherData = teacher.dataValues || teacher;
+              return teacherData.teaching_categories.includes(courseType);
+            })
+            .map(teacher => {
+              const teacherData = teacher.dataValues || teacher;
+              return {
+                label: `${teacherData.name} / Teacher ${teacherData.name}`,
+                value: teacherData.id
+              };
+            });
+        } else {
+          Message.error(response.message || '獲取老師列表失敗');
+        }
+      } catch (error) {
+        console.error('獲取老師列表失敗:', error);
+        Message.error('獲取老師列表失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 處理課程種類變更 Handle course type change
+    const handleCourseTypeChange = async () => {
+      // 重置老師選擇 Reset teacher selection
+      formData.teacherId = '';
+      
+      if (formData.courseType) {
+        await fetchTeachersByCourseType(formData.courseType);
+      } else {
+        teachers.value = [];
+      }
+    };
+
+    // 組件掛載時只獲取課程種類 Only fetch course types when component is mounted
+    onMounted(async () => {
+      await fetchCourseTypes();
+    });
 
     // 處理對話框可見性變化 Handle dialog visibility change
     const handleVisibleChange = (value) => {
@@ -232,13 +365,17 @@ export default {
         className: '',
         courseType: '',
         date: '',
+        endDate: '',
         startTime: '',
         endTime: '',
         teacherId: '',
         courseFee: '',
         teacherFee: '',
-        assistants: []
+        assistants: [],
+        recurringDays: Array(7).fill(false)
       });
+      // 重置老師列表 Reset teacher list
+      teachers.value = [];
     };
 
     // 添加助教 Add assistant
@@ -258,15 +395,80 @@ export default {
       formData.assistants.splice(index, 1);
     };
 
-    // 提交表單 Submit form
+    // 處理提交 Handle submit
     const handleSubmit = () => {
-      // TODO: 驗證表單 Validate form
-      emit('submit', formData);
+      // 創建課程數據 Create course data
+      const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
+      const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
+
+      let assistantName = '';
+      let assistantFee = '';
+      if (formData.assistants.length > 0) {
+        const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
+        assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
+        assistantFee = formData.assistants[0].fee;
+      }
+
+      // 基本課程數據 Base course data
+      const baseEventData = {
+        courseType: formData.courseType,
+        schoolName: formData.schoolName,
+        teacherName: teacherName,
+        assistantName: assistantName,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        className: formData.className,
+        courseFee: formData.courseFee,
+        teacherFee: formData.teacherFee,
+        assistantFee: assistantFee
+      };
+
+      // 如果沒有結束日期，創建單次課程 If no end date, create single course
+      if (!formData.endDate) {
+        const singleEvent = {
+          ...baseEventData,
+          date: formData.date
+        };
+        emit('submit', [singleEvent]);
+      } else {
+        // 如果有結束日期，創建重複性課程 If has end date, create recurring courses
+        const events = generateRecurringEvents(baseEventData);
+        emit('submit', events);
+      }
+
       handleClose();
     };
 
+    // 生成重複性課程 Generate recurring events
+    const generateRecurringEvents = (baseEventData) => {
+      const startDate = parseISO(formData.date);
+      const endDate = parseISO(formData.endDate);
+      const events = [];
+
+      let currentDate = startDate;
+      while (currentDate <= endDate) {
+        const currentWeekday = getDay(currentDate);
+        // 將 currentWeekday 轉換為數組索引（0=週一，...，6=週日）
+        const dayIndex = currentWeekday === 0 ? 6 : currentWeekday - 1;
+        
+        if (formData.recurringDays[dayIndex]) {
+          events.push({
+            ...baseEventData,
+            date: format(currentDate, 'yyyy-MM-dd')
+          });
+        }
+        
+        // 添加一天 Add one day
+        currentDate = new Date(currentDate.setDate(currentDate.getDate() + 1));
+      }
+
+      return events;
+    };
+
     return {
+      loading,
       formData,
+      weekDays,
       courseTypes,
       teachers,
       assistants,
@@ -274,7 +476,9 @@ export default {
       handleClose,
       handleSubmit,
       addAssistant,
-      removeAssistant
+      removeAssistant,
+      generateRecurringEvents,
+      handleCourseTypeChange,
     };
   }
 };
@@ -361,6 +565,53 @@ export default {
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+    }
+  }
+
+  .recurring-options {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+
+    .section-title {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-sm);
+      color: var(--text-primary);
+    }
+
+    .weekday-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+
+      .weekday-checkbox {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background-color: var(--bg-primary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        user-select: none;
+
+        input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
+          margin: 0;
+        }
+
+        span {
+          font-size: var(--font-size-sm);
+          color: var(--text-primary);
+        }
+
+        &:has(input:disabled) {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
       }
     }
   }

@@ -231,6 +231,7 @@ import MonthView from '@/components/calendar/MonthView.vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AddCourseDialog from '@/components/schedule/AddCourseDialog.vue';
 import AppButton from '@/components/base/AppButton.vue';
+import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
 
 export default defineComponent({
   name: 'SchedulePage',
@@ -241,137 +242,96 @@ export default defineComponent({
     MonthView,
     AppHeader,
     AddCourseDialog,
-    AppButton
+    AppButton,
+    ScheduleBlock
   },
   
   setup() {
     // 日期和視圖狀態 Date and view state
     const currentDate = ref(new Date());
     const currentView = ref('month'); // 默認月視圖 Default to month view
-    
-    // 用戶信息 User information
+    const isAddCourseDialogVisible = ref(false);
     const isLoggingOut = ref(false);
     
-    // 對話框狀態 Dialog states
-    const courseDialogVisible = ref(false);
-    const filterDialogVisible = ref(false);
-    const isEditMode = ref(false);
-    const currentCourse = ref({
-      title: '',
-      start: new Date(),
-      end: new Date(),
-      teacherId: null,
-      courseTypeId: null,
-      locationId: null,
-      description: ''
-    });
-    
-    // 篩選條件 Filter conditions
-    const filters = ref({
-      teacherId: null,
-      courseTypeId: null,
-      locationId: null,
-      dateRange: null
-    });
-    
-    // 課程數據 Course data
-    const courseEvents = ref([
-      // 示例數據，將在後續通過API獲取 Example data, will be fetched via API later
-      {
-        id: 1,
-        title: '鋼琴課 - 初級',
-        start: new Date(2023, 2, 15, 10, 0),
-        end: new Date(2023, 2, 15, 11, 0),
-        teacherId: 1,
-        courseTypeId: 1,
-        locationId: 1,
-        description: '初級鋼琴課程'
-      },
-      {
-        id: 2,
-        title: '小提琴課 - 中級',
-        start: new Date(2023, 2, 15, 14, 0),
-        end: new Date(2023, 2, 15, 15, 30),
-        teacherId: 2,
-        courseTypeId: 2,
-        locationId: 2,
-        description: '中級小提琴課程'
-      },
-      {
-        id: 3,
-        title: '繪畫課 - 高級',
-        start: new Date(2023, 2, 16, 9, 0),
-        end: new Date(2023, 2, 16, 11, 0),
-        teacherId: 3,
-        courseTypeId: 3,
-        locationId: 1,
-        description: '高級繪畫課程'
-      }
-    ]);
-    
-    // 選項數據 Option data
-    const teachers = ref([
-      { id: 1, name: '王老師' },
-      { id: 2, name: '李老師' },
-      { id: 3, name: '張老師' }
-    ]);
-    
-    const courseTypes = ref([
-      { id: 1, name: '鋼琴' },
-      { id: 2, name: '小提琴' },
-      { id: 3, name: '繪畫' }
-    ]);
-    
-    const locations = ref([
-      { id: 1, name: '主教室' },
-      { id: 2, name: '分教室A' },
-      { id: 3, name: '分教室B' }
-    ]);
-    
+    // 課程事件數據 Course events data
+    const courseEvents = ref([]);
+
+    // 顯示新增課程對話框 Show add course dialog
+    const showAddCourseDialog = () => {
+      isAddCourseDialogVisible.value = true;
+    };
+
+    // 隱藏新增課程對話框 Hide add course dialog
+    const hideAddCourseDialog = () => {
+      isAddCourseDialogVisible.value = false;
+    };
+
+    // 處理新增課程 Handle add course
+    const handleAddCourse = (newEvents) => {
+      console.log('New course events:', newEvents);
+      
+      // 添加多個課程事件 Add multiple course events
+      newEvents.forEach(courseData => {
+        const newEvent = {
+          id: Math.max(0, ...courseEvents.value.map(e => e.id ?? 0)) + 1,
+          courseType: courseData.courseType,
+          schoolName: courseData.schoolName,
+          teacherName: courseData.teacherName,
+          assistantName: courseData.assistantName,
+          startTime: courseData.startTime,
+          endTime: courseData.endTime,
+          date: courseData.date,
+          className: courseData.className,
+          courseFee: courseData.courseFee,
+          teacherFee: courseData.teacherFee,
+          assistantFee: courseData.assistantFee
+        };
+        
+        courseEvents.value.push(newEvent);
+      });
+      
+      // 關閉對話框 Close dialog
+      hideAddCourseDialog();
+    };
+
+    // 處理事件點擊 Handle event click
+    const handleEventClick = (event) => {
+      console.log('Clicked event:', event);
+    };
+
+    // 處理日期點擊 Handle date click
+    const handleDateClick = (date) => {
+      console.log('Clicked date:', date);
+    };
+
     // 視圖選項 View options
     const viewOptions = [
       { label: '日', value: 'day' },
       { label: '週', value: 'week' },
       { label: '月', value: 'month' }
     ];
-    
-    // 計算屬性 Computed properties
-    const formattedCurrentDate = computed(() => {
-      if (currentView.value === 'day') {
-        return format(currentDate.value, 'yyyy年MM月dd日', { locale: zhTW });
-      } else if (currentView.value === 'week') {
-        const weekStart = startOfWeek(currentDate.value, { weekStartsOn: 1 });
-        const weekEnd = addDays(weekStart, 6);
-        return `${format(weekStart, 'yyyy年MM月dd日', { locale: zhTW })} - ${format(weekEnd, 'MM月dd日', { locale: zhTW })}`;
-      } else {
-        return format(currentDate.value, 'yyyy年MM月', { locale: zhTW });
-      }
+
+    // 計算屬性：當前年份 Computed property: current year
+    const currentYear = computed(() => {
+      return format(currentDate.value, 'yyyy', { locale: zhTW });
     });
-    
-    const courseDialogTitle = computed(() => {
-      return isEditMode.value ? '編輯課程' : '新增課程';
+
+    // 計算屬性：當前月份 Computed property: current month
+    const currentMonth = computed(() => {
+      return format(currentDate.value, 'MM', { locale: zhTW });
     });
-    
+
+    // 計算屬性：當前日曆組件 Computed property: current calendar component
     const currentCalendarComponent = computed(() => {
       switch (currentView.value) {
         case 'day': return DayView;
         case 'week': return WeekView;
         case 'month': return MonthView;
-        default: return WeekView;
+        default: return MonthView;
       }
     });
-    
-    // 計算屬性：當前年份 Computed property: current year
-    const currentYear = computed(() => {
-      return format(currentDate.value, 'yyyy', { locale: zhTW });
-    });
-    
-    // 計算屬性：當前月份 Computed property: current month
-    const currentMonth = computed(() => {
-      return format(currentDate.value, 'MM', { locale: zhTW });
-    });
-    
-    // 方法 Methods
+
+    // 導航到上一個時間段 Navigate to previous period
     const navigatePrevious = () => {
       if (currentView.value === 'day') {
         currentDate.value = addDays(currentDate.value, -1);
@@ -381,7 +341,8 @@ export default defineComponent({
         currentDate.value = addMonths(currentDate.value, -1);
       }
     };
-    
+
+    // 導航到下一個時間段 Navigate to next period
     const navigateNext = () => {
       if (currentView.value === 'day') {
         currentDate.value = addDays(currentDate.value, 1);
@@ -391,102 +352,17 @@ export default defineComponent({
         currentDate.value = addMonths(currentDate.value, 1);
       }
     };
-    
+
+    // 跳轉到今天 Go to today
     const goToToday = () => {
       currentDate.value = new Date();
     };
-    
+
+    // 切換視圖 Change view
     const changeView = (view) => {
       currentView.value = view;
     };
-    
-    const openAddCourseDialog = () => {
-      isEditMode.value = false;
-      currentCourse.value = {
-        title: '',
-        start: new Date(),
-        end: new Date(new Date().getTime() + 60 * 60 * 1000), // 默認1小時 Default 1 hour
-        teacherId: null,
-        courseTypeId: null,
-        locationId: null,
-        description: ''
-      };
-      courseDialogVisible.value = true;
-    };
-    
-    const openFilterDialog = () => {
-      filterDialogVisible.value = true;
-    };
-    
-    const handleEventClick = (event) => {
-      isEditMode.value = true;
-      currentCourse.value = { ...event };
-      courseDialogVisible.value = true;
-    };
-    
-    const handleDateClick = (date) => {
-      isEditMode.value = false;
-      currentCourse.value = {
-        title: '',
-        start: date,
-        end: new Date(date.getTime() + 60 * 60 * 1000), // 默認1小時 Default 1 hour
-        teacherId: null,
-        courseTypeId: null,
-        locationId: null,
-        description: ''
-      };
-      courseDialogVisible.value = true;
-    };
-    
-    const saveCourse = () => {
-      // 將在後續實現API調用 Will implement API calls in subsequent steps
-      if (isEditMode.value) {
-        // 更新現有課程 Update existing course
-        const index = courseEvents.value.findIndex(e => e.id === currentCourse.value.id);
-        if (index !== -1) {
-          courseEvents.value[index] = { ...currentCourse.value };
-        }
-      } else {
-        // 添加新課程 Add new course
-        const newId = Math.max(0, ...courseEvents.value.map(e => e.id)) + 1;
-        courseEvents.value.push({
-          ...currentCourse.value,
-          id: newId
-        });
-      }
-      
-      courseDialogVisible.value = false;
-    };
-    
-    const resetCourseForm = () => {
-      currentCourse.value = {
-        title: '',
-        start: new Date(),
-        end: new Date(),
-        teacherId: null,
-        courseTypeId: null,
-        locationId: null,
-        description: ''
-      };
-    };
-    
-    const resetFilters = () => {
-      filters.value = {
-        teacherId: null,
-        courseTypeId: null,
-        locationId: null,
-        dateRange: null
-      };
-    };
-    
-    const applyFilters = () => {
-      // 將在後續實現篩選邏輯 Will implement filtering logic in subsequent steps
-      console.log('應用篩選:', filters.value);
-      filterDialogVisible.value = false;
-      
-      // 這裡應該調用API獲取篩選後的數據 Should call API to get filtered data here
-    };
-    
+
     // 處理登出 Handle logout
     const router = useRouter();
     const handleLogout = async () => {
@@ -500,69 +376,27 @@ export default defineComponent({
         isLoggingOut.value = false;
       }
     };
-    
-    // 新增課程對話框狀態
-    const isAddCourseDialogVisible = ref(false);
 
-    // 顯示新增課程對話框 Show add course dialog
-    const showAddCourseDialog = () => {
-      isAddCourseDialogVisible.value = true;
-    };
-
-    // 隱藏新增課程對話框 Hide add course dialog
-    const hideAddCourseDialog = () => {
-      isAddCourseDialogVisible.value = false;
-    };
-
-    // 處理新增課程 Handle add course
-    const handleAddCourse = (courseData) => {
-      console.log('New course data:', courseData);
-      // TODO: 調用 API 保存課程數據 Call API to save course data
-    };
-    
-    // 生命週期鉤子 Lifecycle hooks
-    onMounted(() => {
-      // 將在後續實現API調用 Will implement API calls in subsequent steps
-      console.log('組件已掛載，將加載課程數據');
-      
-      // 這裡應該調用API獲取初始數據 Should call API to get initial data here
-    });
-    
     return {
       currentDate,
       currentView,
-      viewOptions,
-      formattedCurrentDate,
+      isAddCourseDialogVisible,
+      isLoggingOut,
       courseEvents,
-      courseDialogVisible,
-      courseDialogTitle,
-      filterDialogVisible,
+      viewOptions,
+      currentYear,
+      currentMonth,
       currentCalendarComponent,
-      currentCourse,
-      filters,
-      teachers,
-      courseTypes,
-      locations,
+      showAddCourseDialog,
+      hideAddCourseDialog,
+      handleAddCourse,
+      handleEventClick,
+      handleDateClick,
       navigatePrevious,
       navigateNext,
       goToToday,
       changeView,
-      openAddCourseDialog,
-      openFilterDialog,
-      handleEventClick,
-      handleDateClick,
-      saveCourse,
-      resetCourseForm,
-      resetFilters,
-      applyFilters,
-      isLoggingOut,
-      handleLogout,
-      currentYear,
-      currentMonth,
-      isAddCourseDialogVisible,
-      showAddCourseDialog,
-      hideAddCourseDialog,
-      handleAddCourse
+      handleLogout
     };
   }
 });

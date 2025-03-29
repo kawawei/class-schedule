@@ -64,7 +64,17 @@ export default {
     type: {
       type: String,
       default: 'text',
-      validator: (value) => ['text', 'password', 'email', 'number', 'tel', 'url', 'textarea'].includes(value)
+      validator: (value) => [
+        'text',
+        'password',
+        'email',
+        'number',
+        'tel',
+        'url',
+        'textarea',
+        'time',
+        'date'
+      ].includes(value)
     },
     // 輸入框值 Input value (v-model)
     modelValue: {
