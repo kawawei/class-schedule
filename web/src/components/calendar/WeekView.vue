@@ -173,28 +173,30 @@ export default defineComponent({
     // 獲取指定日期的事件 Get events for specific day
     const getEventsForDay = (date) => {
       return props.events.filter(event => {
-        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-        return isSameDay(eventStart, date);
+        if (!event.date) return false;
+        const eventDate = parseISO(event.date);
+        return isSameDay(eventDate, date);
       });
     };
     
     // 獲取事件樣式 Get event style
     const getEventStyle = (event) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
+      // 解析時間字符串 Parse time strings
+      const [startHour, startMinute] = event.startTime.split(':').map(Number);
+      const [endHour, endMinute] = event.endTime.split(':').map(Number);
       
       // 計算事件開始時間的位置 Calculate position of event start time
-      const startHour = getHours(eventStart) + getMinutes(eventStart) / 60;
-      const endHour = getHours(eventEnd) + getMinutes(eventEnd) / 60;
+      const startTime = startHour + startMinute / 60;
+      const endTime = endHour + endMinute / 60;
       
       // 計算事件持續時間 Calculate event duration
-      const duration = endHour - startHour;
+      const duration = endTime - startTime;
       
       // 計算從頂部的偏移量 Calculate offset from top
       const startHourOffset = 8; // 開始時間 Start time
       const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
       
-      const top = (startHour - startHourOffset) * hourHeight;
+      const top = (startTime - startHourOffset) * hourHeight;
       const height = duration * hourHeight;
       
       return {
@@ -205,10 +207,7 @@ export default defineComponent({
     
     // 格式化事件時間 Format event time
     const formatEventTime = (event) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-      
-      return `${format(eventStart, 'HH:mm')} - ${format(eventEnd, 'HH:mm')}`;
+      return `${event.startTime} - ${event.endTime}`;
     };
     
     // 處理事件點擊 Handle event click

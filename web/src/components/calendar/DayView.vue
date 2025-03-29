@@ -42,14 +42,18 @@
         <div 
           v-for="(event, eventIndex) in dayEvents" 
           :key="`event-${eventIndex}`" 
-          class="event-card"
-          :style="getEventStyle(event)"
-          @click.stop="handleEventClick(event)"
+          class="event-container"
         >
-          <div class="event-title">{{ event.title }}</div>
-          <div class="event-time">{{ formatEventTime(event) }}</div>
-          <div class="event-location" v-if="event.location">{{ event.location }}</div>
-          <div class="event-description" v-if="event.description">{{ event.description }}</div>
+          <ScheduleBlock
+            :start-time="formatEventTime(event).split(' - ')[0]"
+            :end-time="formatEventTime(event).split(' - ')[1]"
+            :course-type="event.courseType"
+            :school-name="event.schoolName"
+            :teacher-name="event.teacherName"
+            :assistant-name="event.assistantName"
+            :position="event.position"
+            @click="handleEventClick(event)"
+          />
         </div>
       </div>
       
@@ -76,9 +80,14 @@ import {
   parseISO
 } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
 
 export default defineComponent({
   name: 'DayView',
+  
+  components: {
+    ScheduleBlock
+  },
   
   props: {
     // 當前日期 Current date
@@ -121,8 +130,9 @@ export default defineComponent({
     // 當前日期的事件 Events for current day
     const dayEvents = computed(() => {
       return props.events.filter(event => {
-        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-        return isSameDay(eventStart, props.currentDate);
+        if (!event.date) return false;
+        const eventDate = parseISO(event.date);
+        return isSameDay(eventDate, props.currentDate);
       });
     });
     
@@ -152,21 +162,22 @@ export default defineComponent({
     
     // 獲取事件樣式 Get event style
     const getEventStyle = (event) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
+      // 解析時間字符串 Parse time strings
+      const [startHour, startMinute] = event.startTime.split(':').map(Number);
+      const [endHour, endMinute] = event.endTime.split(':').map(Number);
       
       // 計算事件開始時間的位置 Calculate position of event start time
-      const startHour = getHours(eventStart) + getMinutes(eventStart) / 60;
-      const endHour = getHours(eventEnd) + getMinutes(eventEnd) / 60;
+      const startTime = startHour + startMinute / 60;
+      const endTime = endHour + endMinute / 60;
       
       // 計算事件持續時間 Calculate event duration
-      const duration = endHour - startHour;
+      const duration = endTime - startTime;
       
       // 計算從頂部的偏移量 Calculate offset from top
       const startHourOffset = 8; // 開始時間 Start time
       const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
       
-      const top = (startHour - startHourOffset) * hourHeight;
+      const top = (startTime - startHourOffset) * hourHeight;
       const height = duration * hourHeight;
       
       return {
@@ -177,10 +188,7 @@ export default defineComponent({
     
     // 格式化事件時間 Format event time
     const formatEventTime = (event) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-      
-      return `${format(eventStart, 'HH:mm')} - ${format(eventEnd, 'HH:mm')}`;
+      return `${event.startTime} - ${event.endTime}`;
     };
     
     // 處理事件點擊 Handle event click
@@ -339,7 +347,7 @@ export default defineComponent({
       }
     }
     
-    .event-card {
+    .event-container {
       position: absolute;
       left: var(--spacing-md);
       right: var(--spacing-md);
@@ -356,34 +364,6 @@ export default defineComponent({
         background-color: rgba(0, 113, 227, 0.15);
         transform: translateY(-1px);
         box-shadow: var(--shadow-sm);
-      }
-      
-      .event-title {
-        font-weight: var(--font-weight-medium);
-        font-size: var(--font-size-md);
-        margin-bottom: var(--spacing-xs);
-      }
-      
-      .event-time {
-        font-size: var(--font-size-sm);
-        color: var(--text-secondary);
-        margin-bottom: var(--spacing-xs);
-      }
-      
-      .event-location {
-        font-size: var(--font-size-sm);
-        color: var(--text-secondary);
-        margin-bottom: var(--spacing-xs);
-      }
-      
-      .event-description {
-        font-size: var(--font-size-sm);
-        color: var(--text-secondary);
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
       }
     }
   }

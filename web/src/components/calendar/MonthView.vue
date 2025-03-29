@@ -35,24 +35,22 @@
         >
           <div class="day-number">{{ day.dayNumber }}</div>
           
-          <!-- 事件列表 Event list -->
-          <div class="day-events">
-            <div 
-              v-for="(event, eventIndex) in getEventsForDay(day.date).slice(0, 3)" 
-              :key="`event-${eventIndex}`" 
-              class="event-pill"
-              @click.stop="handleEventClick(event)"
-            >
-              {{ event.title }}
-            </div>
-            
-            <!-- 更多事件指示器 More events indicator -->
-            <div 
-              v-if="getEventsForDay(day.date).length > 3" 
-              class="more-events"
-              @click.stop="handleMoreEventsClick(day.date)"
-            >
-              +{{ getEventsForDay(day.date).length - 3 }} more
+          <!-- 事件列表容器 Event list container -->
+          <div class="day-events-container">
+            <div class="day-events">
+              <ScheduleBlock
+                v-for="(event, eventIndex) in getSortedEventsForDay(day.date)"
+                :key="`event-${eventIndex}`"
+                :start-time="event.startTime"
+                :end-time="event.endTime"
+                :course-type="event.courseType"
+                :school-name="event.schoolName"
+                :teacher-name="event.teacherName"
+                :assistant-name="event.assistantName"
+                :position="{ row: 1, column: 1 }"
+                class="month-schedule-block"
+                @click="handleScheduleBlockClick($event, event)"
+              />
             </div>
           </div>
         </div>
@@ -104,9 +102,14 @@ import {
   parseISO
 } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
 
 export default defineComponent({
   name: 'MonthView',
+  
+  components: {
+    ScheduleBlock
+  },
   
   props: {
     // 當前日期 Current date
@@ -192,23 +195,30 @@ export default defineComponent({
     // 獲取指定日期的事件 Get events for specific day
     const getEventsForDay = (date) => {
       return props.events.filter(event => {
-        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-        return isSameDay(eventStart, date);
+        // 將事件的日期和時間組合成完整的日期時間 Combine event date and time into full datetime
+        if (!event.date) return false;
+        const eventDate = parseISO(event.date);
+        return isSameDay(eventDate, date);
       });
     };
     
     // 格式化事件時間 Format event time
     const formatEventTime = (event) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-      
-      return `${format(eventStart, 'HH:mm')} - ${format(eventEnd, 'HH:mm')}`;
+      return `${event.startTime} - ${event.endTime}`;
     };
     
     // 修改處理日期點擊事件 Modify day click handler
     const handleDayClick = (date) => {
-      selectedDate.value = date; // 更新選中日期 Update selected date
+      selectedDate.value = date;
       emit('date-click', date);
+    };
+    
+    // 處理課程方塊點擊 Handle schedule block click
+    const handleScheduleBlockClick = (event, scheduleEvent) => {
+      // 阻止事件冒泡到日期單元格 Prevent event bubbling to date cell
+      event?.preventDefault?.();
+      // 發出事件點擊事件 Emit event click event
+      handleEventClick(scheduleEvent);
     };
     
     // 處理事件點擊 Handle event click
@@ -232,6 +242,23 @@ export default defineComponent({
       }, 0);
     };
     
+    // 獲取排序後的事件 Get sorted events for a day
+    const getSortedEventsForDay = (date) => {
+      const events = getEventsForDay(date);
+      return events.sort((a, b) => {
+        // 將時間轉換為分鐘數進行比較 Convert time to minutes for comparison
+        const aMinutes = timeToMinutes(a.startTime);
+        const bMinutes = timeToMinutes(b.startTime);
+        return aMinutes - bMinutes;
+      });
+    };
+    
+    // 將時間轉換為分鐘數 Convert time to minutes
+    const timeToMinutes = (time) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
     return {
       weekDays,
       calendarDays,
@@ -244,8 +271,11 @@ export default defineComponent({
       isSelectedDate,
       selectedDate,
       handleDayClick,
+      handleScheduleBlockClick,
       handleEventClick,
-      handleMoreEventsClick
+      handleMoreEventsClick,
+      getSortedEventsForDay,
+      timeToMinutes
     };
   }
 });
@@ -371,42 +401,40 @@ export default defineComponent({
         margin: 2px;
       }
       
-      .day-events {
-        margin-top: 2px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        flex: 1; // 讓事件列表佔據剩餘空間
-        overflow-y: auto; // 如果事件太多，允許滾動
-        
-        .event-pill {
-          background-color: rgba(0, 113, 227, 0.1);
-          border-left: 3px solid var(--color-primary);
-          border-radius: var(--radius-sm);
-          padding: 2px var(--spacing-xs);
-          font-size: var(--font-size-xs);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          cursor: pointer;
+      .day-events-container {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+
+        .day-events {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          overflow-y: auto;
+          padding-right: var(--spacing-xs); // 為滾動條預留空間
           
-          &:hover {
-            background-color: rgba(0, 113, 227, 0.15);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-xs);
+          /* 自定義滾動條樣式 Custom scrollbar styles */
+          &::-webkit-scrollbar {
+            width: 4px;
           }
-        }
-        
-        .more-events {
-          font-size: var(--font-size-xs);
-          color: var(--text-secondary);
-          text-align: center;
-          padding: 2px;
-          cursor: pointer;
           
-          &:hover {
-            color: var(--color-primary);
-            text-decoration: underline;
+          &::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background: var(--color-gray-300);
+            border-radius: 2px;
+          }
+
+          .month-schedule-block {
+            margin-bottom: 2px; // 方塊之間的間距
+            
+            &:last-child {
+              margin-bottom: 0;
+            }
           }
         }
       }
