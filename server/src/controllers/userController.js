@@ -397,6 +397,190 @@ const userController = {
             client.release();
             console.log(`[DELETE USER] 數據庫連接已釋放 Database connection released`);
         }
+    },
+
+    /**
+     * 獲取用戶權限 Get user permissions
+     * @param {Object} req - 請求對象 Request object
+     * @param {Object} res - 響應對象 Response object
+     */
+    getUserPermissions: async (req, res) => {
+        const client = await mainPool.connect();
+        try {
+            const { id } = req.params;
+            const companyCode = req.user.companyCode;
+
+            // 檢查權限 Check permission
+            if (!['tenant', 'admin'].includes(req.user.role)) {
+                return res.status(403).json({
+                    success: false,
+                    message: '權限不足 Insufficient permissions'
+                });
+            }
+
+            // 獲取用戶權限 Get user permissions
+            const result = await client.query(
+                `SELECT id, username, role, permissions 
+                 FROM ${companyCode}.users 
+                 WHERE id = $1`,
+                [id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: '用戶不存在 User not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    id: result.rows[0].id,
+                    username: result.rows[0].username,
+                    role: result.rows[0].role,
+                    permissions: result.rows[0].permissions || {}
+                }
+            });
+        } catch (error) {
+            console.error('獲取用戶權限失敗 Failed to get user permissions:', error);
+            res.status(500).json({
+                success: false,
+                message: '獲取用戶權限失敗 Failed to get user permissions'
+            });
+        } finally {
+            client.release();
+        }
+    },
+
+    /**
+     * 更新用戶權限 Update user permissions
+     * @param {Object} req - 請求對象 Request object
+     * @param {Object} res - 響應對象 Response object
+     */
+    updateUserPermissions: async (req, res) => {
+        const client = await mainPool.connect();
+        try {
+            const { id } = req.params;
+            const { permissions } = req.body;
+            const requestingUser = req.user;
+
+            console.log('[UPDATE PERMISSIONS] 開始更新權限 Starting permission update:', {
+                userId: id,
+                requestedPermissions: permissions
+            });
+
+            // 檢查權限 Check permission
+            if (!['tenant', 'admin'].includes(req.user.role)) {
+                console.log('[UPDATE PERMISSIONS] 權限不足 Insufficient permissions:', {
+                    userRole: req.user.role,
+                    requiredRoles: ['tenant', 'admin']
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: '權限不足 Insufficient permissions'
+                });
+            }
+
+            // 檢查用戶是否存在 Check if user exists
+            const existingUser = await client.query(
+                `SELECT id, role FROM ${req.user.companyCode}.users WHERE id = $1`,
+                [id]
+            );
+
+            if (existingUser.rows.length === 0) {
+                console.log('[UPDATE PERMISSIONS] 用戶不存在 User not found:', { userId: id });
+                return res.status(404).json({
+                    success: false,
+                    message: '用戶不存在 User not found'
+                });
+            }
+
+            // 只有超級管理員可以修改管理員的權限 Only tenant can modify admin permissions
+            if (existingUser.rows[0].role === 'admin' && req.user.role !== 'tenant') {
+                console.log('[UPDATE PERMISSIONS] 嘗試修改管理員權限 Attempt to modify admin permissions:', {
+                    userId: id,
+                    userRole: existingUser.rows[0].role,
+                    requesterRole: req.user.role
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: '只有超級管理員可以修改管理員的權限 Only tenant can modify admin permissions'
+                });
+            }
+
+            // 驗證權限格式 Validate permissions format
+            if (!permissions || typeof permissions !== 'object') {
+                console.log('[UPDATE PERMISSIONS] 權限格式無效 Invalid permissions format:', {
+                    receivedPermissions: permissions,
+                    type: typeof permissions
+                });
+                return res.status(400).json({
+                    success: false,
+                    message: '權限格式無效 Invalid permissions format'
+                });
+            }
+
+            // 轉換權限格式 Transform permissions format
+            const transformedPermissions = {};
+            for (const [module, modulePermissions] of Object.entries(permissions)) {
+                // 檢查模組是否有 enabled 屬性 Check if module has enabled property
+                if (!modulePermissions || typeof modulePermissions.enabled !== 'boolean') {
+                    console.log('[UPDATE PERMISSIONS] 模組權限格式無效 Invalid permission format for module:', {
+                        module,
+                        receivedPermissions: modulePermissions
+                    });
+                    return res.status(400).json({
+                        success: false,
+                        message: `模組 ${module} 的權限格式無效 Invalid permission format for module ${module}`
+                    });
+                }
+
+                // 如果模組被啟用，設置所有操作為 true，否則為 false
+                // If module is enabled, set all operations to true, otherwise false
+                transformedPermissions[module] = {
+                    view: modulePermissions.enabled,
+                    create: modulePermissions.enabled,
+                    edit: modulePermissions.enabled,
+                    delete: modulePermissions.enabled
+                };
+            }
+
+            // 更新用戶權限 Update user permissions
+            console.log('[UPDATE PERMISSIONS] 執行權限更新 Executing permission update');
+            const result = await client.query(
+                `UPDATE ${req.user.companyCode}.users 
+                 SET permissions = $1,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $2
+                 RETURNING id, username, role, permissions`,
+                [transformedPermissions, id]
+            );
+
+            console.log('[UPDATE PERMISSIONS] 權限更新成功 Permissions updated successfully:', {
+                userId: id,
+                updatedPermissions: transformedPermissions
+            });
+
+            res.json({
+                success: true,
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('[UPDATE PERMISSIONS] 更新用戶權限失敗 Failed to update user permissions:', {
+                error: error.message,
+                stack: error.stack,
+                query: error.query,
+                parameters: error.parameters
+            });
+            res.status(500).json({
+                success: false,
+                message: '更新用戶權限失敗 Failed to update user permissions'
+            });
+        } finally {
+            client.release();
+            console.log('[UPDATE PERMISSIONS] 數據庫連接已釋放 Database connection released');
+        }
     }
 };
 

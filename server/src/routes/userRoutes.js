@@ -21,6 +21,12 @@ router.put('/:id', userController.updateUser);
 // 刪除用戶 Delete user
 router.delete('/:id', userController.deleteUser);
 
+// 獲取用戶權限 Get user permissions
+router.get('/:id/permissions', userController.getUserPermissions);
+
+// 更新用戶權限 Update user permissions
+router.put('/:id/permissions', userController.updateUserPermissions);
+
 module.exports = router;
 
  

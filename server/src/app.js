@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { mainPool } = require('./config/database');
+const morgan = require('morgan');
+const { mainPool, updateExistingSchemas } = require('./config/database');
 const tenantRoutes = require('./routes/tenantRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -14,6 +15,7 @@ const app = express();
 // 中間件
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'));
 
 // 路由
 app.use('/api/tenants', tenantRoutes);
@@ -56,10 +58,24 @@ app.use((err, req, res, next) => {
     });
 });
 
+// 初始化數據庫 Initialize database
+const initializeDatabase = async () => {
+    try {
+        // 更新現有的 schema 以添加權限欄位
+        console.log('開始更新數據庫 schema Starting database schema update...');
+        await updateExistingSchemas();
+        console.log('數據庫 schema 更新完成 Database schema update completed');
+    } catch (error) {
+        console.error('初始化數據庫失敗 Database initialization failed:', error);
+        process.exit(1);
+    }
+};
+
 // 啟動服務器
 const PORT = process.env.PORT || 3006;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`服務器運行在端口 ${PORT} Server is running on port ${PORT}`);
+    await initializeDatabase();
 });
 
 // 優雅關閉
