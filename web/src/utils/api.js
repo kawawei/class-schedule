@@ -88,7 +88,7 @@ const parseDateTimeData = (data) => {
  * @returns {Promise} 響應數據 Response data
  */
 const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true) => {
-  const requestId = Math.random().toString(36).substring(7);
+  const requestId = Math.random().toString(36).substring(2, 8);
   console.log(`[${new Date().toISOString()}] [Request ${requestId}] 開始 API 請求 Starting API request:`, {
     endpoint,
     method,
@@ -96,13 +96,9 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
   });
 
   try {
-    const baseURL = 'http://localhost:3006/api';
-    
-    const config = {
-      method,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    const url = `${API_BASE_URL}${endpoint}`;
+    const headers = {
+      'Content-Type': 'application/json'
     };
     
     if (withAuth) {
@@ -114,21 +110,26 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
         throw new Error('未登入 Not logged in');
       }
       
-      config.headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
       if (companyCode) {
-        config.headers['x-company-code'] = companyCode;
+        headers['x-company-code'] = companyCode;
       }
       console.log(`[${new Date().toISOString()}] [Request ${requestId}] 已添加認證信息 Added authentication information`);
     }
     
+    const config = {
+      method,
+      headers
+    };
+
     if (data) {
       const processedData = processDateTimeData(data);
       config.body = JSON.stringify(processedData);
       console.log(`[${new Date().toISOString()}] [Request ${requestId}] 請求數據 Request data:`, processedData);
     }
     
-    console.log(`[${new Date().toISOString()}] [Request ${requestId}] 發送請求 Sending request to: ${baseURL}${endpoint}`);
-    const response = await fetch(`${baseURL}${endpoint}`, config);
+    console.log(`[${new Date().toISOString()}] [Request ${requestId}] 發送請求 Sending request to: ${url}`);
+    const response = await fetch(url, config);
     const responseData = await response.json();
     
     console.log(`[${new Date().toISOString()}] [Request ${requestId}] 收到響應 Received response:`, {

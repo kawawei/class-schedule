@@ -28,9 +28,23 @@
                 </svg>
               </button>
             </div>
-            <button class="today-button" @click="goToToday">今天</button>
+            <AppButton
+              type="secondary"
+              size="sm"
+              @click="goToToday"
+            >
+              今天 / Today
+            </AppButton>
           </div>
           <div class="toolbar-right">
+            <!-- 添加新增課程按鈕 Add course button -->
+            <AppButton
+              type="primary"
+              class="add-course-button"
+              @click="showAddCourseDialog"
+            >
+              新增課程 / Add Course
+            </AppButton>
             <div class="view-selector">
               <button 
                 v-for="view in viewOptions" 
@@ -58,6 +72,13 @@
         </div>
       </div>
     </div>
+
+    <!-- 新增課程對話框 Add course dialog -->
+    <AddCourseDialog
+      v-model:visible="isAddCourseDialogVisible"
+      @close="hideAddCourseDialog"
+      @submit="handleAddCourse"
+    />
 
     <!-- 暫時隱藏對話框 Temporarily hide dialogs -->
     <!-- 
@@ -208,6 +229,8 @@ import MonthView from '@/components/calendar/MonthView.vue';
 
 // 導入頂部導航欄組件 Import top navigation bar component
 import AppHeader from '@/components/layout/AppHeader.vue';
+import AddCourseDialog from '@/components/schedule/AddCourseDialog.vue';
+import AppButton from '@/components/base/AppButton.vue';
 
 export default defineComponent({
   name: 'SchedulePage',
@@ -216,7 +239,9 @@ export default defineComponent({
     DayView,
     WeekView,
     MonthView,
-    AppHeader
+    AppHeader,
+    AddCourseDialog,
+    AppButton
   },
   
   setup() {
@@ -476,6 +501,25 @@ export default defineComponent({
       }
     };
     
+    // 新增課程對話框狀態
+    const isAddCourseDialogVisible = ref(false);
+
+    // 顯示新增課程對話框 Show add course dialog
+    const showAddCourseDialog = () => {
+      isAddCourseDialogVisible.value = true;
+    };
+
+    // 隱藏新增課程對話框 Hide add course dialog
+    const hideAddCourseDialog = () => {
+      isAddCourseDialogVisible.value = false;
+    };
+
+    // 處理新增課程 Handle add course
+    const handleAddCourse = (courseData) => {
+      console.log('New course data:', courseData);
+      // TODO: 調用 API 保存課程數據 Call API to save course data
+    };
+    
     // 生命週期鉤子 Lifecycle hooks
     onMounted(() => {
       // 將在後續實現API調用 Will implement API calls in subsequent steps
@@ -514,7 +558,11 @@ export default defineComponent({
       isLoggingOut,
       handleLogout,
       currentYear,
-      currentMonth
+      currentMonth,
+      isAddCourseDialogVisible,
+      showAddCourseDialog,
+      hideAddCourseDialog,
+      handleAddCourse
     };
   }
 });
@@ -522,4 +570,93 @@ export default defineComponent({
 
 <style lang="scss">
 @import './schedule.scss';
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .add-course-button {
+      margin-right: 1rem;
+    }
+  }
+
+  .date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-button {
+    padding: 0.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  .current-date {
+    font-size: 1.2rem;
+    font-weight: 500;
+    
+    .year, .month {
+      margin: 0 0.25rem;
+    }
+  }
+
+  .today-button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  .view-selector {
+    display: flex;
+    gap: 0.5rem;
+    
+    .view-option {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+
+      &.active {
+        background-color: #1890ff;
+        color: #fff;
+        border-color: #1890ff;
+      }
+    }
+  }
+}
 </style> 
