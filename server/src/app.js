@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
 const ApiError = require('./utils/apiError');
 
 // 創建 Express 應用
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/teachers', teacherRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 // 404 處理
 app.use((req, res, next) => {
