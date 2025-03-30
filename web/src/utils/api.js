@@ -425,6 +425,56 @@ const courseAPI = {
   }
 };
 
+/**
+ * 課程排程 API Schedule API
+ */
+const scheduleAPI = {
+  /**
+   * 獲取所有課程排程 Get all schedules
+   * @returns {Promise} 課程排程列表 Schedule list
+   */
+  getAllSchedules: () => {
+    return apiRequest('/schedules', 'GET', null, true);
+  },
+  
+  /**
+   * 獲取單個課程排程 Get single schedule
+   * @param {Number} id - 課程排程ID Schedule ID
+   * @returns {Promise} 課程排程信息 Schedule info
+   */
+  getSchedule: (id) => {
+    return apiRequest(`/schedules/${id}`, 'GET', null, true);
+  },
+  
+  /**
+   * 創建課程排程 Create schedule
+   * @param {Object} scheduleData - 課程排程數據 Schedule data
+   * @returns {Promise} 創建結果 Creation result
+   */
+  createSchedule: (scheduleData) => {
+    return apiRequest('/schedules', 'POST', scheduleData, true);
+  },
+  
+  /**
+   * 更新課程排程 Update schedule
+   * @param {Number} id - 課程排程ID Schedule ID
+   * @param {Object} scheduleData - 課程排程數據 Schedule data
+   * @returns {Promise} 更新結果 Update result
+   */
+  updateSchedule: (id, scheduleData) => {
+    return apiRequest(`/schedules/${id}`, 'PUT', scheduleData, true);
+  },
+  
+  /**
+   * 刪除課程排程 Delete schedule
+   * @param {Number} id - 課程排程ID Schedule ID
+   * @returns {Promise} 刪除結果 Deletion result
+   */
+  deleteSchedule: (id) => {
+    return apiRequest(`/schedules/${id}`, 'DELETE', null, true);
+  }
+};
+
 // 導出 API Export API
 export {
   userAPI,
@@ -432,5 +482,6 @@ export {
   teacherAPI,
   departmentAPI,
   courseAPI,
+  scheduleAPI,
   apiRequest
 }; 

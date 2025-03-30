@@ -55,11 +55,14 @@ export default defineComponent({
       type: String,
       required: true
     },
-    // 課程類型 Course type (math, english, chinese, science)
+    // 課程類型 Course type
     courseType: {
       type: String,
       required: true,
-      validator: (value) => ['math', 'english', 'chinese', 'science'].includes(value)
+      validator: (value) => {
+        // 只驗證是否為非空字符串 Only validate if it's a non-empty string
+        return typeof value === 'string' && value.trim().length > 0;
+      }
     },
     // 補習班名稱 School name
     schoolName: {
@@ -119,13 +122,8 @@ export default defineComponent({
 
     // 課程類型標籤 Course type label
     const courseTypeLabel = computed(() => {
-      const labels = {
-        math: '數學',
-        english: '英文',
-        chinese: '國文',
-        science: '理化'
-      };
-      return labels[props.courseType] || props.courseType;
+      // 直接返回課程類型，不做轉換 Directly return course type without conversion
+      return props.courseType;
     });
 
     // 課程數據 Course data
@@ -151,7 +149,9 @@ export default defineComponent({
 
     // 格式化時間 Format time
     const formatTime = (time) => {
-      return time;  // 已經是 HH:mm 格式，不需要額外處理
+      if (!time) return '';
+      // 如果時間包含秒，只取小時和分鐘 If time includes seconds, only take hours and minutes
+      return time.split(':').slice(0, 2).join(':');
     };
 
     // 計算行數跨度 Calculate row span based on time difference
@@ -249,15 +249,17 @@ export default defineComponent({
 
   .block-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     font-size: var(--font-size-xs);
     flex-shrink: 0;
-    min-width: 160px;
+    min-width: auto;
+    gap: 50px;
 
     .time {
       color: var(--text-secondary);
       font-weight: var(--font-weight-medium);
+      white-space: nowrap;
     }
 
     .course-type {
@@ -265,16 +267,21 @@ export default defineComponent({
       font-weight: var(--font-weight-bold);
       padding: 0 2px;
       background: none;
-      margin-left: 1rem;
+      margin-left: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60px;
     }
   }
 
   .block-content {
     display: flex;
     align-items: center;
-    margin-left: 1rem;
+    margin-left: 4px;
     flex: 1;
     overflow: hidden;
+    min-width: 0;
 
     .school-name {
       font-size: var(--font-size-xs);
@@ -283,6 +290,7 @@ export default defineComponent({
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 100%;
     }
 
     .teacher-info {

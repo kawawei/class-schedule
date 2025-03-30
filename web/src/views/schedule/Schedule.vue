@@ -221,6 +221,8 @@ import { ref, computed, onMounted, defineComponent } from 'vue';
 import { format, addDays, addWeeks, addMonths, startOfWeek, startOfMonth } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { useRouter } from 'vue-router';
+import { scheduleAPI, authAPI } from '@/utils/api';
+import Message from '@/utils/message';
 
 // 導入日曆視圖組件 Import calendar view components
 import DayView from '@/components/calendar/DayView.vue';
@@ -256,6 +258,59 @@ export default defineComponent({
     // 課程事件數據 Course events data
     const courseEvents = ref([]);
 
+    // 獲取課程排程數據 Get course schedule data
+    const fetchCourseSchedules = async () => {
+      try {
+        const response = await scheduleAPI.getAllSchedules();
+        if (response.success) {
+          // 轉換數據格式為前端需要的格式 Convert data format to frontend format
+          courseEvents.value = response.data.map(schedule => {
+            // 計算位置 Calculate position
+            let row = 1;
+            let column = 1;
+            
+            // 添加空值檢查 Add null check
+            if (schedule.start_time) {
+              const [hours, minutes] = schedule.start_time.split(':').map(Number);
+              row = (hours - 8) * 2 + Math.floor(minutes / 30) + 1; // 從8點開始，每30分鐘一格
+            }
+            
+            if (schedule.date) {
+              const date = new Date(schedule.date);
+              const day = date.getDay(); // 0-6 (週日-週六)
+              column = day === 0 ? 7 : day; // 將週日(0)轉換為7，其他日期保持不變
+            }
+
+            return {
+              id: schedule.id,
+              courseType: schedule.course_type ? schedule.course_type.toLowerCase() : '', // 添加空值檢查 Add null check
+              schoolName: schedule.school_name || '',
+              teacherName: schedule.teacher?.name || '', // 修改為使用可選鏈運算符 Use optional chaining
+              assistantName: schedule.assistant?.name || '', // 修改為使用可選鏈運算符 Use optional chaining
+              startTime: schedule.start_time || '',
+              endTime: schedule.end_time || '',
+              date: schedule.date || '',
+              className: schedule.class_name || '',
+              courseFee: schedule.course_fee || 0,
+              teacherFee: schedule.teacher_fee || 0,
+              assistantFee: schedule.assistant_fee || 0,
+              position: { row, column }
+            };
+          });
+        } else {
+          Message.error(response.message || '獲取課程排程失敗');
+        }
+      } catch (error) {
+        console.error('獲取課程排程失敗:', error);
+        Message.error('獲取課程排程失敗');
+      }
+    };
+
+    // 組件掛載時獲取課程排程數據 Get course schedule data when component is mounted
+    onMounted(async () => {
+      await fetchCourseSchedules();
+    });
+
     // 顯示新增課程對話框 Show add course dialog
     const showAddCourseDialog = () => {
       isAddCourseDialogVisible.value = true;
@@ -267,31 +322,58 @@ export default defineComponent({
     };
 
     // 處理新增課程 Handle add course
-    const handleAddCourse = (newEvents) => {
-      console.log('New course events:', newEvents);
-      
-      // 添加多個課程事件 Add multiple course events
-      newEvents.forEach(courseData => {
-        const newEvent = {
-          id: Math.max(0, ...courseEvents.value.map(e => e.id ?? 0)) + 1,
-          courseType: courseData.courseType,
-          schoolName: courseData.schoolName,
-          teacherName: courseData.teacherName,
-          assistantName: courseData.assistantName,
-          startTime: courseData.startTime,
-          endTime: courseData.endTime,
-          date: courseData.date,
-          className: courseData.className,
-          courseFee: courseData.courseFee,
-          teacherFee: courseData.teacherFee,
-          assistantFee: courseData.assistantFee
-        };
-        
-        courseEvents.value.push(newEvent);
-      });
-      
-      // 關閉對話框 Close dialog
-      hideAddCourseDialog();
+    const handleAddCourse = async (newEvents) => {
+      try {
+        // 如果創建成功，直接將新課程添加到列表中
+        // If creation successful, directly add new courses to the list
+        if (newEvents) {
+          // 如果是單個課程，轉換為數組
+          // If it's a single course, convert to array
+          const eventsArray = Array.isArray(newEvents) ? newEvents : [newEvents];
+          
+          // 處理每個新課程
+          // Process each new course
+          eventsArray.forEach(newEvent => {
+            // 計算位置 Calculate position
+            let row = 1;
+            let column = 1;
+            
+            // 添加空值檢查 Add null check
+            if (newEvent.start_time) {
+              const [hours, minutes] = newEvent.start_time.split(':').map(Number);
+              row = (hours - 8) * 2 + Math.floor(minutes / 30) + 1; // 從8點開始，每30分鐘一格
+            }
+            
+            if (newEvent.date) {
+              const date = new Date(newEvent.date);
+              const day = date.getDay(); // 0-6 (週日-週六)
+              column = day === 0 ? 7 : day; // 將週日(0)轉換為7，其他日期保持不變
+            }
+
+            courseEvents.value.push({
+              id: newEvent.id,
+              courseType: newEvent.course_type ? newEvent.course_type.toLowerCase() : '', // 添加空值檢查 Add null check
+              schoolName: newEvent.school_name || '',
+              teacherName: newEvent.teacher?.name || '', // 修改為使用可選鏈運算符 Use optional chaining
+              assistantName: newEvent.assistant?.name || '', // 修改為使用可選鏈運算符 Use optional chaining
+              startTime: newEvent.start_time || '',
+              endTime: newEvent.end_time || '',
+              date: newEvent.date || '',
+              className: newEvent.class_name || '',
+              courseFee: newEvent.course_fee || 0,
+              teacherFee: newEvent.teacher_fee || 0,
+              assistantFee: newEvent.assistant_fee || 0,
+              position: { row, column }
+            });
+          });
+          
+          Message.success('課程排程創建成功');
+        }
+        hideAddCourseDialog();
+      } catch (error) {
+        console.error('創建課程排程失敗:', error);
+        Message.error('創建課程排程失敗');
+      }
     };
 
     // 處理事件點擊 Handle event click
@@ -396,7 +478,8 @@ export default defineComponent({
       navigateNext,
       goToToday,
       changeView,
-      handleLogout
+      handleLogout,
+      fetchCourseSchedules
     };
   }
 });

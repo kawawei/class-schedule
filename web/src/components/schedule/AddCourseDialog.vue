@@ -82,8 +82,9 @@
             <input
               type="checkbox"
               v-model="formData.recurringDays[index]"
+              :disabled="!availableWeekdays[index]"
             >
-            <span>{{ day.label }}</span>
+            <span :class="{ 'disabled': !availableWeekdays[index] }">{{ day.label }}</span>
           </label>
         </div>
       </div>
@@ -179,9 +180,9 @@
 </template>
 
 <script>
-import { ref, reactive, nextTick, onMounted } from 'vue';
+import { ref, reactive, nextTick, onMounted, watch } from 'vue';
 import { format, parseISO, getDay } from 'date-fns';
-import { teacherAPI, courseAPI } from '@/utils/api';
+import { teacherAPI, courseAPI, scheduleAPI } from '@/utils/api';
 import Message from '@/utils/message';
 import AppDialog from '../base/AppDialog.vue';
 import AppInput from '../base/AppInput.vue';
@@ -219,7 +220,7 @@ export default {
       { label: '週四 / Thu', value: 4 },
       { label: '週五 / Fri', value: 5 },
       { label: '週六 / Sat', value: 6 },
-      { label: '週日 / Sun', value: 0 }
+      { label: '週日 / Sun', value: 7 }
     ];
 
     // 表單數據 Form data
@@ -237,6 +238,53 @@ export default {
       assistants: [],
       recurringDays: Array(7).fill(false)  // 重複性選項 Recurring options
     });
+
+    // 計算日期範圍內的星期幾 Calculate weekdays within date range
+    const calculateAvailableWeekdays = () => {
+      if (!formData.date || !formData.endDate) return Array(7).fill(true);
+      
+      const startDate = new Date(formData.date);
+      const endDate = new Date(formData.endDate);
+      
+      // 如果結束日期小於開始日期，返回全部可選
+      if (endDate < startDate) return Array(7).fill(true);
+      
+      // 計算日期範圍內的天數 Calculate days in range
+      const daysInRange = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // 如果日期範圍大於等於7天，返回全部可選
+      if (daysInRange >= 7) return Array(7).fill(true);
+      
+      // 計算日期範圍內的星期幾
+      const availableWeekdays = Array(7).fill(false);
+      const currentDate = new Date(startDate);
+      
+      for (let i = 0; i < daysInRange; i++) {
+        // 將 getDay() 的結果轉換為我們的索引格式（週一為0，週日為6）
+        // Convert getDay() result to our index format (Monday is 0, Sunday is 6)
+        const day = currentDate.getDay();
+        const index = day === 0 ? 6 : day - 1; // 將週日(0)轉換為6，其他日期減1
+        availableWeekdays[index] = true;
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return availableWeekdays;
+    };
+
+    // 可選的星期幾 Available weekdays
+    const availableWeekdays = ref(Array(7).fill(true));
+
+    // 監聽日期變化 Watch date changes
+    watch(
+      () => [formData.date, formData.endDate],
+      () => {
+        availableWeekdays.value = calculateAvailableWeekdays();
+        // 重置不可選的星期幾的勾選狀態 Reset unchecked state for unavailable weekdays
+        formData.recurringDays = formData.recurringDays.map((checked, index) => 
+          checked && availableWeekdays.value[index]
+        );
+      }
+    );
 
     // 課程種類選項 Course type options
     const courseTypes = ref([]);
@@ -396,73 +444,119 @@ export default {
     };
 
     // 處理提交 Handle submit
-    const handleSubmit = () => {
-      // 創建課程數據 Create course data
-      const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
-      const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
-
-      let assistantName = '';
-      let assistantFee = '';
-      if (formData.assistants.length > 0) {
-        const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
-        assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
-        assistantFee = formData.assistants[0].fee;
-      }
-
-      // 基本課程數據 Base course data
-      const baseEventData = {
-        courseType: formData.courseType,
-        schoolName: formData.schoolName,
-        teacherName: teacherName,
-        assistantName: assistantName,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        className: formData.className,
-        courseFee: formData.courseFee,
-        teacherFee: formData.teacherFee,
-        assistantFee: assistantFee
-      };
-
-      // 如果沒有結束日期，創建單次課程 If no end date, create single course
-      if (!formData.endDate) {
-        const singleEvent = {
-          ...baseEventData,
-          date: formData.date
-        };
-        emit('submit', [singleEvent]);
-      } else {
-        // 如果有結束日期，創建重複性課程 If has end date, create recurring courses
-        const events = generateRecurringEvents(baseEventData);
-        emit('submit', events);
-      }
-
-      handleClose();
-    };
-
-    // 生成重複性課程 Generate recurring events
-    const generateRecurringEvents = (baseEventData) => {
-      const startDate = parseISO(formData.date);
-      const endDate = parseISO(formData.endDate);
-      const events = [];
-
-      let currentDate = startDate;
-      while (currentDate <= endDate) {
-        const currentWeekday = getDay(currentDate);
-        // 將 currentWeekday 轉換為數組索引（0=週一，...，6=週日）
-        const dayIndex = currentWeekday === 0 ? 6 : currentWeekday - 1;
+    const handleSubmit = async () => {
+      if (loading.value) return; // 如果正在加載中，直接返回 If loading, return directly
+      
+      try {
+        loading.value = true;
         
-        if (formData.recurringDays[dayIndex]) {
-          events.push({
-            ...baseEventData,
-            date: format(currentDate, 'yyyy-MM-dd')
-          });
+        // 創建課程數據 Create course data
+        const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
+        const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
+
+        let assistantName = '';
+        let assistantFee = '';
+        if (formData.assistants.length > 0) {
+          const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
+          assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
+          assistantFee = formData.assistants[0].fee;
         }
-        
-        // 添加一天 Add one day
-        currentDate = new Date(currentDate.setDate(currentDate.getDate() + 1));
-      }
 
-      return events;
+        // 基本課程數據 Base course data
+        const baseEventData = {
+          school_name: formData.schoolName,
+          class_name: formData.className,
+          course_type: formData.courseType,
+          teacher_id: formData.teacherId,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+          course_fee: formData.courseFee,
+          teacher_fee: formData.teacherFee,
+          company_code: localStorage.getItem('companyCode'),
+          assistants: formData.assistants.map(assistant => ({
+            id: assistant.id,
+            fee: assistant.fee
+          }))
+        };
+
+        // 如果沒有結束日期，創建單次課程 If no end date, create single course
+        if (!formData.endDate) {
+          console.log('創建單次課程:', {
+            ...baseEventData,
+            date: formData.date,
+            is_recurring: false
+          });
+          
+          const scheduleData = {
+            ...baseEventData,
+            date: formData.date,
+            is_recurring: false
+          };
+          
+          const response = await scheduleAPI.createSchedule(scheduleData);
+          console.log('單次課程創建響應:', response);
+          
+          if (response.success) {
+            emit('submit', response.data);
+            handleClose();
+          } else {
+            Message.error(response.message || '課程排程創建失敗');
+          }
+        } else {
+          // 如果有結束日期，創建重複性課程 If has end date, create recurring courses
+          console.log('選擇的重複性日期:', formData.recurringDays);
+          console.log('星期幾選項:', weekDays);
+          
+          const recurringDays = formData.recurringDays
+            .map((checked, index) => {
+              console.log(`第 ${index} 天: ${checked ? '已選擇' : '未選擇'}`);
+              // 直接使用 index + 1 作為星期值（1-7，週一到週日）
+              // Directly use index + 1 as weekday value (1-7, Monday to Sunday)
+              return checked ? index + 1 : null;
+            })
+            .filter(Boolean);
+            
+          console.log('生成的重複性日期:', recurringDays);
+          
+          console.log('創建重複性課程:', {
+            ...baseEventData,
+            date: formData.date,
+            is_recurring: true,
+            recurring_days: recurringDays,
+            recurring_start_date: formData.date,
+            recurring_end_date: formData.endDate
+          });
+          
+          if (recurringDays.length === 0) {
+            Message.error('請選擇至少一個重複的星期');
+            return;
+          }
+          
+          const scheduleData = {
+            ...baseEventData,
+            date: formData.date,
+            is_recurring: true,
+            recurring_days: recurringDays,
+            recurring_start_date: formData.date,
+            recurring_end_date: formData.endDate
+          };
+          
+          const response = await scheduleAPI.createSchedule(scheduleData);
+          console.log('重複性課程創建響應:', response);
+          
+          if (response.success) {
+            emit('submit', response.data);
+            handleClose();
+          } else {
+            Message.error(response.message || '重複性課程排程創建失敗');
+          }
+        }
+      } catch (error) {
+        console.error('創建課程排程失敗:', error);
+        Message.error('創建課程排程失敗');
+      } finally {
+        loading.value = false;
+      }
     };
 
     return {
@@ -472,12 +566,12 @@ export default {
       courseTypes,
       teachers,
       assistants,
+      availableWeekdays,
       handleVisibleChange,
       handleClose,
       handleSubmit,
       addAssistant,
       removeAssistant,
-      generateRecurringEvents,
       handleCourseTypeChange,
     };
   }
@@ -611,6 +705,10 @@ export default {
         &:has(input:disabled) {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .disabled {
+          color: var(--text-secondary);
         }
       }
     }
