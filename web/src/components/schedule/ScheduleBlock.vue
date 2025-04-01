@@ -6,6 +6,8 @@
       class="schedule-block"
       :class="[`course-type-${courseType}`, { 'has-assistant': assistantName }]"
       :style="blockStyle"
+      :data-date="date"
+      :data-start-time="startTime"
       @click="handleBlockClick"
     >
       <!-- 時間和課程類型 Time and Course Type -->
@@ -23,26 +25,14 @@
         </div>
       </div>
     </button>
-
-    <!-- 課程詳情對話框 Schedule Detail Dialog -->
-    <ScheduleDetailDialog
-      v-model:visible="dialogVisible"
-      :course-data="courseData"
-      @edit="handleEdit"
-    />
   </div>
 </template>
 
 <script>
-import { defineComponent, ref, computed } from 'vue';
-import ScheduleDetailDialog from './ScheduleDetailDialog.vue';
+import { defineComponent, computed } from 'vue';
 
 export default defineComponent({
   name: 'ScheduleBlock',
-
-  components: {
-    ScheduleDetailDialog
-  },
 
   props: {
     // 開始時間 Start time (HH:mm format)
@@ -114,32 +104,13 @@ export default defineComponent({
     }
   },
 
-  emits: ['click', 'edit'],
+  emits: ['click'],
 
   setup(props, { emit }) {
-    // 對話框可見性 Dialog visibility
-    const dialogVisible = ref(false);
-
     // 課程類型標籤 Course type label
     const courseTypeLabel = computed(() => {
-      // 直接返回課程類型，不做轉換 Directly return course type without conversion
       return props.courseType;
     });
-
-    // 課程數據 Course data
-    const courseData = computed(() => ({
-      date: props.date,
-      startTime: props.startTime,
-      endTime: props.endTime,
-      courseType: props.courseType,
-      schoolName: props.schoolName,
-      className: props.className,
-      teacherName: props.teacherName,
-      assistantName: props.assistantName,
-      courseFee: props.courseFee,
-      teacherFee: props.teacherFee,
-      assistantFee: props.assistantFee
-    }));
 
     // 方塊樣式 Block style
     const blockStyle = computed(() => ({
@@ -150,7 +121,6 @@ export default defineComponent({
     // 格式化時間 Format time
     const formatTime = (time) => {
       if (!time) return '';
-      // 如果時間包含秒，只取小時和分鐘 If time includes seconds, only take hours and minutes
       return time.split(':').slice(0, 2).join(':');
     };
 
@@ -169,23 +139,29 @@ export default defineComponent({
 
     // 點擊方塊 Click handler
     const handleBlockClick = () => {
-      dialogVisible.value = true;
-      emit('click', courseData.value);
-    };
-
-    // 編輯課程 Edit course
-    const handleEdit = (data) => {
-      emit('edit', data);
+      // 觸發點擊事件並傳遞課程數據 Emit click event with course data
+      emit('click', {
+        date: props.date,
+        startTime: props.startTime,
+        endTime: props.endTime,
+        courseType: props.courseType,
+        schoolName: props.schoolName,
+        className: props.className,
+        teacherName: props.teacherName,
+        assistantName: props.assistantName,
+        courseFee: props.courseFee,
+        teacherFee: props.teacherFee,
+        assistantFee: props.assistantFee
+      });
     };
 
     return {
-      dialogVisible,
       courseTypeLabel,
-      courseData,
       blockStyle,
       formatTime,
       handleBlockClick,
-      handleEdit
+      // 直接暴露所有需要的 props 給模板使用
+      ...props
     };
   }
 });
@@ -194,7 +170,6 @@ export default defineComponent({
 <style lang="scss" scoped>
 .schedule-block-wrapper {
   position: relative;
-  z-index: 1;
 }
 
 .schedule-block {
@@ -216,6 +191,12 @@ export default defineComponent({
   overflow: hidden;
   text-align: left;
   font-family: inherit;
+  position: relative;
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-sm);
+  }
 
   &:focus {
     outline: none;

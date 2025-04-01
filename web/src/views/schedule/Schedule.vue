@@ -80,6 +80,14 @@
       @submit="handleAddCourse"
     />
 
+    <!-- 課程詳情對話框 Course detail dialog -->
+    <ScheduleDetailDialog
+      v-model:visible="showScheduleDetailDialog"
+      :schedule-data="selectedCourseData"
+      @close="hideScheduleDetailDialog"
+      @save="handleCourseUpdate"
+    />
+
     <!-- 暫時隱藏對話框 Temporarily hide dialogs -->
     <!-- 
     <el-dialog
@@ -234,6 +242,7 @@ import AppHeader from '@/components/layout/AppHeader.vue';
 import AddCourseDialog from '@/components/schedule/AddCourseDialog.vue';
 import AppButton from '@/components/base/AppButton.vue';
 import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
+import ScheduleDetailDialog from '@/components/schedule/ScheduleDetailDialog.vue';
 
 export default defineComponent({
   name: 'SchedulePage',
@@ -245,7 +254,8 @@ export default defineComponent({
     AppHeader,
     AddCourseDialog,
     AppButton,
-    ScheduleBlock
+    ScheduleBlock,
+    ScheduleDetailDialog
   },
   
   setup() {
@@ -254,6 +264,8 @@ export default defineComponent({
     const currentView = ref('month'); // 默認月視圖 Default to month view
     const isAddCourseDialogVisible = ref(false);
     const isLoggingOut = ref(false);
+    const showScheduleDetailDialog = ref(false);
+    const selectedCourseData = ref(null);
     
     // 課程事件數據 Course events data
     const courseEvents = ref([]);
@@ -376,33 +388,64 @@ export default defineComponent({
       }
     };
 
-    // 處理事件點擊 Handle event click
-    const handleEventClick = (event) => {
-      console.log('Clicked event:', event);
+    // 處理課程點擊事件 Handle course click event
+    const handleEventClick = async (event) => {
+      console.log('課程點擊事件 Course click event:', event);
+      try {
+        // 獲取完整的課程詳情 Get complete course details
+        const response = await scheduleAPI.getSchedule(event.id);
+        console.log('獲取到的課程詳情 Course details received:', response);
+        
+        if (response.success) {
+          selectedCourseData.value = {
+            id: response.data.id,
+            courseType: response.data.course_type,
+            schoolName: response.data.school_name,
+            className: response.data.class_name,
+            teacherName: response.data.teacher?.name,
+            assistantName: response.data.assistants?.[0]?.assistant_id,
+            startTime: response.data.start_time,
+            endTime: response.data.end_time,
+            date: response.data.date,
+            courseFee: response.data.course_fee,
+            teacherFee: response.data.teacher_fee,
+            assistantFee: response.data.assistants?.[0]?.fee || 0,
+            teacher: response.data.teacher,
+            assistants: response.data.assistants || []
+          };
+          console.log('處理後的課程數據 Processed course data:', selectedCourseData.value);
+          showScheduleDetailDialog.value = true;
+        } else {
+          Message.error('獲取課程詳情失敗 Failed to get course details');
+        }
+      } catch (error) {
+        console.error('獲取課程詳情失敗 Failed to get course details:', error);
+        Message.error('獲取課程詳情失敗 Failed to get course details');
+      }
     };
 
     // 處理日期點擊 Handle date click
     const handleDateClick = (date) => {
       console.log('Clicked date:', date);
     };
-
+    
     // 視圖選項 View options
     const viewOptions = [
       { label: '日', value: 'day' },
       { label: '週', value: 'week' },
       { label: '月', value: 'month' }
     ];
-
+    
     // 計算屬性：當前年份 Computed property: current year
     const currentYear = computed(() => {
       return format(currentDate.value, 'yyyy', { locale: zhTW });
     });
-
+    
     // 計算屬性：當前月份 Computed property: current month
     const currentMonth = computed(() => {
       return format(currentDate.value, 'MM', { locale: zhTW });
     });
-
+    
     // 計算屬性：當前日曆組件 Computed property: current calendar component
     const currentCalendarComponent = computed(() => {
       switch (currentView.value) {
@@ -423,7 +466,7 @@ export default defineComponent({
         currentDate.value = addMonths(currentDate.value, -1);
       }
     };
-
+    
     // 導航到下一個時間段 Navigate to next period
     const navigateNext = () => {
       if (currentView.value === 'day') {
@@ -434,17 +477,17 @@ export default defineComponent({
         currentDate.value = addMonths(currentDate.value, 1);
       }
     };
-
+    
     // 跳轉到今天 Go to today
     const goToToday = () => {
       currentDate.value = new Date();
     };
-
+    
     // 切換視圖 Change view
     const changeView = (view) => {
       currentView.value = view;
     };
-
+    
     // 處理登出 Handle logout
     const router = useRouter();
     const handleLogout = async () => {
@@ -458,7 +501,29 @@ export default defineComponent({
         isLoggingOut.value = false;
       }
     };
+    
+    // 隱藏課程詳情對話框
+    const hideScheduleDetailDialog = () => {
+      showScheduleDetailDialog.value = false;
+      selectedCourseData.value = null;
+    };
 
+    // 處理課程更新 Handle course update
+    const handleCourseUpdate = async (updatedData) => {
+      try {
+        const response = await scheduleAPI.updateSchedule(selectedCourseData.value.id, updatedData);
+        if (response.success) {
+          // 重新獲取課程數據 Refetch course data
+          await fetchCourseSchedules();
+          showScheduleDetailDialog.value = false;
+        } else {
+          console.error('更新課程失敗 Failed to update course:', response.message);
+        }
+      } catch (error) {
+        console.error('更新課程出錯 Error updating course:', error);
+      }
+    };
+    
     return {
       currentDate,
       currentView,
@@ -479,7 +544,11 @@ export default defineComponent({
       goToToday,
       changeView,
       handleLogout,
-      fetchCourseSchedules
+      fetchCourseSchedules,
+      showScheduleDetailDialog,
+      selectedCourseData,
+      hideScheduleDetailDialog,
+      handleCourseUpdate
     };
   }
 });
@@ -497,83 +566,14 @@ export default defineComponent({
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
 
-  .toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
+.schedule-content {
+  position: relative;
+}
 
-  .toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-
-    .add-course-button {
-      margin-right: 1rem;
-    }
-  }
-
-  .date-navigation {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .nav-button {
-    padding: 0.5rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: 4px;
-
-    &:hover {
-      background-color: #f5f5f5;
-    }
-  }
-
-  .current-date {
-    font-size: 1.2rem;
-    font-weight: 500;
-    
-    .year, .month {
-      margin: 0 0.25rem;
-    }
-  }
-
-  .today-button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-
-    &:hover {
-      background-color: #f5f5f5;
-    }
-  }
-
-  .view-selector {
-    display: flex;
-    gap: 0.5rem;
-    
-    .view-option {
-      padding: 0.5rem 1rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #fff;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #f5f5f5;
-      }
-
-      &.active {
-        background-color: #1890ff;
-        color: #fff;
-        border-color: #1890ff;
-      }
-    }
-  }
+.calendar-container {
+  position: relative;
 }
 </style> 

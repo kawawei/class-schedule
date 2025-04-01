@@ -3,7 +3,6 @@
 .app-header {
   position: sticky; // 固定在頂部 Sticky at the top
   top: 0;
-  z-index: 100;
   padding: var(--spacing-md) 0;
   margin-bottom: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
@@ -153,11 +152,11 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.2s ease;
+  z-index: 1000; // 添加較高的 z-index，確保菜單顯示在最上層 Add high z-index to ensure menu appears on top
 }
 
 // 菜單彈出窗口 Menu popup

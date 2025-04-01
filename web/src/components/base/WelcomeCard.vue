@@ -82,6 +82,7 @@ export default {
   border-radius: var(--radius-lg); // 大圓角 Large border radius
   overflow: hidden; // 隱藏溢出內容 Hide overflow content
   position: relative; // 相對定位 Relative positioning
+  z-index: 1; // 設置較低的 z-index，確保不會擋住菜單 Set lower z-index to ensure it doesn't block the menu
   
   // 添加背景圖案 Add background pattern
   &::before {
@@ -102,14 +103,12 @@ export default {
     font-weight: var(--font-weight-bold);
     margin-top: 0;
     position: relative; // 相對定位 Relative positioning
-    z-index: 1; // 層級 Z-index
   }
   
   .welcome-subtitle {
     font-size: var(--font-size-md);
     opacity: 0.9;
     position: relative; // 相對定位 Relative positioning
-    z-index: 1; // 層級 Z-index
   }
   
   .welcome-time {
@@ -117,7 +116,6 @@ export default {
     font-weight: var(--font-weight-medium);
     opacity: 0.9;
     position: relative; // 相對定位 Relative positioning
-    z-index: 1; // 層級 Z-index
   }
 }
 

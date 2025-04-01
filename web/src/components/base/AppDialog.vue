@@ -135,7 +135,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 999999;
   overflow-y: auto;
   padding: var(--spacing-md);
 }
@@ -151,6 +151,8 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 1000000;
   
   &.app-dialog-sm {
     width: 400px;
@@ -167,6 +169,8 @@ export default {
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-gray-200);
+  position: relative;
+  z-index: 1000001;
 }
 
 .app-dialog-title {
@@ -192,6 +196,8 @@ export default {
   padding: var(--spacing-lg);
   overflow-y: auto;
   flex: 1;
+  position: relative;
+  z-index: 1000001;
 }
 
 .app-dialog-footer {
@@ -200,5 +206,7 @@ export default {
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid var(--color-gray-200);
+  position: relative;
+  z-index: 1000001;
 }
 </style> 

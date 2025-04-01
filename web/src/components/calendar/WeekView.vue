@@ -174,9 +174,13 @@ export default defineComponent({
     const getEventsForDay = (date) => {
       return props.events.filter(event => {
         if (!event.date) return false;
-        const eventDate = parseISO(event.date);
+        const eventDate = typeof event.date === 'string' ? parseISO(event.date) : event.date;
         return isSameDay(eventDate, date);
-      });
+      }).map(event => ({
+        ...event,
+        title: `${event.className} - ${event.teacherName}`,
+        location: event.schoolName
+      }));
     };
     
     // 獲取事件樣式 Get event style
@@ -212,7 +216,23 @@ export default defineComponent({
     
     // 處理事件點擊 Handle event click
     const handleEventClick = (event) => {
-      emit('event-click', event);
+      console.log('課程點擊事件數據 Course click event data:', event);
+      emit('event-click', {
+        id: event.id,
+        date: event.date,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        courseType: event.courseType,
+        schoolName: event.schoolName,
+        className: event.className,
+        teacherName: event.teacherName,
+        assistantName: event.assistantName,
+        courseFee: event.courseFee,
+        teacherFee: event.teacherFee,
+        assistantFee: event.assistantFee,
+        teacher: event.teacher,
+        assistants: event.assistants
+      });
     };
     
     // 處理單元格點擊 Handle cell click
