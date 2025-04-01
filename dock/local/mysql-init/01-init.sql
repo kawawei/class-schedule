@@ -31,6 +31,8 @@ ON DUPLICATE KEY UPDATE username = username;
 -- 創建課程排課表 Create course schedule table
 CREATE TABLE IF NOT EXISTS course_schedules (
   id INT AUTO_INCREMENT PRIMARY KEY COMMENT '排課ID Schedule ID',
+  series_id VARCHAR(36) DEFAULT NULL COMMENT '重複課程系列ID Series ID for recurring courses',
+  is_recurring BOOLEAN DEFAULT FALSE COMMENT '是否為重複課程 Is Recurring Course',
   school_name VARCHAR(255) NOT NULL COMMENT '補習班名稱 School Name',
   class_name VARCHAR(255) NOT NULL COMMENT '班級名稱 Class Name',
   course_type VARCHAR(255) NOT NULL COMMENT '課程種類 Course Type',
@@ -45,7 +47,8 @@ CREATE TABLE IF NOT EXISTS course_schedules (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間 Updated Time',
   INDEX idx_teacher_id (teacher_id),
   INDEX idx_date (date),
-  INDEX idx_company_code (company_code)
+  INDEX idx_company_code (company_code),
+  INDEX idx_series_id (series_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 創建課程助教表 Create course assistant table

@@ -1,3 +1,9 @@
+-- 創建數據庫 Create database
+CREATE DATABASE IF NOT EXISTS class_schedule;
+
+-- 使用數據庫 Use database
+\c class_schedule
+
 -- 創建租戶表（如果不存在）Create tenants table if not exists
 CREATE TABLE IF NOT EXISTS tenants (
     id SERIAL PRIMARY KEY,
@@ -17,6 +23,7 @@ ALTER TABLE tenants OWNER TO postgres;
 -- 創建課程排課表（如果不存在）Create course schedules table if not exists
 CREATE TABLE IF NOT EXISTS course_schedules (
     id SERIAL PRIMARY KEY,
+    series_id VARCHAR(36) DEFAULT NULL,
     school_name VARCHAR(100) NOT NULL,
     class_name VARCHAR(100) NOT NULL,
     course_type VARCHAR(50) NOT NULL,
@@ -42,6 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_schedule_company_code ON course_schedules(company
 CREATE INDEX IF NOT EXISTS idx_schedule_is_recurring ON course_schedules(is_recurring);
 CREATE INDEX IF NOT EXISTS idx_schedule_recurring_start_date ON course_schedules(recurring_start_date);
 CREATE INDEX IF NOT EXISTS idx_schedule_recurring_end_date ON course_schedules(recurring_end_date);
+CREATE INDEX IF NOT EXISTS idx_schedule_series_id ON course_schedules(series_id);
 
 -- 設置權限 Set permissions
 ALTER TABLE course_schedules OWNER TO postgres; 
