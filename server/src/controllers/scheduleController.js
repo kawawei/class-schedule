@@ -394,36 +394,45 @@ const scheduleController = {
     try {
       const { id } = req.params;
       const { companyCode } = req.user;
-      
-      // 檢查課程排課是否存在 Check if schedule exists
+
+      console.log('[scheduleController] 開始處理刪除請求 Starting delete request processing');
+      console.log('[scheduleController] 請求參數 Request params:', { id, companyCode });
+
+      // 檢查課程是否存在 Check if schedule exists
       const schedule = await CourseSchedule.findOne({
-        where: { 
+        where: {
           id,
           company_code: companyCode
         }
       });
-      
+
+      console.log('[scheduleController] 檢查課程是否存在 Check if schedule exists:', schedule ? 'Found' : 'Not found');
+
       if (!schedule) {
         throw new ApiError(404, '找不到該課程排課 Schedule not found');
       }
-      
-      // 刪除相關助教排課 Delete related assistant schedules
+
+      // 開始刪除相關的助教排課 Start deleting related assistant schedules
+      console.log('[scheduleController] 開始刪除相關的助教排課 Starting to delete related assistant schedules');
       await CourseAssistant.destroy({
         where: {
-          schedule_id: id,
-          company_code: companyCode
+          schedule_id: id
         }
       });
-      
+      console.log('[scheduleController] 完成刪除相關的助教排課 Completed deleting related assistant schedules');
+
       // 刪除課程排課 Delete schedule
+      console.log('[scheduleController] 開始刪除課程排課 Starting to delete schedule');
       await schedule.destroy();
-      
-      res.json({
+      console.log('[scheduleController] 完成刪除課程排課 Completed deleting schedule');
+
+      console.log('[scheduleController] 刪除操作完成 Delete operation completed');
+      res.status(200).json({
         success: true,
-        message: '課程排課刪除成功 Schedule deleted successfully'
+        message: '課程排課已成功刪除 / Schedule deleted successfully'
       });
     } catch (error) {
-      console.error('刪除課程排課失敗 Failed to delete schedule:', error);
+      console.error('[scheduleController] 刪除課程排課時發生錯誤 Error deleting schedule:', error);
       if (error instanceof ApiError) {
         next(error);
       } else {
