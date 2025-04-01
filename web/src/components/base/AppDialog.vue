@@ -60,7 +60,6 @@ export default {
     closeDialog() {
       console.log('關閉對話框 Close dialog');
       this.$emit('update:modelValue', false);
-      this.$emit('close');
     },
     
     /**
@@ -208,5 +207,10 @@ export default {
   border-top: 1px solid var(--color-gray-200);
   position: relative;
   z-index: 1000001;
+}
+
+// 確認刪除對話框的按鈕置中對齊
+.app-dialog-sm .app-dialog-footer {
+  justify-content: center; // 小型對話框（如確認刪除）按鈕置中對齊
 }
 </style> 
