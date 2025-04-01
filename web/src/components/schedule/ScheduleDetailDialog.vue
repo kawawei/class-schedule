@@ -26,12 +26,21 @@
           :disabled="!isEditing"
           required
         />
+        <!-- 在非編輯模式下顯示純文本，編輯模式下顯示選擇器 -->
+        <template v-if="!isEditing">
+          <AppInput
+            v-model="formData.teacherName"
+            label="授課老師 / Teacher"
+            :disabled="true"
+            required
+          />
+        </template>
         <AppSelect
+          v-else
           v-model="formData.teacherId"
           label="授課老師 / Teacher"
           :options="teachers"
           placeholder="請選擇老師"
-          :disabled="!isEditing"
           required
         />
       </div>
@@ -176,9 +185,11 @@
 </template>
 
 <script>
-import { defineComponent, ref, reactive, nextTick } from 'vue';
+import { defineComponent, ref, reactive, nextTick, onMounted, watch } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import { scheduleAPI, courseAPI } from '@/utils/api';
+import Message from '@/utils/message';
 import AppDialog from '../base/AppDialog.vue';
 import AppInput from '../base/AppInput.vue';
 import AppSelect from '../base/AppSelect.vue';
@@ -199,22 +210,9 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
-    courseData: {
+    scheduleData: {
       type: Object,
-      required: true,
-      default: () => ({
-        date: '',
-        startTime: '',
-        endTime: '',
-        courseType: '',
-        schoolName: '',
-        className: '',
-        teacherName: '',
-        assistantName: '',
-        courseFee: '',
-        teacherFee: '',
-        assistantFee: ''
-      })
+      default: () => ({})
     }
   },
 
@@ -223,73 +221,125 @@ export default defineComponent({
   setup(props, { emit }) {
     // 編輯模式狀態 Edit mode state
     const isEditing = ref(false);
+    const loading = ref(false);
 
     // 表單數據 Form data
-    const formData = reactive({
+    const formData = ref({
+      id: null,
       schoolName: '',
       className: '',
+      teacherId: null,
+      teacherName: '',
+      assistantName: '',
       courseType: '',
-      date: '',
-      startTime: '',
-      endTime: '',
-      teacherId: '',
-      courseFee: '',
-      teacherFee: '',
-      assistants: []
+      date: null,
+      startTime: null,
+      endTime: null,
+      courseFee: 0,
+      teacherFee: 0,
+      assistantFee: 0,
+      assistants: [] // 初始化助教列表為空數組 Initialize assistants list as empty array
     });
 
     // 課程種類選項 Course type options
-    const courseTypes = ref([
-      { label: '數學 / Math', value: 'math' },
-      { label: '英文 / English', value: 'english' },
-      { label: '國文 / Chinese', value: 'chinese' },
-      { label: '理化 / Science', value: 'science' }
-    ]);
+    const courseTypes = ref([]);
 
     // 老師列表 Teacher list
-    const teachers = ref([
-      { label: '王老師 / Teacher Wang', value: 1 },
-      { label: '李老師 / Teacher Li', value: 2 },
-      { label: '張老師 / Teacher Zhang', value: 3 }
-    ]);
+    const teachers = ref([]);
 
     // 助教列表 Assistant list
-    const assistants = ref([
-      { label: '王助教 / Assistant Wang', value: 1 },
-      { label: '李助教 / Assistant Li', value: 2 },
-      { label: '張助教 / Assistant Zhang', value: 3 }
-    ]);
+    const assistants = ref([]);
+
+    // 獲取課程種類 Get course types
+    const fetchCourseTypes = async () => {
+      try {
+        loading.value = true;
+        const response = await courseAPI.getAllCourses();
+        
+        if (response.success) {
+          // 從課程列表中提取不重複的類別 Extract unique categories from course list
+          const categories = [...new Set(response.data.map(course => {
+            const courseData = course.dataValues || course;
+            return courseData.category;
+          }))];
+          
+          // 轉換為選項格式 Convert to options format
+          courseTypes.value = categories.map(category => ({
+            label: `${category} / ${category}`,
+            value: category.toLowerCase()
+          }));
+        } else {
+          Message.error(response.message || '獲取課程種類失敗');
+        }
+      } catch (error) {
+        console.error('獲取課程種類失敗:', error);
+        Message.error('獲取課程種類失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 獲取老師列表 Get teacher list
+    const fetchTeachers = async () => {
+      try {
+        loading.value = true;
+        const response = await scheduleAPI.getTeachers();
+        if (response.success) {
+          teachers.value = response.data.map(teacher => ({
+            label: `${teacher.name} / Teacher ${teacher.name}`,
+            value: teacher.id
+          }));
+        } else {
+          Message.error(response.message || '獲取老師列表失敗');
+        }
+      } catch (error) {
+        console.error('獲取老師列表失敗:', error);
+        Message.error('獲取老師列表失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 獲取助教列表 Get assistant list
+    const fetchAssistants = async () => {
+      try {
+        loading.value = true;
+        const response = await scheduleAPI.getAssistants();
+        if (response.success) {
+          assistants.value = response.data.map(assistant => ({
+            label: `${assistant.name} / Assistant ${assistant.name}`,
+            value: assistant.id
+          }));
+        } else {
+          Message.error(response.message || '獲取助教列表失敗');
+        }
+      } catch (error) {
+        console.error('獲取助教列表失敗:', error);
+        Message.error('獲取助教列表失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 組件掛載時獲取課程種類和老師列表 Get course types and teacher list when component is mounted
+    onMounted(async () => {
+      await fetchCourseTypes();
+      if (props.visible) {
+        initializeFormData();
+      }
+    });
 
     // 初始化表單數據 Initialize form data
     const initializeFormData = () => {
-      // 找到對應的教師ID Find corresponding teacher ID
-      const teacherId = teachers.value.find(
-        t => t.label.split(' / ')[0] === props.courseData.teacherName
-      )?.value || '';
-
-      // 設置表單數據 Set form data
-      Object.assign(formData, {
-        schoolName: props.courseData.schoolName,
-        className: props.courseData.className,
-        courseType: props.courseData.courseType,
-        date: props.courseData.date,
-        startTime: props.courseData.startTime,
-        endTime: props.courseData.endTime,
-        teacherId: teacherId,
-        courseFee: props.courseData.courseFee,
-        teacherFee: props.courseData.teacherFee,
-        assistants: []
-      });
-
-      // 如果有助教，添加助教信息 Add assistant info if exists
-      if (props.courseData.assistantName) {
-        const assistantId = assistants.value.find(
-          a => a.label.split(' / ')[0] === props.courseData.assistantName
-        )?.value || '';
-
-        formData.assistants.push({
-          id: assistantId,
-          fee: props.courseData.assistantFee
+      formData.value = { ...props.scheduleData };
+      
+      // 如果有助教，添加到助教列表
+      formData.value.assistants = [];
+      if (props.scheduleData.assistantName) {
+        formData.value.assistants.push({
+          id: '', // 這裡需要後端提供助教ID
+          name: props.scheduleData.assistantName,
+          fee: props.scheduleData.assistantFee || 0
         });
       }
     };
@@ -312,7 +362,15 @@ export default defineComponent({
     };
 
     // 開始編輯 Start editing
-    const startEditing = () => {
+    const startEditing = async () => {
+      // 進入編輯模式時才獲取老師和助教列表
+      // Only fetch teachers and assistants list when entering edit mode
+      if (teachers.value.length === 0) {
+        await Promise.all([
+          fetchTeachers(),
+          fetchAssistants()
+        ]);
+      }
       isEditing.value = true;
     };
 
@@ -324,48 +382,74 @@ export default defineComponent({
       };
       
       await nextTick();
-      formData.assistants.push(newAssistant);
+      formData.value.assistants.push(newAssistant);
     };
 
     // 移除助教 Remove assistant
     const removeAssistant = (index) => {
-      formData.assistants.splice(index, 1);
+      formData.value.assistants.splice(index, 1);
     };
 
     // 提交表單 Submit form
     const handleSubmit = () => {
       // 獲取選中的老師名稱 Get selected teacher name
-      const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
+      const selectedTeacher = teachers.value.find(t => t.value === formData.value.teacherId);
       const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
 
       // 獲取助教名稱（如果有） Get assistant name (if exists)
       let assistantName = '';
-      if (formData.assistants.length > 0) {
-        const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
+      if (formData.value.assistants.length > 0) {
+        const selectedAssistant = assistants.value.find(a => a.value === formData.value.assistants[0].id);
         assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
       }
 
       // 創建課程數據 Create course data
       const updatedCourseData = {
-        courseType: formData.courseType,
-        schoolName: formData.schoolName,
+        courseType: formData.value.courseType,
+        schoolName: formData.value.schoolName,
         teacherName: teacherName,
         assistantName: assistantName,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        date: formData.date,
-        className: formData.className,
-        courseFee: formData.courseFee,
-        teacherFee: formData.teacherFee,
-        assistantFee: formData.assistants[0]?.fee || ''
+        startTime: formData.value.startTime,
+        endTime: formData.value.endTime,
+        date: formData.value.date,
+        className: formData.value.className,
+        courseFee: formData.value.courseFee,
+        teacherFee: formData.value.teacherFee,
+        assistantFee: formData.value.assistants[0]?.fee || ''
       };
 
       emit('save', updatedCourseData);
       handleClose();
     };
 
+    // 監聽 scheduleData 變化 Watch scheduleData changes
+    watch(() => props.scheduleData, (newData) => {
+      if (newData) {
+        console.log('接收到的課程數據 Received course data:', newData);
+        formData.value = {
+          id: newData.id,
+          schoolName: newData.schoolName || '',
+          className: newData.className || '',
+          teacherId: newData.teacher?.id,
+          teacherName: newData.teacher?.name || '',
+          courseType: newData.courseType || '',
+          date: newData.date || null,
+          startTime: newData.startTime || null,
+          endTime: newData.endTime || null,
+          courseFee: parseInt(newData.courseFee) || 0,
+          teacherFee: parseInt(newData.teacherFee) || 0,
+          assistants: newData.assistants?.map(assistant => ({
+            id: assistant.assistant_id,
+            fee: parseInt(assistant.fee) || 0
+          })) || []
+        };
+        console.log('處理後的表單數據 Processed form data:', formData.value);
+      }
+    }, { immediate: true, deep: true });
+
     return {
       isEditing,
+      loading,
       formData,
       courseTypes,
       teachers,
@@ -382,6 +466,35 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+:deep(.app-dialog-overlay) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999999 !important;
+}
+
+:deep(.app-dialog) {
+  position: relative !important;
+  z-index: 1000000 !important;
+  
+  .app-dialog-body {
+    position: relative !important;
+    z-index: 1000001 !important;
+  }
+  
+  .app-dialog-header {
+    position: relative !important;
+    z-index: 1000001 !important;
+  }
+  
+  .app-dialog-footer {
+    position: relative !important;
+    z-index: 1000001 !important;
+  }
+}
+
 .course-form {
   display: flex;
   flex-direction: column;
@@ -390,18 +503,24 @@ export default defineComponent({
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  position: relative !important;
+  z-index: 1000001 !important;
 
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     align-items: start;
+    position: relative !important;
+    z-index: 1000001 !important;
   }
 
   .time-selection {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
+    position: relative !important;
+    z-index: 1000001 !important;
   }
 
   .assistant-list {
@@ -473,5 +592,22 @@ export default defineComponent({
   gap: 1rem;
   padding: 1rem;
   border-top: 1px solid var(--color-gray-200);
+  position: relative !important;
+  z-index: 1000001 !important;
+}
+
+:deep(.app-select-wrapper) {
+  position: relative !important;
+  z-index: 1000002 !important;
+}
+
+:deep(.app-select) {
+  position: relative !important;
+  z-index: 1000002 !important;
+}
+
+:deep(.select-options) {
+  position: relative !important;
+  z-index: 1000003 !important;
 }
 </style> 
