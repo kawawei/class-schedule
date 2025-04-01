@@ -467,11 +467,14 @@ const scheduleAPI = {
   
   /**
    * 刪除課程排程 Delete schedule
-   * @param {Number} id - 課程排程ID Schedule ID
+   * @param {Object} deleteInfo - 刪除信息 Delete info
+   * @param {Number} deleteInfo.id - 課程排程ID Schedule ID
+   * @param {String} deleteInfo.type - 刪除類型 Delete type ('single' or 'series')
+   * @param {String} deleteInfo.series_id - 系列ID Series ID (optional)
    * @returns {Promise} 刪除結果 Deletion result
    */
-  deleteSchedule: (id) => {
-    return apiRequest(`/schedules/${id}`, 'DELETE', null, true);
+  deleteSchedule: (deleteInfo) => {
+    return apiRequest(`/schedules/${deleteInfo.id}?type=${deleteInfo.type}`, 'DELETE', null, true);
   }
 };
 

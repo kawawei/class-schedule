@@ -3,6 +3,7 @@ const { ValidationError, Op } = require('sequelize');
 const ApiError = require('../utils/apiError');
 const { addDays, isWithinInterval, parseISO } = require('date-fns');
 const { v4: uuidv4 } = require('uuid');  // 引入 UUID 生成函數
+const { sequelize } = require('../models');
 
 /**
  * 課程排課控制器 Schedule Controller
@@ -390,10 +391,11 @@ const scheduleController = {
   deleteSchedule: async (req, res, next) => {
     try {
       const { id } = req.params;
+      const { type = 'single' } = req.query;
       const { companyCode } = req.user;
-      const { deleteType = 'single' } = req.query;  // 添加刪除類型參數 Add delete type parameter
       
-      // 查找要刪除的課程 Find the schedule to delete
+      console.log('刪除課程，參數:', { id, type, companyCode });
+      
       const schedule = await CourseSchedule.findOne({
         where: {
           id,
@@ -407,15 +409,41 @@ const scheduleController = {
       
       // 根據刪除類型執行不同的刪除操作
       // Execute different delete operations based on delete type
-      if (deleteType === 'series' && schedule.series_id) {
+      if (type === 'series' && schedule.series_id) {
         // 刪除整個系列的課程 Delete all courses in the series
         console.log('刪除系列課程，系列ID:', schedule.series_id);
-        await CourseSchedule.destroy({
+        
+        // 先找到所有相關的課程 ID First find all related course IDs
+        const relatedSchedules = await CourseSchedule.findAll({
+          where: {
+            series_id: schedule.series_id,
+            company_code: companyCode
+          },
+          attributes: ['id']
+        });
+        
+        const scheduleIds = relatedSchedules.map(s => s.id);
+        
+        // 先刪除所有相關的助教記錄 Delete all related assistant records first
+        if (scheduleIds.length > 0) {
+          await CourseAssistant.destroy({
+            where: {
+              schedule_id: {
+                [Op.in]: scheduleIds
+              }
+            }
+          });
+        }
+        
+        // 然後刪除所有系列課程 Then delete all courses in the series
+        const deleteResult = await CourseSchedule.destroy({
           where: {
             series_id: schedule.series_id,
             company_code: companyCode
           }
         });
+        
+        console.log('系列課程刪除結果:', deleteResult);
         
         res.json({
           success: true,
@@ -424,6 +452,13 @@ const scheduleController = {
       } else {
         // 刪除單一課程 Delete single course
         console.log('刪除單一課程，ID:', id);
+        
+        // 先刪除相關的助教記錄 Delete related assistant records first
+        await CourseAssistant.destroy({
+          where: { schedule_id: id }
+        });
+        
+        // 然後刪除課程 Then delete the course
         await schedule.destroy();
         
         res.json({

@@ -418,7 +418,7 @@ export default defineComponent({
       }
     };
 
-    // 處理課程點擊事件 Handle course click event
+    // 處理課程點擊事件 Handle course click
     const handleEventClick = async (event) => {
       console.log('課程點擊事件 Course click event:', event);
       try {
@@ -427,6 +427,10 @@ export default defineComponent({
         console.log('獲取到的課程詳情 Course details received:', response);
         
         if (response.success) {
+          // 檢查是否為重複性課程 Check if it's a recurring course
+          const isRecurring = response.data.series_id != null;
+          console.log('是否為重複性課程 Is recurring course:', isRecurring);
+          
           selectedCourseData.value = {
             id: response.data.id,
             courseType: response.data.course_type,
@@ -441,7 +445,8 @@ export default defineComponent({
             teacherFee: response.data.teacher_fee,
             assistantFee: response.data.assistants?.[0]?.fee || 0,
             teacher: response.data.teacher,
-            assistants: response.data.assistants || []
+            assistants: response.data.assistants || [],
+            series_id: response.data.series_id // 添加 series_id 到課程數據中
           };
           console.log('處理後的課程數據 Processed course data:', selectedCourseData.value);
           showScheduleDetailDialog.value = true;
@@ -555,13 +560,17 @@ export default defineComponent({
     };
 
     // 處理課程刪除 Handle course deletion
-    const handleCourseDelete = async (id) => {
-      console.log('[Schedule] 開始處理課程刪除 Starting course deletion, ID:', id);
+    const handleCourseDelete = async (deleteInfo) => {
+      console.log('[Schedule] 開始處理課程刪除 Starting course deletion:', deleteInfo);
       console.log('[Schedule] 當前課程數據 Current course data:', courseEvents.value);
       
       try {
         console.log('[Schedule] 發送刪除請求到後端 Sending delete request to backend');
-        const response = await scheduleAPI.deleteSchedule(id);
+        const response = await scheduleAPI.deleteSchedule({
+          id: deleteInfo.id,
+          type: deleteInfo.type,
+          series_id: deleteInfo.series_id
+        });
         
         console.log('[Schedule] 收到後端響應 Received backend response:', response);
         
@@ -572,7 +581,11 @@ export default defineComponent({
           // 重新獲取數據 Refetch data
           await fetchCourseSchedules();
           console.log('[Schedule] 數據重新獲取完成 Data refetch completed, new data:', courseEvents.value);
-          Message.success('課程已成功刪除 / Course deleted successfully');
+          Message.success(
+            deleteInfo.type === 'series' 
+              ? '重複性課程已全部刪除 / All recurring courses deleted successfully'
+              : '課程已成功刪除 / Course deleted successfully'
+          );
           showScheduleDetailDialog.value = false;
         } else {
           console.error('[Schedule] 刪除失敗 Deletion failed:', response.message);

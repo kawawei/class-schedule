@@ -190,7 +190,14 @@
     @update:model-value="handleDeleteConfirmChange"
   >
     <div class="delete-confirm-content">
-      <p>確定要刪除這個課程嗎？ / Are you sure you want to delete this course?</p>
+      <template v-if="scheduleData?.series_id">
+        <p>這是重複性課程，請選擇刪除方式：</p>
+        <p>This is a recurring course, please select deletion method:</p>
+      </template>
+      <template v-else>
+        <p>確定要刪除這個課程嗎？</p>
+        <p>Are you sure you want to delete this course?</p>
+      </template>
     </div>
     <template #footer>
       <div class="dialog-footer">
@@ -200,9 +207,24 @@
         >
           取消 / Cancel
         </AppButton>
+        <template v-if="scheduleData?.series_id">
+          <AppButton
+            type="danger"
+            @click="() => handleDeleteConfirm('single')"
+          >
+            單筆刪除 / Delete Single
+          </AppButton>
+          <AppButton
+            type="danger"
+            @click="() => handleDeleteConfirm('series')"
+          >
+            批量刪除 / Delete All
+          </AppButton>
+        </template>
         <AppButton
+          v-else
           type="danger"
-          @click="handleDeleteConfirm"
+          @click="() => handleDeleteConfirm('single')"
         >
           確認刪除 / Confirm Delete
         </AppButton>
@@ -409,17 +431,16 @@ export default defineComponent({
     };
 
     // 處理刪除確認 Handle delete confirmation
-    const handleDeleteConfirm = () => {
-      if (isDeleting.value) {
-        console.log('[ScheduleDetailDialog] 刪除操作正在進行中，忽略重複請求 Delete operation in progress, ignoring duplicate request');
-        return;
-      }
-
-      console.log('[ScheduleDetailDialog] 用戶確認刪除 User confirmed deletion');
+    const handleDeleteConfirm = async (type = 'single') => {
+      console.log('[ScheduleDetailDialog] 用戶確認刪除 User confirmed deletion', type);
       // 設置刪除狀態 Set delete state
       isDeleting.value = true;
-      // 先發送刪除事件
-      emit('delete', props.scheduleData.id);
+      // 發送刪除事件，並傳遞刪除類型
+      emit('delete', {
+        id: props.scheduleData.id,
+        type,
+        series_id: props.scheduleData.series_id
+      });
       console.log('[ScheduleDetailDialog] 發送刪除事件 Emitting delete event');
       // 關閉確認對話框 Close confirmation dialog
       showDeleteConfirm.value = false;
@@ -710,13 +731,47 @@ export default defineComponent({
 }
 
 .delete-confirm-content {
-  padding: 1.5rem;
-  text-align: center;
+  padding: 2rem 0.5rem;  // 減少左右邊距 Reduce left and right padding
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   
   p {
-    margin: 0;
-    font-size: 1rem;
-    color: var(--text-primary);
+    margin: 0.5rem 0;
+    line-height: 1.5;
+    text-align: left;
+    width: 100%;
+    padding-left: 0;  // 移除段落的左邊距 Remove left padding from paragraphs
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  flex-wrap: wrap;
+  
+  :deep(.app-button) {
+    min-width: 120px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .delete-confirm-content {
+    min-width: 300px;
+  }
+  
+  .dialog-footer {
+    flex-direction: column;
+    align-items: stretch;
+    
+    :deep(.app-button) {
+      width: 100%;
+      margin: 0.5rem 0;
+    }
   }
 }
 </style> 
