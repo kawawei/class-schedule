@@ -86,6 +86,7 @@
       :schedule-data="selectedCourseData"
       @close="hideScheduleDetailDialog"
       @save="handleCourseUpdate"
+      @delete="handleCourseDelete"
     />
 
     <!-- 暫時隱藏對話框 Temporarily hide dialogs -->
@@ -276,7 +277,7 @@ export default defineComponent({
         const response = await scheduleAPI.getAllSchedules();
         if (response.success) {
           // 轉換數據格式為前端需要的格式 Convert data format to frontend format
-          courseEvents.value = response.data.map(schedule => {
+          const formattedEvents = response.data.map(schedule => {
             // 計算位置 Calculate position
             let row = 1;
             let column = 1;
@@ -309,6 +310,35 @@ export default defineComponent({
               position: { row, column }
             };
           });
+
+          // 按照日期和開始時間排序 Sort by date and start time
+          formattedEvents.sort((a, b) => {
+            // 先比較日期 Compare dates first
+            const dateComparison = new Date(a.date) - new Date(b.date);
+            if (dateComparison !== 0) return dateComparison;
+
+            // 如果日期相同，比較開始時間 If dates are same, compare start times
+            if (a.startTime && b.startTime) {
+              const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+              const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+              const aTime = aHours * 60 + aMinutes;
+              const bTime = bHours * 60 + bMinutes;
+              return aTime - bTime;
+            }
+            return 0;
+          });
+
+          // 更新課程事件數據 Update course events data
+          courseEvents.value = formattedEvents;
+          
+          console.log('[Schedule] 課程數據已排序 Course data sorted:', 
+            formattedEvents.map(e => ({
+              id: e.id,
+              date: e.date,
+              startTime: e.startTime,
+              className: e.className
+            }))
+          );
         } else {
           Message.error(response.message || '獲取課程排程失敗');
         }
@@ -523,6 +553,36 @@ export default defineComponent({
         console.error('更新課程出錯 Error updating course:', error);
       }
     };
+
+    // 處理課程刪除 Handle course deletion
+    const handleCourseDelete = async (id) => {
+      console.log('[Schedule] 開始處理課程刪除 Starting course deletion, ID:', id);
+      console.log('[Schedule] 當前課程數據 Current course data:', courseEvents.value);
+      
+      try {
+        console.log('[Schedule] 發送刪除請求到後端 Sending delete request to backend');
+        const response = await scheduleAPI.deleteSchedule(id);
+        
+        console.log('[Schedule] 收到後端響應 Received backend response:', response);
+        
+        if (response.success) {
+          console.log('[Schedule] 刪除成功，開始重新獲取課程數據 Deletion successful, starting data refetch');
+          // 先清空現有數據 Clear existing data first
+          courseEvents.value = [];
+          // 重新獲取數據 Refetch data
+          await fetchCourseSchedules();
+          console.log('[Schedule] 數據重新獲取完成 Data refetch completed, new data:', courseEvents.value);
+          Message.success('課程已成功刪除 / Course deleted successfully');
+          showScheduleDetailDialog.value = false;
+        } else {
+          console.error('[Schedule] 刪除失敗 Deletion failed:', response.message);
+          Message.error(response.message || '刪除課程失敗 / Failed to delete course');
+        }
+      } catch (error) {
+        console.error('[Schedule] 刪除出錯 Error deleting course:', error);
+        Message.error('刪除課程失敗 / Failed to delete course');
+      }
+    };
     
     return {
       currentDate,
@@ -548,7 +608,8 @@ export default defineComponent({
       showScheduleDetailDialog,
       selectedCourseData,
       hideScheduleDetailDialog,
-      handleCourseUpdate
+      handleCourseUpdate,
+      handleCourseDelete
     };
   }
 });

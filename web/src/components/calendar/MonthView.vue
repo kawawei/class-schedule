@@ -40,7 +40,7 @@
             <div class="day-events">
               <ScheduleBlock
                 v-for="(event, eventIndex) in getSortedEventsForDay(day.date)"
-                :key="`event-${eventIndex}`"
+                :key="`${event.id}-${event.date}-${event.startTime}`"
                 :start-time="event.startTime"
                 :end-time="event.endTime"
                 :course-type="event.courseType"
@@ -246,10 +246,28 @@ export default defineComponent({
     const getSortedEventsForDay = (date) => {
       const events = getEventsForDay(date);
       return events.sort((a, b) => {
-        // 將時間轉換為分鐘數進行比較 Convert time to minutes for comparison
-        const aMinutes = timeToMinutes(a.startTime);
-        const bMinutes = timeToMinutes(b.startTime);
-        return aMinutes - bMinutes;
+        // 先比較開始時間 Compare start times first
+        const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+        const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+        const aTime = aHours * 60 + aMinutes;
+        const bTime = bHours * 60 + bMinutes;
+        
+        if (aTime !== bTime) {
+          return aTime - bTime;
+        }
+        
+        // 如果開始時間相同，比較結束時間 If start times are same, compare end times
+        const [aEndHours, aEndMinutes] = a.endTime.split(':').map(Number);
+        const [bEndHours, bEndMinutes] = b.endTime.split(':').map(Number);
+        const aEndTime = aEndHours * 60 + aEndMinutes;
+        const bEndTime = bEndHours * 60 + bEndMinutes;
+        
+        if (aEndTime !== bEndTime) {
+          return aEndTime - bEndTime;
+        }
+        
+        // 如果時間都相同，比較課程ID If times are same, compare course IDs
+        return a.id - b.id;
       });
     };
     

@@ -5,7 +5,6 @@
     :title="isEditing ? '編輯課程 / Edit Course' : '課程詳情 / Course Details'"
     size="lg"
     @update:model-value="handleVisibleChange"
-    @close="handleClose"
   >
     <div class="course-form">
       <!-- 第一行：補習班名稱 First row: School Name -->
@@ -160,10 +159,10 @@
     <template #footer>
       <div class="dialog-footer">
         <AppButton
-          type="secondary"
-          @click="handleClose"
+          type="danger"
+          @click="handleDelete"
         >
-          {{ isEditing ? '取消 / Cancel' : '關閉 / Close' }}
+          移除 / Delete
         </AppButton>
         <AppButton
           v-if="!isEditing"
@@ -178,6 +177,34 @@
           @click="handleSubmit"
         >
           確認 / Confirm
+        </AppButton>
+      </div>
+    </template>
+  </AppDialog>
+
+  <!-- 刪除確認對話框 Delete Confirmation Dialog -->
+  <AppDialog
+    :model-value="showDeleteConfirm"
+    title="確認刪除 / Confirm Delete"
+    size="sm"
+    @update:model-value="handleDeleteConfirmChange"
+  >
+    <div class="delete-confirm-content">
+      <p>確定要刪除這個課程嗎？ / Are you sure you want to delete this course?</p>
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <AppButton
+          type="secondary"
+          @click="handleDeleteCancel"
+        >
+          取消 / Cancel
+        </AppButton>
+        <AppButton
+          type="danger"
+          @click="handleDeleteConfirm"
+        >
+          確認刪除 / Confirm Delete
         </AppButton>
       </div>
     </template>
@@ -216,7 +243,7 @@ export default defineComponent({
     }
   },
 
-  emits: ['update:visible', 'close', 'edit', 'save'],
+  emits: ['update:visible', 'close', 'edit', 'save', 'delete'],
 
   setup(props, { emit }) {
     // 編輯模式狀態 Edit mode state
@@ -244,6 +271,9 @@ export default defineComponent({
     // 課程種類選項 Course type options
     const courseTypes = ref([]);
 
+    // 緩存標誌 Cache flag
+    const hasLoadedCourseTypes = ref(false);
+
     // 老師列表 Teacher list
     const teachers = ref([]);
 
@@ -252,6 +282,9 @@ export default defineComponent({
 
     // 獲取課程種類 Get course types
     const fetchCourseTypes = async () => {
+      // 如果已經加載過，直接返回 If already loaded, return directly
+      if (hasLoadedCourseTypes.value) return;
+      
       try {
         loading.value = true;
         const response = await courseAPI.getAllCourses();
@@ -268,6 +301,9 @@ export default defineComponent({
             label: `${category} / ${category}`,
             value: category.toLowerCase()
           }));
+          
+          // 設置緩存標誌 Set cache flag
+          hasLoadedCourseTypes.value = true;
         } else {
           Message.error(response.message || '獲取課程種類失敗');
         }
@@ -346,19 +382,69 @@ export default defineComponent({
 
     // 處理對話框可見性變化 Handle dialog visibility change
     const handleVisibleChange = (value) => {
-      if (value) {
-        initializeFormData();
-      } else {
+      // 如果是關閉操作，且不是由刪除操作觸發的，才執行關閉邏輯
+      // Only execute close logic if it's a close operation and not triggered by delete
+      if (!value && !isDeleting.value) {
         isEditing.value = false;
       }
       emit('update:visible', value);
     };
 
-    // 關閉對話框 Close dialog
-    const handleClose = () => {
+    // 刪除狀態標誌 Delete state flag
+    const isDeleting = ref(false);
+
+    // 刪除確認對話框狀態 Delete confirmation dialog state
+    const showDeleteConfirm = ref(false);
+
+    // 處理刪除確認對話框狀態變化 Handle delete confirmation dialog state change
+    const handleDeleteConfirmChange = (value) => {
+      if (!value && !isDeleting.value) {
+        showDeleteConfirm.value = false;
+      }
+    };
+
+    // 處理刪除取消 Handle delete cancellation
+    const handleDeleteCancel = () => {
+      showDeleteConfirm.value = false;
+    };
+
+    // 處理刪除確認 Handle delete confirmation
+    const handleDeleteConfirm = () => {
+      if (isDeleting.value) {
+        console.log('[ScheduleDetailDialog] 刪除操作正在進行中，忽略重複請求 Delete operation in progress, ignoring duplicate request');
+        return;
+      }
+
+      console.log('[ScheduleDetailDialog] 用戶確認刪除 User confirmed deletion');
+      // 設置刪除狀態 Set delete state
+      isDeleting.value = true;
+      // 先發送刪除事件
+      emit('delete', props.scheduleData.id);
+      console.log('[ScheduleDetailDialog] 發送刪除事件 Emitting delete event');
+      // 關閉確認對話框 Close confirmation dialog
+      showDeleteConfirm.value = false;
+      // 關閉主對話框 Close main dialog
+      console.log('[ScheduleDetailDialog] 更新對話框可見性 Updating dialog visibility');
       emit('update:visible', false);
-      emit('close');
-      isEditing.value = false;
+      // 重置刪除狀態 Reset delete state
+      setTimeout(() => {
+        isDeleting.value = false;
+      }, 1000);
+    };
+
+    // 處理刪除 Handle deletion
+    const handleDelete = () => {
+      // 如果正在刪除中，直接返回 If already deleting, return directly
+      if (isDeleting.value) {
+        console.log('[ScheduleDetailDialog] 刪除操作正在進行中，忽略重複請求 Delete operation in progress, ignoring duplicate request');
+        return;
+      }
+
+      console.log('[ScheduleDetailDialog] 開始處理刪除操作 Starting delete operation');
+      console.log('[ScheduleDetailDialog] 課程ID Course ID:', props.scheduleData.id);
+      
+      // 顯示刪除確認對話框 Show delete confirmation dialog
+      showDeleteConfirm.value = true;
     };
 
     // 開始編輯 Start editing
@@ -422,6 +508,13 @@ export default defineComponent({
       handleClose();
     };
 
+    // 關閉對話框 Close dialog
+    const handleClose = () => {
+      emit('update:visible', false);
+      emit('close');
+      isEditing.value = false;
+    };
+
     // 監聽 scheduleData 變化 Watch scheduleData changes
     watch(() => props.scheduleData, (newData) => {
       if (newData) {
@@ -459,7 +552,12 @@ export default defineComponent({
       startEditing,
       handleSubmit,
       addAssistant,
-      removeAssistant
+      removeAssistant,
+      handleDelete,
+      showDeleteConfirm,
+      handleDeleteConfirm,
+      handleDeleteCancel,
+      handleDeleteConfirmChange
     };
   }
 });
@@ -609,5 +707,16 @@ export default defineComponent({
 :deep(.select-options) {
   position: relative !important;
   z-index: 1000003 !important;
+}
+
+.delete-confirm-content {
+  padding: 1.5rem;
+  text-align: center;
+  
+  p {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
 }
 </style> 
