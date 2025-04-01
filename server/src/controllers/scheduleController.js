@@ -60,6 +60,56 @@ const scheduleController = {
   },
 
   /**
+   * 獲取單個課程排課 Get single schedule
+   * @param {Object} req - 請求對象 Request object
+   * @param {Object} res - 響應對象 Response object
+   * @param {Function} next - 下一個中間件 Next middleware
+   */
+  getSchedule: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { companyCode } = req.user;
+      
+      // 獲取課程排課，包含教師和助教信息
+      // Get schedule with teacher and assistant information
+      const schedule = await CourseSchedule.findOne({
+        where: { 
+          id,
+          company_code: companyCode
+        },
+        include: [
+          {
+            model: Teacher,
+            attributes: ['id', 'name'],
+            as: 'teacher'
+          },
+          {
+            model: CourseAssistant,
+            as: 'assistants',
+            attributes: ['id', 'assistant_id', 'fee']
+          }
+        ]
+      });
+      
+      if (!schedule) {
+        throw new ApiError(404, '找不到該課程排課 Schedule not found');
+      }
+      
+      res.json({
+        success: true,
+        data: schedule.get({ plain: true })
+      });
+    } catch (error) {
+      console.error('獲取課程排課失敗 Failed to get schedule:', error);
+      if (error instanceof ApiError) {
+        next(error);
+      } else {
+        next(new ApiError(500, '獲取課程排課失敗 Failed to get schedule'));
+      }
+    }
+  },
+
+  /**
    * 創建課程排課 Create schedule
    * @param {Object} req - 請求對象 Request object
    * @param {Object} res - 響應對象 Response object

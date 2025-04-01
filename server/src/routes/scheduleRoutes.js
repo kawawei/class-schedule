@@ -11,6 +11,9 @@ const validationMiddleware = require('../middlewares/validationMiddleware');
 // 獲取所有課程排課 Get all schedules
 router.get('/', authMiddleware, scheduleController.getAllSchedules);
 
+// 獲取單個課程排課 Get single schedule
+router.get('/:id', authMiddleware, scheduleController.getSchedule);
+
 // 創建課程排課 Create schedule
 router.post('/', authMiddleware, scheduleController.createSchedule);
 
