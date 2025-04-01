@@ -2,6 +2,7 @@ const { CourseSchedule, CourseAssistant, Teacher } = require('../models');
 const { ValidationError, Op } = require('sequelize');
 const ApiError = require('../utils/apiError');
 const { addDays, isWithinInterval, parseISO } = require('date-fns');
+const { v4: uuidv4 } = require('uuid');  // 引入 UUID 生成函數
 
 /**
  * 課程排課控制器 Schedule Controller
@@ -129,14 +130,14 @@ const scheduleController = {
         let currentDate = new Date(scheduleData.recurring_start_date);
         const endDate = new Date(scheduleData.recurring_end_date);
         
+        // 生成系列ID Generate series ID
+        const seriesId = uuidv4();
+        console.log('生成的系列ID:', seriesId);
+        
         // 檢查重複日期是否有時間衝突
         // Check for time conflicts in recurring dates
         while (currentDate <= endDate) {
-          // 獲取當前日期的星期幾（0-6，0 表示週日）
-          // Get the day of week for current date (0-6, 0 means Sunday)
           const dayOfWeek = currentDate.getDay();
-          // 將 getDay() 返回值（0-6）轉換為前端的值（1-7）
-          // Convert getDay() value (0-6) to frontend value (1-7, Monday to Sunday)
           const frontendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
           
           console.log(`日期: ${currentDate.toISOString().split('T')[0]}, 星期: ${dayOfWeek}, 前端星期: ${frontendDayOfWeek}, 是否包含: ${scheduleData.recurring_days.includes(frontendDayOfWeek)}`);
@@ -144,8 +145,6 @@ const scheduleController = {
           if (scheduleData.recurring_days.includes(frontendDayOfWeek)) {
             console.log('檢查日期:', currentDate.toISOString().split('T')[0]);
             
-            // 檢查該日期是否有時間衝突
-            // Check for time conflicts on this date
             const existingSchedule = await CourseSchedule.findOne({
               where: {
                 start_time: {
@@ -173,11 +172,7 @@ const scheduleController = {
         
         // 創建重複性課程 Create recurring courses
         while (currentDate <= endDate) {
-          // 獲取當前日期的星期幾（0-6，0 表示週日）
-          // Get the day of week for current date (0-6, 0 means Sunday)
           const dayOfWeek = currentDate.getDay();
-          // 將 getDay() 返回值（0-6）轉換為前端的值（1-7）
-          // Convert getDay() value (0-6) to frontend value (1-7, Monday to Sunday)
           const frontendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
           
           console.log(`日期: ${currentDate.toISOString().split('T')[0]}, 星期: ${dayOfWeek}, 前端星期: ${frontendDayOfWeek}, 是否包含: ${scheduleData.recurring_days.includes(frontendDayOfWeek)}`);
@@ -185,9 +180,10 @@ const scheduleController = {
           if (scheduleData.recurring_days.includes(frontendDayOfWeek)) {
             console.log('創建課程:', currentDate.toISOString().split('T')[0]);
             
-            // 創建課程排課 Create schedule
+            // 創建課程排課，包含系列ID Create schedule with series ID
             const schedule = await CourseSchedule.create({
               ...scheduleData,
+              series_id: seriesId,  // 添加系列ID Add series ID
               date: currentDate.toISOString().split('T')[0],
               company_code: companyCode
             });
@@ -249,6 +245,7 @@ const scheduleController = {
         console.log('創建單次課程');
         const schedule = await CourseSchedule.create({
           ...scheduleData,
+          series_id: null,  // 單次課程設置 series_id 為 null Set series_id to null for single course
           company_code: companyCode
         });
         
@@ -342,19 +339,21 @@ const scheduleController = {
       }
       
       // 更新課程排課 Update schedule
-      await schedule.update(scheduleData);
+      const updatedSchedule = await schedule.update({
+        ...scheduleData,
+        // 如果是重複課程，保持原有的 series_id
+        // If it's a recurring course, keep the original series_id
+        series_id: scheduleData.is_recurring ? schedule.series_id : null
+      });
       
-      // 更新助教信息 Update assistant information
+      // 更新助教排課 Update assistant schedules
       if (scheduleData.assistants) {
-        // 刪除現有助教 Delete existing assistants
+        // 刪除原有的助教排課 Delete existing assistant schedules
         await CourseAssistant.destroy({
-          where: {
-            schedule_id: id,
-            company_code: companyCode
-          }
+          where: { schedule_id: id }
         });
         
-        // 創建新助教 Create new assistants
+        // 創建新的助教排課 Create new assistant schedules
         if (scheduleData.assistants.length > 0) {
           const assistantSchedules = scheduleData.assistants.map(assistant => ({
             schedule_id: id,
@@ -369,15 +368,13 @@ const scheduleController = {
       
       res.json({
         success: true,
-        data: schedule,
+        data: updatedSchedule,
         message: '課程排課更新成功 Schedule updated successfully'
       });
     } catch (error) {
       console.error('更新課程排課失敗 Failed to update schedule:', error);
       if (error instanceof ApiError) {
         next(error);
-      } else if (error instanceof ValidationError) {
-        next(new ApiError(400, '無效的課程排課數據 Invalid schedule data'));
       } else {
         next(new ApiError(500, '更新課程排課失敗 Failed to update schedule'));
       }
@@ -394,45 +391,48 @@ const scheduleController = {
     try {
       const { id } = req.params;
       const { companyCode } = req.user;
-
-      console.log('[scheduleController] 開始處理刪除請求 Starting delete request processing');
-      console.log('[scheduleController] 請求參數 Request params:', { id, companyCode });
-
-      // 檢查課程是否存在 Check if schedule exists
+      const { deleteType = 'single' } = req.query;  // 添加刪除類型參數 Add delete type parameter
+      
+      // 查找要刪除的課程 Find the schedule to delete
       const schedule = await CourseSchedule.findOne({
         where: {
           id,
           company_code: companyCode
         }
       });
-
-      console.log('[scheduleController] 檢查課程是否存在 Check if schedule exists:', schedule ? 'Found' : 'Not found');
-
+      
       if (!schedule) {
         throw new ApiError(404, '找不到該課程排課 Schedule not found');
       }
-
-      // 開始刪除相關的助教排課 Start deleting related assistant schedules
-      console.log('[scheduleController] 開始刪除相關的助教排課 Starting to delete related assistant schedules');
-      await CourseAssistant.destroy({
-        where: {
-          schedule_id: id
-        }
-      });
-      console.log('[scheduleController] 完成刪除相關的助教排課 Completed deleting related assistant schedules');
-
-      // 刪除課程排課 Delete schedule
-      console.log('[scheduleController] 開始刪除課程排課 Starting to delete schedule');
-      await schedule.destroy();
-      console.log('[scheduleController] 完成刪除課程排課 Completed deleting schedule');
-
-      console.log('[scheduleController] 刪除操作完成 Delete operation completed');
-      res.status(200).json({
-        success: true,
-        message: '課程排課已成功刪除 / Schedule deleted successfully'
-      });
+      
+      // 根據刪除類型執行不同的刪除操作
+      // Execute different delete operations based on delete type
+      if (deleteType === 'series' && schedule.series_id) {
+        // 刪除整個系列的課程 Delete all courses in the series
+        console.log('刪除系列課程，系列ID:', schedule.series_id);
+        await CourseSchedule.destroy({
+          where: {
+            series_id: schedule.series_id,
+            company_code: companyCode
+          }
+        });
+        
+        res.json({
+          success: true,
+          message: '課程系列刪除成功 Course series deleted successfully'
+        });
+      } else {
+        // 刪除單一課程 Delete single course
+        console.log('刪除單一課程，ID:', id);
+        await schedule.destroy();
+        
+        res.json({
+          success: true,
+          message: '課程排課刪除成功 Schedule deleted successfully'
+        });
+      }
     } catch (error) {
-      console.error('[scheduleController] 刪除課程排課時發生錯誤 Error deleting schedule:', error);
+      console.error('刪除課程排課失敗 Failed to delete schedule:', error);
       if (error instanceof ApiError) {
         next(error);
       } else {

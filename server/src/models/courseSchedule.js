@@ -67,6 +67,11 @@ module.exports = (sequelize) => {
       defaultValue: false,
       comment: '是否為重複性課程 Is this a recurring course'
     },
+    series_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: '重複性課程系列ID Recurring course series ID'
+    },
     recurring_days: {
       type: DataTypes.JSON,
       defaultValue: [],
@@ -107,6 +112,10 @@ module.exports = (sequelize) => {
       {
         fields: ['is_recurring'],
         name: 'idx_schedule_is_recurring'
+      },
+      {
+        fields: ['series_id'],
+        name: 'idx_schedule_series_id'
       },
       {
         fields: ['recurring_start_date'],
