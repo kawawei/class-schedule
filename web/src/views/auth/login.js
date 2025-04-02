@@ -143,8 +143,15 @@ export default {
         };
         localStorage.setItem('companyData', JSON.stringify(companyData));
         
-        // 跳轉到儀表板 Redirect to dashboard
-        router.push('/dashboard');
+        // 根據用戶角色導向到不同的儀表板 Redirect to different dashboards based on user role
+        console.log('用戶角色:', userData.role); // Log user role
+        if (userData.role === 'teacher') {
+          console.log('導向到老師儀表板 Redirecting to teacher dashboard');
+          router.push('/teacher/dashboard');
+        } else {
+          console.log('導向到管理員儀表板 Redirecting to admin dashboard');
+          router.push('/dashboard');
+        }
       } catch (error) {
         console.error('登入失敗 Login failed:', error);
         loginError.value = error.message || '登入失敗，請稍後重試';

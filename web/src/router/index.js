@@ -4,7 +4,22 @@ import { createRouter, createWebHistory } from 'vue-router';
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard'
+    name: 'Root',
+    redirect: to => {
+      // 從 localStorage 獲取用戶信息 Get user info from localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          // 根據角色重定向到對應的儀表板 Redirect to corresponding dashboard based on role
+          return userData.role === 'teacher' ? '/teacher/dashboard' : '/dashboard';
+        } catch (error) {
+          console.error('解析用戶數據時出錯 Error parsing user data:', error);
+          return '/login';
+        }
+      }
+      return '/login';
+    }
   },
   {
     path: '/login',
@@ -27,10 +42,21 @@ const routes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../views/dashboard/Dashboard.vue'), // 懶加載儀表板頁面 Lazy load dashboard page
+    component: () => import('../views/dashboard/Dashboard.vue'),
     meta: {
-      title: '儀表板', // 頁面標題 Page title
-      requiresAuth: true // 需要身份驗證 Authentication required
+      title: '管理員儀表板', // 頁面標題 Page title
+      requiresAuth: true, // 需要身份驗證 Authentication required
+      requiresRole: ['admin', 'staff'] // 需要管理員或職員角色 Requires admin or staff role
+    }
+  },
+  {
+    path: '/teacher/dashboard',
+    name: 'TeacherDashboard',
+    component: () => import('../views/teacher/Dashboard.vue'),
+    meta: {
+      title: '老師儀表板', // 頁面標題 Page title
+      requiresAuth: true, // 需要身份驗證 Authentication required
+      requiresRole: ['teacher'] // 需要老師角色 Requires teacher role
     }
   },
   {
@@ -126,30 +152,57 @@ router.beforeEach((to, from, next) => {
   // 設置頁面標題 Set page title
   document.title = to.meta.title ? `${to.meta.title} - 才藝老師管理系統` : '才藝老師管理系統';
   
-  // 檢查路由是否需要身份驗證 Check if route requires authentication
-  if (to.meta.requiresAuth !== false) {
-    console.log(`路由 ${to.path} 需要認證 Route ${to.path} requires authentication`);
-    
-    // 如果用戶未登入，重定向到登入頁面 If user is not authenticated, redirect to login page
-    if (!isAuthenticated()) {
-      console.log('用戶未認證，重定向到登入頁面 User not authenticated, redirecting to login page');
-      next({ name: 'Login' });
-      return;
-    }
-    
-    console.log('用戶已認證，允許訪問 User authenticated, allowing access');
-  } else {
-    console.log(`路由 ${to.path} 不需要認證 Route ${to.path} does not require authentication`);
-  }
-  
-  // 如果用戶已登入且嘗試訪問登入頁面，重定向到儀表板 If user is authenticated and tries to access login page, redirect to dashboard
-  if (to.name === 'Login' && isAuthenticated()) {
-    console.log('用戶已認證且嘗試訪問登入頁面，重定向到儀表板 User authenticated and trying to access login page, redirecting to dashboard');
-    next({ name: 'Dashboard' });
+  // 檢查是否需要身份驗證 Check if authentication is required
+  if (to.meta.requiresAuth && !isAuthenticated()) {
+    console.log('需要身份驗證但未登入，重定向到登入頁面 Authentication required but not logged in, redirecting to login page');
+    next({ name: 'Login', query: { redirect: to.fullPath } });
     return;
   }
   
-  // 繼續導航 Continue navigation
+  // 檢查角色權限 Check role permissions
+  if (to.meta.requiresRole) {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        // 檢查用戶角色是否在允許的角色列表中
+        // Check if user role is in the allowed roles list
+        if (!to.meta.requiresRole.includes(userData.role)) {
+          console.log('用戶角色不符合要求，重定向到對應的儀表板 User role does not match requirements, redirecting to corresponding dashboard');
+          // 避免重定向到當前路由，防止無限循環
+          // Avoid redirecting to current route to prevent infinite loop
+          const targetPath = userData.role === 'teacher' ? '/teacher/dashboard' : '/dashboard';
+          if (to.path !== targetPath) {
+            next(targetPath);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('解析用戶數據時出錯 Error parsing user data:', error);
+        next('/login');
+        return;
+      }
+    }
+  }
+  
+  // 如果已登入用戶訪問登入頁面，重定向到對應的儀表板
+  // If logged in user visits login page, redirect to corresponding dashboard
+  if (to.name === 'Login' && isAuthenticated()) {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        const targetPath = userData.role === 'teacher' ? '/teacher/dashboard' : '/dashboard';
+        if (to.path !== targetPath) {
+          next(targetPath);
+          return;
+        }
+      } catch (error) {
+        console.error('解析用戶數據時出錯 Error parsing user data:', error);
+      }
+    }
+  }
+  
   next();
 });
 

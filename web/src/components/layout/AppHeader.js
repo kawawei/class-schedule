@@ -34,6 +34,20 @@ export default {
 
   computed: {
     /**
+     * 獲取用戶角色 Get user role
+     * @returns {String} 用戶角色 User role
+     */
+    userRole() {
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        return userData?.role || 'admin';
+      } catch (error) {
+        console.error('解析用戶數據失敗 Failed to parse user data:', error);
+        return 'admin';
+      }
+    },
+
+    /**
      * 獲取用戶顯示名稱 Get user display name
      * 優先顯示用戶姓名，如果沒有則顯示用戶名
      * @returns {String} 用戶顯示名稱 User display name
