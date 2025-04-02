@@ -8,6 +8,9 @@
       :style="blockStyle"
       :data-date="date"
       :data-start-time="startTime"
+      draggable="true"
+      @dragstart="handleDragStart"
+      @dragend="handleDragEnd"
       @click="handleBlockClick"
     >
       <!-- 時間和課程類型 Time and Course Type -->
@@ -101,10 +104,21 @@ export default defineComponent({
     date: {
       type: String,
       default: ''
+    },
+    // 課程 ID Course ID
+    courseId: {
+      type: [String, Number],
+      required: true
+    },
+    // 課程 UUID Course UUID
+    uuid: {
+      type: String,
+      required: false,
+      default: () => Math.random().toString(36).substring(2, 15)
     }
   },
 
-  emits: ['click'],
+  emits: ['click', 'dragstart', 'dragend'],
 
   setup(props, { emit }) {
     // 課程類型標籤 Course type label
@@ -141,6 +155,28 @@ export default defineComponent({
     const handleBlockClick = () => {
       // 觸發點擊事件並傳遞課程數據 Emit click event with course data
       emit('click', {
+        id: props.courseId,
+        date: props.date,
+        startTime: props.startTime,
+        endTime: props.endTime,
+        courseType: props.courseType,
+        schoolName: props.schoolName,
+        className: props.className,
+        teacherName: props.teacherName,
+        assistantName: props.assistantName,
+        courseFee: props.courseFee,
+        teacherFee: props.teacherFee,
+        assistantFee: props.assistantFee,
+        uuid: props.uuid
+      });
+    };
+
+    // 拖曳開始 Drag start handler
+    const handleDragStart = (event) => {
+      // 設置拖曳數據 Set drag data
+      event.dataTransfer.setData('text/plain', JSON.stringify({
+        courseId: props.courseId,
+        uuid: props.uuid,
         date: props.date,
         startTime: props.startTime,
         endTime: props.endTime,
@@ -152,6 +188,26 @@ export default defineComponent({
         courseFee: props.courseFee,
         teacherFee: props.teacherFee,
         assistantFee: props.assistantFee
+      }));
+      
+      // 設置拖曳效果 Set drag effect
+      event.dataTransfer.effectAllowed = 'move';
+      
+      // 觸發拖曳開始事件 Emit drag start event
+      emit('dragstart', {
+        courseId: props.courseId,
+        uuid: props.uuid,
+        date: props.date
+      });
+    };
+
+    // 拖曳結束 Drag end handler
+    const handleDragEnd = (event) => {
+      // 觸發拖曳結束事件 Emit drag end event
+      emit('dragend', {
+        courseId: props.courseId,
+        uuid: props.uuid,
+        date: props.date
       });
     };
 
@@ -160,6 +216,8 @@ export default defineComponent({
       blockStyle,
       formatTime,
       handleBlockClick,
+      handleDragStart,
+      handleDragEnd,
       // 直接暴露所有需要的 props 給模板使用
       ...props
     };
@@ -178,7 +236,7 @@ export default defineComponent({
   border-radius: var(--radius-sm);
   padding: 0.25rem;
   height: 20px;
-  cursor: pointer;
+  cursor: move; // 修改游標樣式為移動游標
   transition: all 0.3s ease;
   border: none;
   border-left: 2px solid transparent;

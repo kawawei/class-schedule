@@ -478,6 +478,23 @@ const scheduleAPI = {
   }
 };
 
+// 更新課程日期 Update course date
+export const updateCourseDate = async (courseId, data) => {
+  try {
+    const response = await apiRequest(`/courses/${courseId}/date`, 'PUT', data);
+    return {
+      success: true,
+      data: response
+    };
+  } catch (error) {
+    console.error('更新課程日期失敗 Failed to update course date:', error);
+    return {
+      success: false,
+      message: error.message || '更新課程日期失敗 Failed to update course date'
+    };
+  }
+};
+
 // 導出 API Export API
 export {
   userAPI,

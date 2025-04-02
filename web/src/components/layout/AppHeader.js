@@ -77,6 +77,20 @@ export default {
     }
   },
   
+  mounted() {
+    // 監聽路由變化 Listen to route changes
+    this.$router.beforeEach((to, from, next) => {
+      // 關閉菜單 Close menu
+      this.closeMenu();
+      next();
+    });
+  },
+
+  beforeUnmount() {
+    // 組件卸載前重置 overflow 屬性 Reset overflow property before component unmount
+    document.body.style.overflow = '';
+  },
+
   methods: {
     /**
      * 處理登出事件 Handle logout event

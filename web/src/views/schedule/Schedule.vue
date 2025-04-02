@@ -68,6 +68,7 @@
             :events="courseEvents"
             @event-click="handleEventClick"
             @date-click="handleDateClick"
+            @course-move="handleCourseMove"
           ></component>
         </div>
       </div>
@@ -267,6 +268,7 @@ export default defineComponent({
     const isLoggingOut = ref(false);
     const showScheduleDetailDialog = ref(false);
     const selectedCourseData = ref(null);
+    const loading = ref(false); // 添加 loading 狀態 Add loading state
     
     // 課程事件數據 Course events data
     const courseEvents = ref([]);
@@ -596,6 +598,33 @@ export default defineComponent({
         Message.error('刪除課程失敗 / Failed to delete course');
       }
     };
+
+    // 處理課程移動 Handle course move
+    const handleCourseMove = async (moveData) => {
+      try {
+        // 顯示載入中 Show loading
+        loading.value = true;
+        
+        // 調用後端 API 更新課程日期 Call backend API to update course date
+        const response = await scheduleAPI.updateSchedule(moveData.courseId, {
+          date: moveData.targetDate,
+          isCopy: moveData.isCopy
+        });
+        
+        if (response.success) {
+          // 更新成功後重新獲取課程列表 Refresh course list after successful update
+          await fetchCourseSchedules();
+          Message.success('課程移動成功 Course moved successfully');
+        } else {
+          Message.error(response.message || '移動課程失敗 Failed to move course');
+        }
+      } catch (error) {
+        console.error('移動課程失敗 Failed to move course:', error);
+        Message.error('移動課程失敗 Failed to move course');
+      } finally {
+        loading.value = false;
+      }
+    };
     
     return {
       currentDate,
@@ -622,7 +651,9 @@ export default defineComponent({
       selectedCourseData,
       hideScheduleDetailDialog,
       handleCourseUpdate,
-      handleCourseDelete
+      handleCourseDelete,
+      handleCourseMove,
+      loading
     };
   }
 });

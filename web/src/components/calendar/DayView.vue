@@ -26,13 +26,20 @@
       </div>
       
       <!-- 日期列 Day column -->
-      <div class="day-column" :class="{ 'current-day-column': isCurrentDay }">
+      <div 
+        class="day-column" 
+        :class="{ 'current-day-column': isCurrentDay }"
+        @dragover.prevent
+        @drop="handleDrop"
+      >
         <!-- 每小時格子 Hourly cells -->
         <div 
           v-for="hour in hours" 
           :key="hour" 
           class="hour-cell"
           @click="handleCellClick(hour)"
+          @dragover.prevent
+          @drop="handleHourDrop($event, hour)"
         >
           <!-- 半小時分隔線 Half-hour divider -->
           <div class="half-hour-divider"></div>
@@ -52,7 +59,11 @@
             :teacher-name="event.teacherName"
             :assistant-name="event.assistantName"
             :position="event.position"
+            :course-id="event.id"
+            :uuid="event.uuid"
             @click="handleEventClick(event)"
+            @dragstart="handleDragStart"
+            @dragend="handleDragEnd"
           />
         </div>
       </div>
@@ -102,7 +113,7 @@ export default defineComponent({
     }
   },
   
-  emits: ['event-click', 'date-click'],
+  emits: ['event-click', 'date-click', 'course-move', 'dragstart', 'dragend'],
   
   setup(props, { emit }) {
     // 時間範圍 Time range
@@ -110,6 +121,13 @@ export default defineComponent({
     
     // 當前時間線更新計時器 Current time line update timer
     const timeUpdateInterval = ref(null);
+    
+    // 拖曳狀態 Drag state
+    const dragState = ref({
+      isDragging: false,
+      sourceBlock: null,
+      sourceDate: null
+    });
     
     // 計算屬性 Computed properties
     
@@ -139,51 +157,17 @@ export default defineComponent({
     // 當前時間線樣式 Current time line style
     const currentTimeLineStyle = computed(() => {
       const now = new Date();
-      const hours = getHours(now);
-      const minutes = getMinutes(now);
-      
-      // 計算從頂部的偏移量 Calculate offset from top
-      const startHour = 8; // 開始時間 Start time
-      const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
-      
-      const topOffset = (hours - startHour + minutes / 60) * hourHeight;
-      
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const top = ((hours - 8) * 60 + minutes) * (60 / 30); // 每30分鐘一個格子
       return {
-        top: `${topOffset}px`
+        top: `${top}px`
       };
     });
     
-    // 方法 Methods
-    
     // 格式化小時 Format hour
     const formatHour = (hour) => {
-      return `${hour}:00`;
-    };
-    
-    // 獲取事件樣式 Get event style
-    const getEventStyle = (event) => {
-      // 解析時間字符串 Parse time strings
-      const [startHour, startMinute] = event.startTime.split(':').map(Number);
-      const [endHour, endMinute] = event.endTime.split(':').map(Number);
-      
-      // 計算事件開始時間的位置 Calculate position of event start time
-      const startTime = startHour + startMinute / 60;
-      const endTime = endHour + endMinute / 60;
-      
-      // 計算事件持續時間 Calculate event duration
-      const duration = endTime - startTime;
-      
-      // 計算從頂部的偏移量 Calculate offset from top
-      const startHourOffset = 8; // 開始時間 Start time
-      const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
-      
-      const top = (startTime - startHourOffset) * hourHeight;
-      const height = duration * hourHeight;
-      
-      return {
-        top: `${top}px`,
-        height: `${height}px`
-      };
+      return `${hour.toString().padStart(2, '0')}:00`;
     };
     
     // 格式化事件時間 Format event time
@@ -198,24 +182,84 @@ export default defineComponent({
     
     // 處理單元格點擊 Handle cell click
     const handleCellClick = (hour) => {
-      const clickedDate = setHours(setMinutes(props.currentDate, 0), hour);
-      emit('date-click', clickedDate);
+      emit('date-click', {
+        date: props.currentDate,
+        hour
+      });
     };
     
-    // 更新當前時間線 Update current time line
-    const updateCurrentTimeLine = () => {
-      // 每分鐘更新一次 Update every minute
-      timeUpdateInterval.value = setInterval(() => {
-        // 強制重新計算 Force recalculation
-        const now = new Date();
-      }, 60000); // 60秒 60 seconds
+    // 處理拖曳開始 Handle drag start
+    const handleDragStart = (event) => {
+      dragState.value.isDragging = true;
+      dragState.value.sourceBlock = event;
+      dragState.value.sourceDate = props.currentDate;
     };
     
-    // 生命週期鉤子 Lifecycle hooks
+    // 處理拖曳結束 Handle drag end
+    const handleDragEnd = () => {
+      dragState.value.isDragging = false;
+      dragState.value.sourceBlock = null;
+      dragState.value.sourceDate = null;
+    };
+    
+    // 處理拖放 Handle drop
+    const handleDrop = (event) => {
+      event.preventDefault();
+      
+      try {
+        const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        const targetDate = format(props.currentDate, 'yyyy-MM-dd');
+        
+        // 如果目標日期與源日期相同，不處理
+        if (targetDate === data.date) return;
+        
+        // 觸發課程移動事件 Emit course move event
+        emit('course-move', {
+          courseId: data.courseId,
+          uuid: data.uuid,
+          sourceDate: data.date,
+          targetDate,
+          isCopy: event.ctrlKey || event.metaKey
+        });
+      } catch (error) {
+        console.error('處理拖放失敗 Handle drop failed:', error);
+      }
+    };
+    
+    // 處理小時格子的拖放 Handle hour cell drop
+    const handleHourDrop = (event, hour) => {
+      event.preventDefault();
+      
+      try {
+        const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        const targetDate = format(props.currentDate, 'yyyy-MM-dd');
+        
+        // 如果目標日期與源日期相同，不處理
+        if (targetDate === data.date) return;
+        
+        // 觸發課程移動事件 Emit course move event
+        emit('course-move', {
+          courseId: data.courseId,
+          uuid: data.uuid,
+          sourceDate: data.date,
+          targetDate,
+          targetHour: hour,
+          isCopy: event.ctrlKey || event.metaKey
+        });
+      } catch (error) {
+        console.error('處理小時格子拖放失敗 Handle hour cell drop failed:', error);
+      }
+    };
+    
+    // 組件掛載時啟動時間線更新 Start time line update when component is mounted
     onMounted(() => {
-      updateCurrentTimeLine();
+      timeUpdateInterval.value = setInterval(() => {
+        // 強制更新當前時間線樣式 Force update current time line style
+        currentTimeLineStyle.value;
+      }, 60000); // 每分鐘更新一次 Update every minute
     });
     
+    // 組件卸載時清理計時器 Clean up timer when component is unmounted
     onUnmounted(() => {
       if (timeUpdateInterval.value) {
         clearInterval(timeUpdateInterval.value);
@@ -230,161 +274,155 @@ export default defineComponent({
       dayEvents,
       currentTimeLineStyle,
       formatHour,
-      getEventStyle,
       formatEventTime,
       handleEventClick,
-      handleCellClick
+      handleCellClick,
+      handleDragStart,
+      handleDragEnd,
+      handleDrop,
+      handleHourDrop
     };
   }
 });
 </script>
 
 <style lang="scss" scoped>
-@use 'sass:color'; // 導入 sass:color 模塊 Import sass:color module
-
 .day-view {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
-}
-
-.day-header {
-  display: flex;
-  border-bottom: 1px solid var(--color-gray-200);
-  background-color: var(--color-white);
-  z-index: 2;
-  
-  .time-column-header {
-    width: 60px;
-    flex-shrink: 0;
-  }
-  
-  .day-column-header {
-    flex: 1;
-    text-align: center;
-    padding: var(--spacing-sm) 0;
-    
-    &.current-day {
-      background-color: rgba(0, 113, 227, 0.05);
-      
-      .day-number {
-        background-color: var(--color-primary);
-        color: white;
-      }
-    }
-    
-    .day-name {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-medium);
-      color: var(--text-primary);
-      margin-bottom: var(--spacing-xs);
-    }
-    
-    .day-number {
-      display: inline-block;
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      border-radius: 50%;
-      font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-medium);
-    }
-  }
-}
-
-.day-grid {
-  display: flex;
-  flex: 1;
+  border-right: 1px solid var(--color-gray-200);
+  background-color: var(--bg-primary);
   position: relative;
-  overflow-y: auto;
-  
-  .time-axis {
-    width: 60px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--color-gray-200);
-    background-color: var(--color-white);
+  min-width: 200px;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  .day-header {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--bg-secondary);
     z-index: 1;
-    
-    .time-slot {
-      height: 60px; // 每小時高度 Height per hour
-      position: relative;
-      
-      .time-label {
-        position: absolute;
-        top: -10px;
-        right: var(--spacing-sm);
-        font-size: var(--font-size-xs);
-        color: var(--text-secondary);
-      }
-    }
-  }
-  
-  .day-column {
-    flex: 1;
-    position: relative;
-    
-    &.current-day-column {
-      background-color: rgba(0, 113, 227, 0.02);
-    }
-    
-    .hour-cell {
-      height: 60px; // 每小時高度 Height per hour
+
+    .time-column-header {
+      height: 24px;
       border-bottom: 1px solid var(--color-gray-200);
-      position: relative;
-      
-      &:hover {
-        background-color: rgba(0, 113, 227, 0.05);
-      }
-      
-      .half-hour-divider {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background-color: var(--color-gray-100);
-      }
     }
-    
-    .event-container {
-      position: absolute;
-      left: var(--spacing-md);
-      right: var(--spacing-md);
-      background-color: rgba(0, 113, 227, 0.1);
-      border-left: 3px solid var(--color-primary);
-      border-radius: var(--radius-sm);
-      padding: var(--spacing-sm);
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      z-index: 1;
-      
-      &:hover {
-        background-color: rgba(0, 113, 227, 0.15);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-sm);
+
+    .day-column-header {
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      position: relative;
+
+      &.current-day {
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+      }
+
+      .day-name {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+      }
+
+      .day-number {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-bold);
+        color: var(--text-primary);
       }
     }
   }
-  
-  .current-time-line {
-    position: absolute;
-    left: 60px;
-    right: 0;
-    height: 2px;
-    background-color: var(--color-danger);
-    z-index: 2;
-    
-    &::before {
-      content: '';
+
+  .day-grid {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+
+    .time-axis {
+      width: 48px;
+      border-right: 1px solid var(--color-gray-200);
+      background-color: var(--bg-secondary);
+      z-index: 1;
+
+      .time-slot {
+        height: 60px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding-right: 8px;
+        border-bottom: 1px solid var(--color-gray-200);
+
+        .time-label {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+          transform: translateY(-50%);
+        }
+      }
+    }
+
+    .day-column {
+      flex: 1;
+      position: relative;
+      background-color: var(--bg-primary);
+
+      &.current-day-column {
+        background-color: var(--bg-secondary);
+      }
+
+      .hour-cell {
+        height: 60px;
+        border-bottom: 1px solid var(--color-gray-200);
+        position: relative;
+        cursor: pointer;
+
+        &:hover {
+          background-color: var(--bg-tertiary);
+        }
+
+        // 添加拖曳時的視覺反饋 Add visual feedback during drag
+        &.dragover {
+          outline: 2px dashed var(--color-primary);
+          outline-offset: -2px;
+          background-color: rgba(24, 144, 255, 0.05);
+          z-index: 2;
+        }
+
+        .half-hour-divider {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          height: 1px;
+          background-color: var(--color-gray-200);
+          opacity: 0.5;
+        }
+      }
+
+      .event-container {
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        z-index: 2;
+      }
+    }
+
+    .current-time-line {
       position: absolute;
-      left: -4px;
-      top: -4px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      left: 48px;
+      right: 0;
+      height: 2px;
       background-color: var(--color-danger);
+      z-index: 3;
+      pointer-events: none;
     }
   }
 }
