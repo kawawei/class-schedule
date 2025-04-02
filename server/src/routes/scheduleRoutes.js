@@ -20,6 +20,9 @@ router.post('/', authMiddleware, scheduleController.createSchedule);
 // 更新課程排課 Update schedule
 router.put('/:id', authMiddleware, scheduleController.updateSchedule);
 
+// 更新課程日期 Update course date
+router.put('/:id/date', authMiddleware, scheduleController.updateCourseDate);
+
 // 刪除課程排課 Delete schedule
 router.delete('/:id', authMiddleware, scheduleController.deleteSchedule);
 

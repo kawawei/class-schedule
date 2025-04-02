@@ -475,6 +475,18 @@ const scheduleAPI = {
    */
   deleteSchedule: (deleteInfo) => {
     return apiRequest(`/schedules/${deleteInfo.id}?type=${deleteInfo.type}`, 'DELETE', null, true);
+  },
+  
+  /**
+   * 更新課程日期 Update course date
+   * @param {number} courseId - 課程ID Course ID
+   * @param {Object} data - 更新數據 Update data
+   * @param {string} data.date - 新日期 New date
+   * @param {boolean} data.isCopy - 是否複製 Whether to copy
+   * @returns {Promise} API 響應 API response
+   */
+  updateCourseDate: (courseId, data) => {
+    return apiRequest(`/schedules/${courseId}/date`, 'PUT', data);
   }
 };
 

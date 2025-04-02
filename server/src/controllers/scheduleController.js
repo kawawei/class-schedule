@@ -474,6 +474,97 @@ const scheduleController = {
         next(new ApiError(500, '刪除課程排課失敗 Failed to delete schedule'));
       }
     }
+  },
+
+  /**
+   * 更新課程日期 Update course date
+   * @param {Object} req - 請求對象 Request object
+   * @param {Object} res - 響應對象 Response object
+   * @param {Function} next - 下一個中間件 Next middleware
+   */
+  updateCourseDate: async (req, res, next) => {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const { id } = req.params;
+      const { date, isCopy } = req.body;
+      const companyCode = req.user.companyCode;
+      
+      // 查找要更新的課程 Find the course to update
+      const schedule = await CourseSchedule.findOne({
+        where: {
+          id,
+          company_code: companyCode
+        },
+        transaction
+      });
+      
+      if (!schedule) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: '找不到課程 Course not found'
+        });
+      }
+
+      if (isCopy) {
+        // 如果是複製操作，創建新的課程記錄
+        // If copying, create a new course record
+        const newSchedule = await CourseSchedule.create({
+          ...schedule.toJSON(),
+          id: undefined, // 讓數據庫自動生成新的 ID Let database generate new ID
+          date: date, // 使用新的日期 Use new date
+          series_id: schedule.series_id || uuidv4(), // 如果沒有 series_id，生成新的
+          created_at: new Date(),
+          updated_at: new Date()
+        }, { transaction });
+
+        // 複製助教信息 Copy assistant information
+        const assistants = await CourseAssistant.findAll({
+          where: { schedule_id: id },
+          transaction
+        });
+
+        if (assistants.length > 0) {
+          await CourseAssistant.bulkCreate(
+            assistants.map(assistant => ({
+              ...assistant.toJSON(),
+              id: undefined,
+              schedule_id: newSchedule.id,
+              created_at: new Date(),
+              updated_at: new Date()
+            })),
+            { transaction }
+          );
+        }
+
+        await transaction.commit();
+        
+        return res.json({
+          success: true,
+          message: '課程複製成功 Course copied successfully',
+          data: newSchedule
+        });
+      } else {
+        // 如果是移動操作，只更新日期
+        // If moving, only update the date
+        const updatedSchedule = await schedule.update({
+          date: date
+        }, { transaction });
+
+        await transaction.commit();
+        
+        return res.json({
+          success: true,
+          message: '課程日期更新成功 Course date updated successfully',
+          data: updatedSchedule
+        });
+      }
+    } catch (error) {
+      await transaction.rollback();
+      console.error('更新課程日期失敗 Failed to update course date:', error);
+      next(new ApiError(500, '更新課程日期失敗 Failed to update course date'));
+    }
   }
 };
 

@@ -606,7 +606,7 @@ export default defineComponent({
         loading.value = true;
         
         // 調用後端 API 更新課程日期 Call backend API to update course date
-        const response = await scheduleAPI.updateSchedule(moveData.courseId, {
+        const response = await scheduleAPI.updateCourseDate(moveData.courseId, {
           date: moveData.targetDate,
           isCopy: moveData.isCopy
         });
@@ -614,13 +614,13 @@ export default defineComponent({
         if (response.success) {
           // 更新成功後重新獲取課程列表 Refresh course list after successful update
           await fetchCourseSchedules();
-          Message.success('課程移動成功 Course moved successfully');
+          Message.success(moveData.isCopy ? '課程複製成功' : '課程移動成功');
         } else {
-          Message.error(response.message || '移動課程失敗 Failed to move course');
+          Message.error(response.message || '操作失敗');
         }
       } catch (error) {
-        console.error('移動課程失敗 Failed to move course:', error);
-        Message.error('移動課程失敗 Failed to move course');
+        console.error('課程操作失敗:', error);
+        Message.error('操作失敗');
       } finally {
         loading.value = false;
       }
