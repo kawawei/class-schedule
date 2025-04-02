@@ -32,6 +32,10 @@
             'selected': isSelectedDate(day.date)
           }"
           @click="handleDayClick(day.date)"
+          @dragover.prevent
+          @dragenter="handleDragEnter($event)"
+          @dragleave="handleDragLeave($event)"
+          @drop="handleDrop($event, day.date)"
         >
           <div class="day-number">{{ day.dayNumber }}</div>
           
@@ -47,9 +51,13 @@
                 :school-name="event.schoolName"
                 :teacher-name="event.teacherName"
                 :assistant-name="event.assistantName"
-                :position="{ row: 1, column: 1 }"
+                :position="event.position"
+                :course-id="event.id"
+                :uuid="event.uuid"
                 class="month-schedule-block"
                 @click="handleScheduleBlockClick($event, event)"
+                @dragstart="handleDragStart"
+                @dragend="handleDragEnd"
               />
             </div>
           </div>
@@ -99,7 +107,8 @@ import {
   isSameMonth,
   isToday,
   isSameDay,
-  parseISO
+  parseISO,
+  eachDayOfInterval
 } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
@@ -124,7 +133,7 @@ export default defineComponent({
     }
   },
   
-  emits: ['event-click', 'date-click'],
+  emits: ['event-click', 'date-click', 'course-move', 'dragstart', 'dragend'],
   
   setup(props, { emit }) {
     // 星期標題 Weekday headers (英文) English weekday headers
@@ -136,6 +145,9 @@ export default defineComponent({
     
     // 添加選中日期狀態 Add selected date state
     const selectedDate = ref(null);
+    
+    // 添加拖曳狀態 Add drag state
+    const isDragging = ref(false);
     
     // 計算屬性 Computed properties
     
@@ -277,6 +289,87 @@ export default defineComponent({
       return hours * 60 + minutes;
     };
     
+    // 處理拖曳開始 Handle drag start
+    const handleDragStart = (event) => {
+      isDragging.value = true;
+      // 確保清除所有之前的 dragover 效果
+      // Clear all previous dragover effects
+      document.querySelectorAll('.dragover').forEach(element => {
+        element.classList.remove('dragover');
+      });
+      emit('dragstart', event);
+    };
+    
+    // 處理拖曳結束 Handle drag end
+    const handleDragEnd = (event) => {
+      // 移除所有具有 dragover 類的元素
+      // Remove dragover class from all elements
+      document.querySelectorAll('.dragover').forEach(element => {
+        element.classList.remove('dragover');
+      });
+      
+      isDragging.value = false;
+      emit('dragend', event);
+    };
+    
+    // 處理拖曳進入 Handle drag enter
+    const handleDragEnter = (event) => {
+      event.preventDefault();
+      // 先清除其他元素的 dragover 效果
+      // Clear dragover effect from other elements first
+      document.querySelectorAll('.dragover').forEach(element => {
+        if (element !== event.currentTarget) {
+          element.classList.remove('dragover');
+        }
+      });
+      // 只有在拖曳狀態時才添加效果
+      // Only add effect when dragging
+      if (isDragging.value) {
+        event.currentTarget.classList.add('dragover');
+      }
+    };
+
+    // 處理拖曳離開 Handle drag leave
+    const handleDragLeave = (event) => {
+      event.preventDefault();
+      // 確保只移除當前元素的效果
+      // Make sure to only remove effect from current element
+      if (event.currentTarget.contains(event.relatedTarget)) {
+        return; // 如果是子元素，不處理 If it's a child element, do nothing
+      }
+      event.currentTarget.classList.remove('dragover');
+    };
+    
+    // 處理拖放 Handle drop
+    const handleDrop = (event, targetDate) => {
+      event.preventDefault();
+      // 清除所有 dragover 效果
+      // Clear all dragover effects
+      document.querySelectorAll('.dragover').forEach(element => {
+        element.classList.remove('dragover');
+      });
+      isDragging.value = false;
+      
+      try {
+        const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        const targetDateStr = format(targetDate, 'yyyy-MM-dd');
+        
+        // 如果目標日期與源日期相同，不處理
+        if (targetDateStr === data.date) return;
+        
+        // 觸發課程移動事件 Emit course move event
+        emit('course-move', {
+          courseId: data.courseId,
+          uuid: data.uuid,
+          sourceDate: data.date,
+          targetDate: targetDateStr,
+          isCopy: event.ctrlKey || event.metaKey
+        });
+      } catch (error) {
+        console.error('處理拖放失敗 Handle drop failed:', error);
+      }
+    };
+    
     return {
       weekDays,
       calendarDays,
@@ -288,12 +381,18 @@ export default defineComponent({
       formatEventTime,
       isSelectedDate,
       selectedDate,
+      isDragging,
       handleDayClick,
       handleScheduleBlockClick,
       handleEventClick,
       handleMoreEventsClick,
       getSortedEventsForDay,
-      timeToMinutes
+      timeToMinutes,
+      handleDragStart,
+      handleDragEnd,
+      handleDragEnter,
+      handleDragLeave,
+      handleDrop
     };
   }
 });
@@ -365,6 +464,14 @@ export default defineComponent({
       &:hover {
         background-color: var(--bg-hover);
         z-index: 1;
+      }
+      
+      // 添加拖曳時的視覺反饋 Add visual feedback during drag
+      &.dragover {
+        outline: 2px dashed var(--color-primary);
+        outline-offset: -2px;
+        background-color: rgba(24, 144, 255, 0.05);
+        z-index: 2;
       }
       
       &.current-month {
