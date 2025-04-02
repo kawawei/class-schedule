@@ -77,19 +77,28 @@
       display: flex;
       align-items: center;
       margin: 0 var(--spacing-sm);
-      font-weight: var(--font-weight-bold); // 加粗字體 Make font bold
-      min-width: 140px; // 增加最小寬度 Increase minimum width
+      font-weight: var(--font-weight-bold);
+      min-width: 140px;
       justify-content: center;
       
       .year {
-        font-size: var(--font-size-xl); // 增加年份字體大小 Increase year font size
+        font-size: var(--font-size-xl);
         color: var(--text-primary);
-        margin-right: var(--spacing-sm); // 增加年月之間的間距 Increase spacing between year and month
+        margin-right: var(--spacing-sm);
       }
       
       .month {
-        font-size: var(--font-size-xl); // 增加月份字體大小 Increase month font size
+        font-size: var(--font-size-xl);
         color: var(--text-primary);
+      }
+
+      .week-range {
+        font-size: var(--font-size-lg);
+        color: var(--text-primary);
+        white-space: nowrap;
+        min-width: 120px;
+        text-align: center;
+        margin-left: var(--spacing-xs);
       }
     }
   }
@@ -160,15 +169,17 @@
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  height: 800px; // 設置一個較大的固定高度值 Set a larger fixed height value
-  overflow: hidden; // 保持隱藏溢出 Keep hiding overflow
-  width: 100%; // 確保日曆容器使用全部可用寬度 Ensure calendar container uses all available width
+  height: calc(100vh - 120px); // 改為視窗高度減去頂部導航和工具欄的高度
+  overflow: hidden; // 保持隱藏溢出
+  width: 100%; // 確保日曆容器使用全部可用寬度
+  display: flex; // 添加 flex 布局
+  flex-direction: column; // 垂直排列
   
   &.month-view {
-    height: 800px; // 同步調整月視圖高度 Adjust month view height accordingly
+    height: calc(100vh - 120px); // 同步調整月視圖高度
   }
   
   &.week-view, &.day-view {
-    height: 800px; // 同步調整週視圖和日視圖高度 Adjust week and day view heights accordingly
+    height: calc(100vh - 120px); // 同步調整週視圖和日視圖高度
   }
 } 

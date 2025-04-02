@@ -20,7 +20,12 @@
               </button>
               <div class="current-date">
                 <span class="year">{{ currentYear }}</span>
-                <span class="month">{{ currentMonth }}</span>
+                <template v-if="currentView === 'week'">
+                  <span class="week-range">{{ weekDateRange }}</span>
+                </template>
+                <template v-else>
+                  <span class="month">{{ currentMonth }}</span>
+                </template>
               </div>
               <button class="nav-button" @click="navigateNext">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -228,7 +233,7 @@
 
 <script>
 import { ref, computed, onMounted, defineComponent } from 'vue';
-import { format, addDays, addWeeks, addMonths, startOfWeek, startOfMonth } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, startOfWeek, startOfMonth, endOfWeek } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { useRouter } from 'vue-router';
 import { scheduleAPI, authAPI } from '@/utils/api';
@@ -478,9 +483,18 @@ export default defineComponent({
       return format(currentDate.value, 'yyyy', { locale: zhTW });
     });
     
+    // 計算屬性：週日期範圍 Computed property: week date range
+    const weekDateRange = computed(() => {
+      const weekStart = startOfWeek(currentDate.value, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(currentDate.value, { weekStartsOn: 1 });
+      
+      // 統一使用數字格式 Use numeric format consistently
+      return `${format(weekStart, 'MM/dd')}-${format(weekEnd, 'MM/dd')}`;
+    });
+    
     // 計算屬性：當前月份 Computed property: current month
     const currentMonth = computed(() => {
-      return format(currentDate.value, 'MM', { locale: zhTW });
+      return format(currentDate.value, 'MM月', { locale: zhTW });
     });
     
     // 計算屬性：當前日曆組件 Computed property: current calendar component
@@ -635,6 +649,7 @@ export default defineComponent({
       viewOptions,
       currentYear,
       currentMonth,
+      weekDateRange,
       currentCalendarComponent,
       showAddCourseDialog,
       hideAddCourseDialog,

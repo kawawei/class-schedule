@@ -108,8 +108,8 @@ export default defineComponent({
   emits: ['event-click', 'date-click'],
   
   setup(props, { emit }) {
-    // 時間範圍 Time range
-    const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 - 21:00
+    // 時間範圍 Time range (00:00-23:59)
+    const hours = Array.from({ length: 24 }, (_, i) => i); // 00:00 - 23:00
     
     // 當前時間線更新計時器 Current time line update timer
     const timeUpdateInterval = ref(null);
@@ -140,21 +140,25 @@ export default defineComponent({
       const minutes = getMinutes(now);
       
       // 計算從頂部的偏移量 Calculate offset from top
-      const startHour = 8; // 開始時間 Start time
       const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
-      
-      const topOffset = (hours - startHour + minutes / 60) * hourHeight;
+      const topOffset = (hours + minutes / 60) * hourHeight;
       
       // 計算從左側的偏移量 Calculate offset from left
-      const dayWidth = 100 / 7; // 每天的寬度百分比 Width percentage per day
+      const timeAxisWidth = 60; // 時間軸寬度 Time axis width
       const currentDayIndex = weekDays.value.findIndex(day => isToday(day.date));
       
-      const leftOffset = currentDayIndex >= 0 ? dayWidth * currentDayIndex : 0;
+      // 如果找到當前日期，計算偏移量 If current date is found, calculate offset
+      const leftOffset = currentDayIndex >= 0 
+        ? `calc(${timeAxisWidth}px + (100% - ${timeAxisWidth}px) * ${currentDayIndex / 7})`
+        : `${timeAxisWidth}px`;
+      
+      // 計算時間線寬度 Calculate time line width
+      const width = `calc((100% - ${timeAxisWidth}px) / 7)`;
       
       return {
         top: `${topOffset}px`,
-        left: `${leftOffset}%`,
-        width: `${dayWidth}%`
+        left: leftOffset,
+        width
       };
     });
     
@@ -162,7 +166,7 @@ export default defineComponent({
     
     // 格式化小時 Format hour
     const formatHour = (hour) => {
-      return `${hour}:00`;
+      return `${hour.toString().padStart(2, '0')}:00`;
     };
     
     // 是否為當天 Is current day
@@ -197,10 +201,9 @@ export default defineComponent({
       const duration = endTime - startTime;
       
       // 計算從頂部的偏移量 Calculate offset from top
-      const startHourOffset = 8; // 開始時間 Start time
       const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
       
-      const top = (startTime - startHourOffset) * hourHeight;
+      const top = startTime * hourHeight;
       const height = duration * hourHeight;
       
       return {
@@ -286,48 +289,41 @@ export default defineComponent({
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-.week-header {
-  display: flex;
-  border-bottom: 1px solid var(--color-gray-200);
-  background-color: var(--color-white);
-  z-index: 2;
   
-  .time-column-header {
-    width: 60px;
-    flex-shrink: 0;
-  }
-  
-  .day-column-header {
-    flex: 1;
-    text-align: center;
-    padding: var(--spacing-sm) 0;
-    border-left: 1px solid var(--color-gray-200);
+  .week-header {
+    display: flex;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--color-white);
+    z-index: 2;
+    height: 64px; // 固定標題行高度
     
-    &.current-day {
-      background-color: rgba(0, 113, 227, 0.05);
+    .time-column-header {
+      width: 60px;
+      flex-shrink: 0;
+      padding-top: var(--spacing-md); // 增加頂部內邊距
+    }
+    
+    .day-column-header {
+      flex: 1;
+      padding: var(--spacing-md) var(--spacing-sm) var(--spacing-sm); // 調整內邊距
+      text-align: center;
+      border-left: 1px solid var(--color-gray-200);
+      
+      &.current-day {
+        background-color: rgba(0, 113, 227, 0.02);
+        font-weight: var(--font-weight-bold);
+      }
+      
+      .day-name {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+      }
       
       .day-number {
-        background-color: var(--color-primary);
-        color: white;
+        font-size: var(--font-size-lg);
+        color: var(--text-primary);
+        margin-top: var(--spacing-xs); // 增加日期數字的上邊距
       }
-    }
-    
-    .day-name {
-      font-size: var(--font-size-sm);
-      color: var(--text-secondary);
-      margin-bottom: var(--spacing-xs);
-    }
-    
-    .day-number {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      line-height: 28px;
-      border-radius: 50%;
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-medium);
     }
   }
 }
@@ -337,6 +333,8 @@ export default defineComponent({
   flex: 1;
   position: relative;
   overflow-y: auto;
+  padding-bottom: var(--spacing-md);
+  padding-top: 36px; // 增加頂部內邊距
   
   .time-axis {
     width: 60px;
@@ -344,17 +342,32 @@ export default defineComponent({
     border-right: 1px solid var(--color-gray-200);
     background-color: var(--color-white);
     z-index: 1;
+    position: sticky;
+    left: 0;
     
     .time-slot {
-      height: 60px; // 每小時高度 Height per hour
+      height: 60px;
       position: relative;
+      border-bottom: 1px solid var(--color-gray-200);
+      
+      &:first-child {
+        margin-top: -24px; // 調整第一個時間格的位置
+        
+        .time-label {
+          top: 4px; // 特別調整第一個時間標籤的位置
+        }
+      }
       
       .time-label {
         position: absolute;
-        top: -10px;
+        top: -9px;
         right: var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--text-secondary);
+        background-color: var(--color-white);
+        padding: 2px 4px; // 增加垂直內邊距
+        line-height: 14px; // 調整行高
+        z-index: 2;
       }
     }
   }
@@ -363,18 +376,21 @@ export default defineComponent({
     display: flex;
     flex: 1;
     position: relative;
+    min-width: 0;
+    margin-top: -24px; // 調整日期列的位置
     
     .day-column {
       flex: 1;
       position: relative;
       border-left: 1px solid var(--color-gray-200);
+      min-width: 0;
       
       &.current-day-column {
         background-color: rgba(0, 113, 227, 0.02);
       }
       
       .hour-cell {
-        height: 60px; // 每小時高度 Height per hour
+        height: 60px;
         border-bottom: 1px solid var(--color-gray-200);
         position: relative;
         
@@ -433,20 +449,12 @@ export default defineComponent({
   
   .current-time-line {
     position: absolute;
+    left: 60px; // 時間軸寬度
+    right: 0;
     height: 2px;
     background-color: var(--color-danger);
-    z-index: 2;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      left: -4px;
-      top: -4px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--color-danger);
-    }
+    z-index: 3;
+    pointer-events: none;
   }
 }
 </style> 
