@@ -16,10 +16,11 @@ const userController = {
             // 從請求中獲取公司代碼 Get company code from request
             const companyCode = req.user.companyCode;
             
-            // 查詢用戶列表 Query user list
+            // 查詢用戶列表，排除老師角色 Query user list, exclude teacher role
             const result = await client.query(
                 `SELECT id, username, name, email, role, is_active, created_at, updated_at 
                  FROM ${companyCode}.users 
+                 WHERE role != 'teacher'
                  ORDER BY id ASC`
             );
             
@@ -126,7 +127,7 @@ const userController = {
             }
 
             // 驗證角色 Validate role
-            const validRoles = ['admin', 'staff'];
+            const validRoles = ['admin', 'staff', 'teacher'];
             if (!validRoles.includes(role)) {
                 console.log('無效的角色 Invalid role:', role);
                 return res.status(400).json({
@@ -178,6 +179,16 @@ const userController = {
                  to_char(updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') as updated_at`,
                 [username, hashedPassword, name, email || null, role, is_active !== false]
             );
+
+            // 如果是老師角色，同時創建老師記錄
+            // If it's a teacher role, also create a teacher record
+            if (role === 'teacher') {
+                await client.query(
+                    `INSERT INTO "${companyCode}".teachers (name, email, phone, teaching_categories, level, years_of_experience, hourly_rate, is_active)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                    [name, email || null, '', '[]', '初級', 0, 0, true]
+                );
+            }
             
             console.log('用戶創建成功 User created successfully:', result.rows[0]);
             res.status(201).json({

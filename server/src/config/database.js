@@ -55,7 +55,7 @@ const createTenantSchema = async (schemaName) => {
                 permissions JSONB DEFAULT '{}'::jsonb,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT valid_role CHECK (role IN ('admin', 'staff')),
+                CONSTRAINT valid_role CHECK (role IN ('admin', 'staff', 'teacher')),
                 CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$')
             )
         `);

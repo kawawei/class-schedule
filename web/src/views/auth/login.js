@@ -120,6 +120,11 @@ export default {
         // 更新最近使用的公司代碼 Update recent company codes
         updateRecentCompanyCodes(form.value.companyCode);
         
+        // 檢查響應格式 Check response format
+        if (!response.success) {
+          throw new Error(response.message || '登入失敗 Login failed');
+        }
+        
         // 保存令牌和公司代碼 Save token and company code
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('companyCode', form.value.companyCode);

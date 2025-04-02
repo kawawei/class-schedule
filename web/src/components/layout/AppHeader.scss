@@ -9,6 +9,7 @@
   background-color: rgba(255, 255, 255, 0.8); // 半透明背景 Semi-transparent background
   backdrop-filter: blur(10px); // 毛玻璃效果 Frosted glass effect
   -webkit-backdrop-filter: blur(10px);
+  z-index: 999; // 降低 z-index 值，使其不會擋住對話框 Lower z-index to prevent blocking dialogs
 }
 
 .container {

@@ -1,6 +1,8 @@
 const { Teacher } = require('../models');
 const { ValidationError, Op } = require('sequelize');
 const ApiError = require('../utils/apiError');
+const bcrypt = require('bcryptjs');
+const { mainPool } = require('../config/database');
 
 /**
  * 老師控制器 Teacher Controller
@@ -74,9 +76,11 @@ const teacherController = {
    * @param {Function} next - 下一個中間件 Next middleware
    */
   createTeacher: async (req, res, next) => {
+    const client = await mainPool.connect();
     try {
       const { companyCode } = req.user;
-      const teacherData = { ...req.body, company_code: companyCode };
+      const { username, password, ...teacherData } = req.body;
+      teacherData.company_code = companyCode;
       
       // 檢查電話是否已存在 Check if phone already exists
       const existingTeacher = await Teacher.findOne({
@@ -89,14 +93,47 @@ const teacherController = {
       if (existingTeacher) {
         throw new ApiError(400, '該電話號碼已被使用 Phone number already in use');
       }
+
+      // 檢查用戶名是否已存在 Check if username exists
+      const existingUser = await client.query(
+        `SELECT id FROM "${companyCode}".users WHERE username = $1`,
+        [username]
+      );
       
-      const teacher = await Teacher.create(teacherData);
+      if (existingUser.rows.length > 0) {
+        throw new ApiError(400, '用戶名已被使用 Username already in use');
+      }
+
+      // 加密密碼 Encrypt password
+      const hashedPassword = await bcrypt.hash(password, 10);
       
-      res.status(201).json({
-        success: true,
-        data: teacher,
-        message: '老師創建成功 Teacher created successfully'
-      });
+      // 開始事務處理 Start transaction
+      await client.query('BEGIN');
+      
+      try {
+        // 創建老師 Create teacher
+        const teacher = await Teacher.create(teacherData);
+        
+        // 創建用戶帳號 Create user account
+        await client.query(
+          `INSERT INTO "${companyCode}".users (username, password, name, email, role, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [username, hashedPassword, teacherData.name, teacherData.email || null, 'teacher', true]
+        );
+        
+        // 提交事務 Commit transaction
+        await client.query('COMMIT');
+        
+        res.status(201).json({
+          success: true,
+          data: teacher,
+          message: '老師創建成功 Teacher created successfully'
+        });
+      } catch (error) {
+        // 如果出錯，回滾事務 Rollback transaction if error occurs
+        await client.query('ROLLBACK');
+        throw error;
+      }
     } catch (error) {
       console.error('創建老師失敗 Failed to create teacher:', error);
       if (error instanceof ValidationError) {
@@ -106,6 +143,8 @@ const teacherController = {
       } else {
         next(new ApiError(500, '創建老師失敗 Failed to create teacher'));
       }
+    } finally {
+      client.release();
     }
   },
 
