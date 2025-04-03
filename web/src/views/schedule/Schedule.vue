@@ -575,16 +575,26 @@ export default defineComponent({
     // 處理課程更新 Handle course update
     const handleCourseUpdate = async (updatedData) => {
       try {
-        const response = await scheduleAPI.updateSchedule(selectedCourseData.value.id, updatedData);
+        // 確保有課程ID Ensure we have course ID
+        if (!updatedData.id) {
+          throw new Error('課程ID不存在 Course ID does not exist');
+        }
+
+        console.log('準備更新的課程數據 Course data to update:', updatedData); // 添加日誌 Add log
+
+        const response = await scheduleAPI.updateSchedule(updatedData.id, updatedData);
         if (response.success) {
           // 重新獲取課程數據 Refetch course data
           await fetchCourseSchedules();
           showScheduleDetailDialog.value = false;
+          Message.success('課程更新成功 Course updated successfully');
         } else {
           console.error('更新課程失敗 Failed to update course:', response.message);
+          Message.error(response.message || '更新課程失敗 Failed to update course');
         }
       } catch (error) {
         console.error('更新課程出錯 Error updating course:', error);
+        Message.error(error.message || '更新課程失敗 Failed to update course');
       }
     };
 

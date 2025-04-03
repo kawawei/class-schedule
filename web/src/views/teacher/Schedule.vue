@@ -351,7 +351,23 @@ export default defineComponent({
       try {
         const response = await scheduleAPI.getSchedule(event.id);
         if (response.success) {
-          selectedCourseData.value = response.data;
+          selectedCourseData.value = {
+            id: response.data.id,
+            courseType: response.data.course_type,
+            schoolName: response.data.school_name,
+            className: response.data.class_name,
+            teacherName: response.data.teacher?.name,
+            assistantName: response.data.assistants?.[0]?.assistant_id,
+            startTime: response.data.start_time,
+            endTime: response.data.end_time,
+            date: response.data.date,
+            courseFee: response.data.course_fee,
+            teacherFee: response.data.teacher_fee,
+            assistantFee: response.data.assistants?.[0]?.fee || 0,
+            teacher: response.data.teacher,
+            assistants: response.data.assistants || [],
+            series_id: response.data.series_id // 添加 series_id 到課程數據中
+          };
           showScheduleDetailDialog.value = true;
         } else {
           Message.error(response.message || '獲取課程詳情失敗');

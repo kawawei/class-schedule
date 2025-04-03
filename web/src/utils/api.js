@@ -487,6 +487,22 @@ const scheduleAPI = {
    */
   updateCourseDate: (courseId, data) => {
     return apiRequest(`/schedules/${courseId}/date`, 'PUT', data);
+  },
+
+  /**
+   * 獲取所有老師列表 Get all teachers
+   * @returns {Promise} 老師列表 Teacher list
+   */
+  getTeachers: () => {
+    return apiRequest('/teachers', 'GET', null, true);
+  },
+
+  /**
+   * 獲取所有助教列表 Get all assistants
+   * @returns {Promise} 助教列表 Assistant list
+   */
+  getAssistants: () => {
+    return apiRequest('/assistants', 'GET', null, true);
   }
 };
 

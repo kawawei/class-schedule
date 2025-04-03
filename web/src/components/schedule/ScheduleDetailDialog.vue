@@ -12,7 +12,7 @@
         v-model="formData.schoolName"
         label="補習班名稱 / School Name"
         placeholder="請輸入補習班名稱"
-        :disabled="!isEditing"
+        :disabled="!isEditing || isTeacher"
         required
       />
 
@@ -22,11 +22,11 @@
           v-model="formData.className"
           label="班級名稱 / Class Name"
           placeholder="請輸入班級名稱"
-          :disabled="!isEditing"
+          :disabled="!isEditing || isTeacher"
           required
         />
         <!-- 在非編輯模式下顯示純文本，編輯模式下顯示選擇器 -->
-        <template v-if="!isEditing">
+        <template v-if="!isEditing || isTeacher">
           <AppInput
             v-model="formData.teacherName"
             label="授課老師 / Teacher"
@@ -50,107 +50,95 @@
         label="課程種類 / Course Type"
         :options="courseTypes"
         placeholder="請選擇課程種類"
-        :disabled="!isEditing"
+        :disabled="!isEditing || isTeacher"
         required
       />
 
       <!-- 第四行：日期和時間 Fourth row: Date and Time -->
-      <div class="time-selection">
+      <div class="form-row">
         <AppInput
           v-model="formData.date"
           label="日期 / Date"
           type="date"
-          :disabled="!isEditing"
+          :disabled="!isEditing || isTeacher"
           required
         />
-        <AppInput
-          v-model="formData.startTime"
-          label="開始時間 / Start Time"
-          type="time"
-          :disabled="!isEditing"
-          required
-        />
-        <AppInput
-          v-model="formData.endTime"
-          label="結束時間 / End Time"
-          type="time"
-          :disabled="!isEditing"
-          required
-        />
+        <div class="time-inputs">
+          <AppInput
+            v-model="formData.startTime"
+            label="開始時間 / Start Time"
+            type="time"
+            :disabled="!isEditing || isTeacher"
+            required
+          />
+          <AppInput
+            v-model="formData.endTime"
+            label="結束時間 / End Time"
+            type="time"
+            :disabled="!isEditing || isTeacher"
+            required
+          />
+        </div>
       </div>
 
-      <!-- 第五行：課程費用 Fifth row: Course Fees -->
+      <!-- 第五行：費用 Fifth row: Fees -->
       <div class="form-row">
         <AppInput
+          v-if="!isTeacher"
           v-model="formData.courseFee"
-          label="課程鐘點費 / Course Fee"
+          label="課程費用 / Course Fee"
           type="number"
-          placeholder="請輸入課程鐘點費"
-          :disabled="!isEditing"
+          :disabled="!isEditing || isTeacher"
           required
         />
         <AppInput
           v-model="formData.teacherFee"
-          label="老師實拿鐘點 / Teacher's Fee"
+          label="老師費用 / Teacher Fee"
           type="number"
-          placeholder="請輸入老師實拿鐘點"
-          :disabled="!isEditing"
+          :disabled="!isEditing || isTeacher"
           required
         />
       </div>
 
       <!-- 助教區域 Assistant Section -->
-      <div class="assistant-section" v-if="isEditing">
-        <AppButton
-          type="primary"
-          size="md"
-          class="add-assistant-button"
-          @click="addAssistant"
-          :disabled="formData.assistants.length > 0"
+      <div class="assistant-section" v-if="isEditing && !isTeacher">
+        <div class="section-header">
+          <h4>助教信息 / Assistant Information</h4>
+          <AppButton
+            type="primary"
+            size="sm"
+            @click="addAssistant"
+          >
+            添加助教 / Add Assistant
+          </AppButton>
+        </div>
+        <div
+          v-for="(assistant, index) in formData.assistants"
+          :key="index"
+          class="assistant-row"
         >
-          <template #icon>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </template>
-          新增助教 / Add Assistant
-        </AppButton>
-      </div>
-
-      <!-- 助教列表 Assistant List -->
-      <div v-if="formData.assistants.length > 0" class="assistant-list">
-        <div v-for="(assistant, index) in formData.assistants" :key="index" class="assistant-info">
-          <div class="assistant-header">
-            <h4>助教 {{ index + 1 }} / Assistant {{ index + 1 }}</h4>
-            <AppButton
-              v-if="isEditing"
-              type="text"
-              size="sm"
-              class="remove-assistant"
-              @click="removeAssistant(index)"
-            >
-              移除助教 / Remove Assistant
-            </AppButton>
-          </div>
-          <div class="form-row">
-            <AppSelect
-              v-model="assistant.id"
-              label="助教 / Assistant"
-              :options="assistants"
-              placeholder="請選擇助教"
-              :disabled="!isEditing"
-              required
-            />
-            <AppInput
-              v-model="assistant.fee"
-              label="助教鐘點費 / Assistant Fee"
-              type="number"
-              placeholder="請輸入助教鐘點費"
-              :disabled="!isEditing"
-              required
-            />
-          </div>
+          <AppSelect
+            v-model="assistant.id"
+            :options="assistants"
+            placeholder="請選擇助教"
+            :disabled="!isEditing || isTeacher"
+            required
+          />
+          <AppInput
+            v-model="assistant.fee"
+            type="number"
+            placeholder="助教費用"
+            :disabled="!isEditing || isTeacher"
+            required
+          />
+          <AppButton
+            v-if="isEditing && !isTeacher"
+            type="danger"
+            size="sm"
+            @click="removeAssistant(index)"
+          >
+            移除 / Remove
+          </AppButton>
         </div>
       </div>
     </div>
@@ -159,20 +147,21 @@
     <template #footer>
       <div class="dialog-footer">
         <AppButton
+          v-if="!isTeacher"
           type="danger"
           @click="handleDelete"
         >
           移除 / Delete
         </AppButton>
         <AppButton
-          v-if="!isEditing"
+          v-if="!isEditing && !isTeacher"
           type="primary"
           @click="startEditing"
         >
           編輯 / Edit
         </AppButton>
         <AppButton
-          v-else
+          v-if="isEditing && !isTeacher"
           type="primary"
           @click="handleSubmit"
         >
@@ -234,7 +223,7 @@
 </template>
 
 <script>
-import { defineComponent, ref, reactive, nextTick, onMounted, watch } from 'vue';
+import { defineComponent, ref, reactive, nextTick, onMounted, watch, computed } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { scheduleAPI, courseAPI } from '@/utils/api';
@@ -271,6 +260,33 @@ export default defineComponent({
     // 編輯模式狀態 Edit mode state
     const isEditing = ref(false);
     const loading = ref(false);
+
+    // 獲取用戶角色 Get user role
+    const userRole = computed(() => {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          return userData.role;
+        } catch (error) {
+          console.error('解析用戶數據失敗:', error);
+          return null;
+        }
+      }
+      return null;
+    });
+
+    // 是否為老師角色 Is teacher role
+    const isTeacher = computed(() => userRole.value === 'teacher');
+
+    // 監聽編輯模式變化，如果是老師角色則禁止編輯
+    // Watch editing mode changes, if teacher role then prevent editing
+    watch(isEditing, (newValue) => {
+      if (newValue && isTeacher.value) {
+        isEditing.value = false;
+        Message.warning('老師角色無法編輯課程 Teacher role cannot edit courses');
+      }
+    });
 
     // 表單數據 Form data
     const formData = ref({
@@ -455,6 +471,12 @@ export default defineComponent({
 
     // 處理刪除 Handle deletion
     const handleDelete = () => {
+      // 如果是老師角色，不允許刪除 If teacher role, not allowed to delete
+      if (isTeacher.value) {
+        Message.warning('老師角色無法刪除課程 Teacher role cannot delete courses');
+        return;
+      }
+
       // 如果正在刪除中，直接返回 If already deleting, return directly
       if (isDeleting.value) {
         console.log('[ScheduleDetailDialog] 刪除操作正在進行中，忽略重複請求 Delete operation in progress, ignoring duplicate request');
@@ -470,6 +492,12 @@ export default defineComponent({
 
     // 開始編輯 Start editing
     const startEditing = async () => {
+      // 如果是老師角色，不允許編輯 If teacher role, not allowed to edit
+      if (isTeacher.value) {
+        Message.warning('老師角色無法編輯課程 Teacher role cannot edit courses');
+        return;
+      }
+
       // 進入編輯模式時才獲取老師和助教列表
       // Only fetch teachers and assistants list when entering edit mode
       if (teachers.value.length === 0) {
@@ -512,9 +540,11 @@ export default defineComponent({
 
       // 創建課程數據 Create course data
       const updatedCourseData = {
+        id: formData.value.id,
         courseType: formData.value.courseType,
         schoolName: formData.value.schoolName,
         teacherName: teacherName,
+        teacherId: formData.value.teacherId,
         assistantName: assistantName,
         startTime: formData.value.startTime,
         endTime: formData.value.endTime,
@@ -525,6 +555,7 @@ export default defineComponent({
         assistantFee: formData.value.assistants[0]?.fee || ''
       };
 
+      console.log('提交的課程數據 Submitted course data:', updatedCourseData);
       emit('save', updatedCourseData);
       handleClose();
     };
@@ -568,6 +599,7 @@ export default defineComponent({
       courseTypes,
       teachers,
       assistants,
+      isTeacher,
       handleVisibleChange,
       handleClose,
       startEditing,
@@ -634,9 +666,9 @@ export default defineComponent({
     z-index: 1000001 !important;
   }
 
-  .time-selection {
+  .time-inputs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     position: relative !important;
     z-index: 1000001 !important;
@@ -687,6 +719,20 @@ export default defineComponent({
     border-top: 1px solid var(--color-gray-200);
     border-bottom: 1px solid var(--color-gray-200);
     margin: 0.5rem 0;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+    }
 
     .add-assistant-button {
       display: flex;
