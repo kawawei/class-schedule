@@ -81,8 +81,13 @@ export default {
   methods: {
     // 關閉訊息 Close message
     close() {
+      if (!this.visible) return; // 防止重複觸發 Prevent duplicate triggers
       this.visible = false;
-      this.$emit('close');
+      // 等待過渡動畫完成後再觸發關閉事件
+      // Wait for transition to complete before emitting close event
+      setTimeout(() => {
+        this.$emit('close');
+      }, 300);
     }
   }
 };

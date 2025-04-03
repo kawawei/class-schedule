@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const http = require('http');
 const { mainPool, updateExistingSchemas } = require('./config/database');
 const tenantRoutes = require('./routes/tenantRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -8,10 +9,18 @@ const userRoutes = require('./routes/userRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const teacherReportRoutes = require('./routes/teacherReportRoutes');
+const { initializeWebSocket } = require('./controllers/notificationController');
 const ApiError = require('./utils/apiError');
 
 // 創建 Express 應用
 const app = express();
+
+// 創建 HTTP 服務器
+const server = http.createServer(app);
+
+// 初始化 WebSocket 服務
+initializeWebSocket(server);
 
 // 中間件
 app.use(cors());
@@ -25,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/teacher-reports', teacherReportRoutes);
 
 // 404 處理
 app.use((req, res, next) => {
@@ -75,7 +85,7 @@ const initializeDatabase = async () => {
 
 // 啟動服務器
 const PORT = process.env.PORT || 3006;
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
     console.log(`服務器運行在端口 ${PORT} Server is running on port ${PORT}`);
     await initializeDatabase();
 });

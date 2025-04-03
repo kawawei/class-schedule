@@ -15,6 +15,8 @@ const Message = {
    * @returns {Object} 訊息實例 Message instance
    */
   show(options) {
+    console.log('[Message] 創建新消息 Creating new message:', options);
+    
     // 創建訊息容器 Create message container
     const messageNode = document.createElement('div');
     document.body.appendChild(messageNode);
@@ -23,80 +25,85 @@ const Message = {
     const messageApp = createApp(AppMessage, {
       ...options,
       onClose: () => {
+        console.log('[Message] 關閉消息 Closing message:', options);
         // 關閉後移除訊息 Remove message after close
-        setTimeout(() => {
-          messageApp.unmount();
-          document.body.removeChild(messageNode);
-        }, 300);
+        messageApp.unmount();
+        document.body.removeChild(messageNode);
+        console.log('[Message] 消息已移除 Message removed');
       }
     });
     
     // 掛載訊息 Mount message
+    console.log('[Message] 掛載消息組件 Mounting message component');
     messageApp.mount(messageNode);
     
     // 返回訊息實例 Return message instance
     return {
       close: () => {
+        console.log('[Message] 手動關閉消息 Manually closing message');
         // 手動關閉訊息 Manually close message
-        messageApp.unmount();
-        document.body.removeChild(messageNode);
+        messageApp._instance.exposed.close();
       }
     };
   },
   
   /**
    * 顯示成功訊息 Show success message
-   * @param {String} message - 訊息內容 Message content
-   * @param {Number} duration - 顯示時間（毫秒） Display time (ms)
+   * @param {Object|String} options - 訊息選項或訊息內容 Message options or content
    * @returns {Object} 訊息實例 Message instance
    */
-  success(message, duration = 3000) {
+  success(options) {
+    console.log('[Message] 顯示成功消息 Showing success message:', options);
+    const messageOptions = typeof options === 'string' ? { message: options } : options;
     return this.show({
-      message,
       type: 'success',
-      duration
-    });
-  },
-  
-  /**
-   * 顯示錯誤訊息 Show error message
-   * @param {String} message - 訊息內容 Message content
-   * @param {Number} duration - 顯示時間（毫秒） Display time (ms)
-   * @returns {Object} 訊息實例 Message instance
-   */
-  error(message, duration = 3000) {
-    return this.show({
-      message,
-      type: 'error',
-      duration
-    });
-  },
-  
-  /**
-   * 顯示警告訊息 Show warning message
-   * @param {String} message - 訊息內容 Message content
-   * @param {Number} duration - 顯示時間（毫秒） Display time (ms)
-   * @returns {Object} 訊息實例 Message instance
-   */
-  warning(message, duration = 3000) {
-    return this.show({
-      message,
-      type: 'warning',
-      duration
+      duration: 3000,
+      ...messageOptions
     });
   },
   
   /**
    * 顯示信息訊息 Show info message
-   * @param {String} message - 訊息內容 Message content
-   * @param {Number} duration - 顯示時間（毫秒） Display time (ms)
+   * @param {Object|String} options - 訊息選項或訊息內容 Message options or content
    * @returns {Object} 訊息實例 Message instance
    */
-  info(message, duration = 3000) {
+  info(options) {
+    console.log('[Message] 顯示信息消息 Showing info message:', options);
+    const messageOptions = typeof options === 'string' ? { message: options } : options;
     return this.show({
-      message,
       type: 'info',
-      duration
+      duration: 3000,
+      ...messageOptions
+    });
+  },
+  
+  /**
+   * 顯示警告訊息 Show warning message
+   * @param {Object|String} options - 訊息選項或訊息內容 Message options or content
+   * @returns {Object} 訊息實例 Message instance
+   */
+  warning(options) {
+    console.log('[Message] 顯示警告消息 Showing warning message:', options);
+    const messageOptions = typeof options === 'string' ? { message: options } : options;
+    return this.show({
+      type: 'warning',
+      duration: 3000,
+      ...messageOptions
+    });
+  },
+  
+  /**
+   * 顯示錯誤訊息 Show error message
+   * @param {Object|String} options - 訊息選項或訊息內容 Message options or content
+   * @returns {Object} 訊息實例 Message instance
+   */
+  error(options) {
+    console.log('[Message] 顯示錯誤消息 Showing error message:', options);
+    const messageOptions = typeof options === 'string' ? { message: options } : options;
+    return this.show({
+      type: 'error',
+      duration: 3000,
+      ...messageOptions
     });
   }
 };

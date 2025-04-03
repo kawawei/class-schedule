@@ -84,6 +84,9 @@
       @save="handleCourseUpdate"
       @delete="handleCourseDelete"
     />
+
+    <!-- 添加課程提醒組件 Add course reminder component -->
+    <CourseReminder />
   </div>
 </template>
 
@@ -105,6 +108,7 @@ import AppHeader from '@/components/layout/AppHeader.vue';
 import AppButton from '@/components/base/AppButton.vue';
 import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
 import ScheduleDetailDialog from '@/components/schedule/ScheduleDetailDialog.vue';
+import CourseReminder from '@/components/teacher/CourseReminder.vue'
 
 export default defineComponent({
   name: 'TeacherSchedule',
@@ -116,7 +120,8 @@ export default defineComponent({
     AppHeader,
     AppButton,
     ScheduleBlock,
-    ScheduleDetailDialog
+    ScheduleDetailDialog,
+    CourseReminder
   },
   
   setup() {

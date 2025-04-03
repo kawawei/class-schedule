@@ -506,6 +506,38 @@ const scheduleAPI = {
   }
 };
 
+/**
+ * 老師回報 API Teacher Report API
+ */
+const teacherReportAPI = {
+  /**
+   * 提交出發記錄 Submit departure record
+   * @param {Object} data - 出發數據 Departure data
+   * @returns {Promise} 提交結果 Submission result
+   */
+  submitDeparture: (data) => {
+    return apiRequest('/teacher-reports/departure', 'POST', data, true);
+  },
+
+  /**
+   * 提交抵達記錄 Submit arrival record
+   * @param {Object} data - 抵達數據 Arrival data
+   * @returns {Promise} 提交結果 Submission result
+   */
+  submitArrival: (data) => {
+    return apiRequest('/teacher-reports/arrival', 'POST', data, true);
+  },
+
+  /**
+   * 獲取位置記錄 Get location records
+   * @param {Number} scheduleId - 課程ID Schedule ID
+   * @returns {Promise} 位置記錄 Location records
+   */
+  getLocationRecords: (scheduleId) => {
+    return apiRequest(`/teacher-reports/${scheduleId}`, 'GET', null, true);
+  }
+};
+
 // 更新課程日期 Update course date
 export const updateCourseDate = async (courseId, data) => {
   try {
@@ -531,5 +563,6 @@ export {
   departmentAPI,
   courseAPI,
   scheduleAPI,
-  apiRequest
+  apiRequest,
+  teacherReportAPI
 }; 
