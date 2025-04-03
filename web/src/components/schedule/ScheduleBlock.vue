@@ -21,9 +21,9 @@
 
       <!-- 補習班和教師信息 School and Teacher Info -->
       <div class="block-content">
-        <div class="school-name">{{ schoolName }}</div>
+        <div class="school-name">{{ title || `${className} - ${teacherName}` }}</div>
         <div class="teacher-info">
-          <span class="teacher">{{ teacherName }}</span>
+          <span class="teacher">{{ location || schoolName }}</span>
           <span v-if="assistantName" class="assistant">{{ assistantName }}</span>
         </div>
       </div>
@@ -115,6 +115,16 @@ export default defineComponent({
       type: String,
       required: false,
       default: () => Math.random().toString(36).substring(2, 15)
+    },
+    // 標題 Title
+    title: {
+      type: String,
+      default: ''
+    },
+    // 位置 Location
+    location: {
+      type: String,
+      default: ''
     }
   },
 
@@ -135,7 +145,8 @@ export default defineComponent({
     // 格式化時間 Format time
     const formatTime = (time) => {
       if (!time) return '';
-      return time.split(':').slice(0, 2).join(':');
+      const [hours, minutes] = time.split(':').map(Number);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     };
 
     // 計算行數跨度 Calculate row span based on time difference

@@ -19,11 +19,16 @@
                 </svg>
               </button>
               <div class="current-date">
-                <span class="year">{{ currentYear }}</span>
-                <template v-if="currentView === 'week'">
+                <template v-if="currentView === 'day'">
+                  <span class="year">{{ currentYear }}</span>
+                  <span class="day-date">{{ currentDayDate }}</span>
+                </template>
+                <template v-else-if="currentView === 'week'">
+                  <span class="year">{{ currentYear }}</span>
                   <span class="week-range">{{ weekDateRange }}</span>
                 </template>
                 <template v-else>
+                  <span class="year">{{ currentYear }}</span>
                   <span class="month">{{ currentMonth }}</span>
                 </template>
               </div>
@@ -508,7 +513,7 @@ export default defineComponent({
     });
 
     // 導航到上一個時間段 Navigate to previous period
-    const navigatePrevious = () => {
+    const navigatePrevious = async () => {
       if (currentView.value === 'day') {
         currentDate.value = addDays(currentDate.value, -1);
       } else if (currentView.value === 'week') {
@@ -516,10 +521,12 @@ export default defineComponent({
       } else {
         currentDate.value = addMonths(currentDate.value, -1);
       }
+      // 重新獲取課程數據 Refresh course data
+      await fetchCourseSchedules();
     };
     
     // 導航到下一個時間段 Navigate to next period
-    const navigateNext = () => {
+    const navigateNext = async () => {
       if (currentView.value === 'day') {
         currentDate.value = addDays(currentDate.value, 1);
       } else if (currentView.value === 'week') {
@@ -527,16 +534,22 @@ export default defineComponent({
       } else {
         currentDate.value = addMonths(currentDate.value, 1);
       }
+      // 重新獲取課程數據 Refresh course data
+      await fetchCourseSchedules();
     };
     
     // 跳轉到今天 Go to today
-    const goToToday = () => {
+    const goToToday = async () => {
       currentDate.value = new Date();
+      // 重新獲取課程數據 Refresh course data
+      await fetchCourseSchedules();
     };
     
     // 切換視圖 Change view
-    const changeView = (view) => {
+    const changeView = async (view) => {
       currentView.value = view;
+      // 重新獲取課程數據 Refresh course data
+      await fetchCourseSchedules();
     };
     
     // 處理登出 Handle logout
@@ -640,6 +653,11 @@ export default defineComponent({
       }
     };
     
+    // 計算屬性：當前日期格式化 Computed property: current day date formatted
+    const currentDayDate = computed(() => {
+      return format(currentDate.value, 'MM/dd', { locale: zhTW });
+    });
+
     return {
       currentDate,
       currentView,
@@ -668,7 +686,8 @@ export default defineComponent({
       handleCourseUpdate,
       handleCourseDelete,
       handleCourseMove,
-      loading
+      loading,
+      currentDayDate
     };
   }
 });

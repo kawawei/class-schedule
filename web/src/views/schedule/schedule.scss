@@ -24,7 +24,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md); // 減少上下內邊距 Reduce vertical padding
+  padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -32,6 +32,13 @@
   .toolbar-left, .toolbar-right {
     display: flex;
     align-items: center;
+    gap: var(--spacing-md); // 添加間距
+  }
+  
+  .toolbar-right {
+    .add-course-button {
+      margin-right: var(--spacing-md); // 添加右邊距，讓按鈕與視圖選擇器有間距
+    }
   }
   
   .date-navigation {
@@ -99,6 +106,14 @@
         min-width: 120px;
         text-align: center;
         margin-left: var(--spacing-xs);
+      }
+
+      .day-date {
+        font-size: var(--font-size-xl);
+        color: var(--text-primary);
+        white-space: nowrap;
+        min-width: 80px;
+        text-align: center;
       }
     }
   }
