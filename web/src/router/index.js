@@ -114,6 +114,16 @@ const routes = [
     }
   },
   {
+    path: '/teacher/schedule',
+    name: 'TeacherSchedule',
+    component: () => import('../views/teacher/Schedule.vue'),
+    meta: {
+      title: '我的課程表',
+      requiresAuth: true,
+      requiresRole: ['teacher']
+    }
+  },
+  {
     path: '/:pathMatch(.*)*', // 捕獲所有未匹配的路由 Catch all unmatched routes
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),
