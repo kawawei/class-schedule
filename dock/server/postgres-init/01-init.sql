@@ -1,9 +1,3 @@
--- 創建數據庫 Create database
-SELECT 'CREATE DATABASE class_schedule' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'class_schedule');
-
--- 連接到數據庫 Connect to database
-\c class_schedule;
-
 -- 創建租戶表 Create tenants table
 CREATE TABLE IF NOT EXISTS "public"."tenants" (
     "company_code" VARCHAR(50) PRIMARY KEY,
