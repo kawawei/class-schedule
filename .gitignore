@@ -41,4 +41,16 @@ Thumbs.db
 
 # 其他 Others
 .cache/
-coverage/ 
+coverage/
+
+# 配置文件 Configuration files
+config/
+config/secure/
+
+# 環境變量文件 Environment variables
+.env.local
+.env.*.local
+
+# 依賴目錄 Dependencies
+dist/
+build/ 
