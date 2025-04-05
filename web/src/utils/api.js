@@ -1,8 +1,8 @@
 // API 服務 API Service
 import { toISOString, parseISOString } from './timezone';
 
-// API 基礎 URL API Base URL
-const API_BASE_URL = 'http://localhost:3006/api';
+// API 基礎配置 Base API configuration
+const BASE_URL = '/schedule-api';  // 修改為新的 API 路徑
 
 /**
  * 處理日期時間數據 Process date time data
@@ -96,7 +96,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
   });
 
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json'
     };
