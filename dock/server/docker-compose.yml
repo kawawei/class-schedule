@@ -34,7 +34,7 @@ services:
     container_name: talent-backend-prod
     build:
       context: ../../server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     image: talent-backend-prod
     expose:
       - "9006"  # 只暴露端口，不直接對外開放
@@ -61,7 +61,7 @@ services:
     container_name: talent-frontend-prod
     build:
       context: ../../web
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     image: talent-frontend-prod
     expose:
       - "9080"  # 只暴露端口，不直接對外開放
