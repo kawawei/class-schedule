@@ -9,12 +9,15 @@ services:
       context: ../../web
       dockerfile: Dockerfile.prod
     ports:
-      - "80:80"
-    networks:
-      - talent-network
-    restart: always
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Taipei
     depends_on:
       - backend
+    networks:
+      - talent-network-prod
+    restart: always
 
   # 後端服務 Backend service
   backend:
@@ -34,10 +37,11 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
+      - TZ=Asia/Taipei
     depends_on:
       - database
     networks:
-      - talent-network
+      - talent-network-prod
     restart: always
 
   # 數據庫服務 Database service
@@ -47,22 +51,26 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - talent-postgres-data:/var/lib/postgresql/data
+      - talent-postgres-data-prod:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - POSTGRES_DB=class_schedule
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Taipei
+      - PGTZ=Asia/Taipei
+    command: postgres -c timezone=Asia/Taipei
     networks:
-      - talent-network
+      - talent-network-prod
     restart: always
 
 # 卷定義 Volumes definition
 volumes:
-  talent-postgres-data:
+  talent-postgres-data-prod:
     name: talent-postgres-data-prod
 
 # 網絡定義 Networks definition
 networks:
-  talent-network:
+  talent-network-prod:
     name: talent-network-prod 
