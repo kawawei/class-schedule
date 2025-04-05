@@ -1,3 +1,6 @@
+-- 使用數據庫 Use database
+\c class_schedule;
+
 -- 創建租戶表（如果不存在）Create tenants table if not exists
 CREATE TABLE IF NOT EXISTS tenants (
     company_code VARCHAR(50) PRIMARY KEY,
