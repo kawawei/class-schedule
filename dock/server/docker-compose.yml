@@ -63,8 +63,8 @@ services:
       context: ../../web
       dockerfile: Dockerfile.prod
     image: talent-frontend-prod
-    expose:
-      - "80"  # 只暴露端口，不直接對外開放
+    ports:
+      - "9080:80"  # 映射到主機的 9080 端口
     environment:
       - NODE_ENV=production
       - VITE_API_BASE_URL=/schedule-api
