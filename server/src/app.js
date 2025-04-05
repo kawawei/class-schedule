@@ -27,6 +27,15 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
+// 健康檢查端點
+app.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        message: '服務正常運行 Service is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // 路由
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
