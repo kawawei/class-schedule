@@ -1,8 +1,10 @@
 // API 服務 API Service
 import { toISOString, parseISOString } from './timezone';
 
-// API 基礎配置 Base API configuration
-const BASE_URL = '/schedule-api';  // 修改為新的 API 路徑
+// API 基礎 URL API Base URL
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/schedule-api'  // 生產環境使用相對路徑 Production environment uses relative path
+  : 'http://localhost:3006/api';  // 開發環境使用完整 URL Development environment uses full URL
 
 /**
  * 處理日期時間數據 Process date time data
@@ -96,7 +98,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null, withAuth = true
   });
 
   try {
-    const url = `${BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json'
     };
