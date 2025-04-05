@@ -78,9 +78,12 @@ services:
     container_name: talent-nginx-prod
     image: nginx:alpine
     ports:
-      - "9080:80"  # 使用 9080 端口
+      - "80:80"  # HTTP 端口
+      - "443:443"  # HTTPS 端口
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /var/www/html:/var/www/html  # Let's Encrypt 驗證目錄
+      - /etc/letsencrypt:/etc/letsencrypt:ro  # SSL 證書目錄（唯讀）
     depends_on:
       - frontend
       - backend
