@@ -51,7 +51,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - talent-postgres-data-prod:/var/lib/postgresql/data
+      - /data/class-schedule/postgres-data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
       - /etc/localtime:/etc/localtime:ro
     environment:
