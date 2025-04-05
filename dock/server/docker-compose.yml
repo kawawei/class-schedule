@@ -22,7 +22,7 @@ services:
     container_name: talent-frontend-prod
     build:
       context: ../../web
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod  # 使用生產環境的 Dockerfile
     image: talent-frontend-prod
     expose:
       - "80"  # 只暴露端口，不直接對外開放
@@ -48,7 +48,7 @@ services:
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=talent_db
+      - DB_NAME=class_schedule
       - JWT_SECRET=your_jwt_secret_key
       - JWT_EXPIRES_IN=24h
       - CORS_ORIGIN=http://18.140.56.99:8080
@@ -70,7 +70,7 @@ services:
       - ./postgres-init:/docker-entrypoint-initdb.d
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - POSTGRES_DB=talent_db
+      - POSTGRES_DB=class_schedule
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - TZ=Asia/Taipei
