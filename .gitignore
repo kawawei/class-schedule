@@ -10,6 +10,7 @@ node_modules/
 # 環境變量文件 Environment variables
 .env
 /server/.env
+/config/secure/  # 安全配置目錄 Secure configuration directory
 
 # 日誌文件 Log files
 *.log
