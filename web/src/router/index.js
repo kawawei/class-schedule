@@ -124,6 +124,26 @@ const routes = [
     }
   },
   {
+    path: '/materials',
+    name: 'Materials',
+    component: () => import('../views/materials/materials.vue'),
+    meta: {
+      title: '教材管理', // 頁面標題 Page title
+      requiresAuth: true, // 需要身份驗證 Authentication required
+      requiresRole: ['tenant', 'admin', 'staff'] // 添加 tenant 角色 Add tenant role
+    }
+  },
+  {
+    path: '/teacher/materials',
+    name: 'TeacherMaterials',
+    component: () => import('../views/materials/materials.vue'),
+    meta: {
+      title: '教材管理', // 頁面標題 Page title
+      requiresAuth: true, // 需要身份驗證 Authentication required
+      requiresRole: ['teacher'] // 需要老師角色 Requires teacher role
+    }
+  },
+  {
     path: '/:pathMatch(.*)*', // 捕獲所有未匹配的路由 Catch all unmatched routes
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),

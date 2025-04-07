@@ -1,0 +1,170 @@
+.materials-page {
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+  
+  .container {
+    padding: var(--spacing-lg);
+  }
+  
+  .materials-content {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  // 標籤頁樣式 Tab styles
+  .tabs-container {
+    .tabs-header {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-gray-200);
+      
+      .tab-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border-radius: var(--radius-full);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background-color: var(--color-gray-100);
+        }
+        
+        &.active {
+          background-color: var(--color-primary-light);
+          color: var(--color-primary);
+          
+          .tab-icon {
+            background-color: rgba(0, 122, 255, 0.1);
+            
+            svg {
+              stroke: var(--color-primary);
+            }
+          }
+        }
+        
+        .tab-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: var(--radius-full);
+          transition: all 0.2s ease;
+          
+          svg {
+            stroke: currentColor;
+            transition: all 0.2s ease;
+          }
+        }
+        
+        .tab-text {
+          font-weight: var(--font-weight-medium);
+        }
+      }
+    }
+  }
+  
+  // 內容區域樣式 Content area styles
+  .tab-content {
+    padding: var(--spacing-lg);
+    
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      
+      h2 {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+      }
+    }
+  }
+  
+  // 教材管理樣式 Materials management styles
+  .materials-management {
+    min-height: 200px; // 設置最小高度以顯示內容區域 Set minimum height to show content area
+    padding: var(--spacing-md);
+    background-color: var(--bg-primary);
+  }
+  
+  // QRCode管理樣式 QRCode management styles
+  .qrcode-management {
+    min-height: 200px; // 設置最小高度以顯示內容區域 Set minimum height to show content area
+    padding: var(--spacing-md);
+    background-color: var(--bg-primary);
+    
+    .qrcode-image {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+    }
+    
+    .scan-count {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: var(--color-primary-light);
+      color: var(--color-primary);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+    
+    .redirect-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-xs);
+      justify-content: center;
+      
+      .edit-btn,
+      .delete-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-full);
+        
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+      
+      .edit-btn {
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+        
+        &:hover {
+          background-color: var(--color-primary);
+          color: white;
+        }
+      }
+      
+      .delete-btn {
+        background-color: var(--color-danger-light);
+        color: var(--color-danger);
+        
+        &:hover {
+          background-color: var(--color-danger);
+          color: white;
+        }
+      }
+    }
+  }
+} 
