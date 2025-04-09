@@ -13,11 +13,11 @@ services:
       - ./postgres-init:/docker-entrypoint-initdb.d
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - POSTGRES_DB=class_schedule
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=talent_password
-      - TZ=Asia/Taipei
-      - PGTZ=Asia/Taipei
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: class_schedule
+      POSTGRES_USER: postgres
+      TZ: Asia/Taipei
+      PGTZ: Asia/Taipei
     command: postgres -c timezone=Asia/Taipei
     networks:
       - server_talent-network
@@ -39,16 +39,16 @@ services:
     expose:
       - "9006"  # 只暴露端口，不直接對外開放
     environment:
-      - NODE_ENV=production
-      - PORT=3006
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=class_schedule
-      - DB_USER=postgres
-      - DB_PASSWORD=talent_password
-      - JWT_SECRET=talent_teacher_secret_key
-      - JWT_EXPIRES_IN=24h
-      - TZ=Asia/Taipei
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: class_schedule
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 24h
+      TZ: Asia/Taipei
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,9 +66,9 @@ services:
     expose:
       - "80"  # 只暴露端口，不直接對外開放
     environment:
-      - NODE_ENV=production
-      - VITE_API_BASE_URL=/schedule-api
-      - TZ=Asia/Taipei
+      NODE_ENV: production
+      VITE_API_BASE_URL: /schedule-api
+      TZ: Asia/Taipei
     networks:
       - server_talent-network
     restart: always
