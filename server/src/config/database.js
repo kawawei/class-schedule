@@ -137,49 +137,46 @@ const createTenantSchema = async (schemaName) => {
     }
 };
 
-// 更新現有租戶 Schema 的函數
+// 更新現有 Schema 的函數
 const updateExistingSchemas = async () => {
     const client = await mainPool.connect();
     try {
-        // 獲取所有非系統 schema
+        // 獲取所有租戶 Schema
         const schemas = await client.query(`
-            SELECT schema_name 
-            FROM information_schema.schemata 
-            WHERE schema_name NOT IN ('public', 'information_schema', 'pg_catalog', 'pg_toast')
+            SELECT company_code 
+            FROM public.tenants 
+            WHERE status = 'active'
         `);
-
-        // 為每個 schema 添加 permissions 欄位
+        
         for (const schema of schemas.rows) {
-            const schemaName = schema.schema_name;
-            try {
-                await client.query('BEGIN');
-
-                // 檢查 permissions 欄位是否存在
-                const columnExists = await client.query(`
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_schema = $1 
-                    AND table_name = 'users' 
-                    AND column_name = 'permissions'
-                `, [schemaName]);
-
-                // 如果欄位不存在，則添加
-                if (columnExists.rows.length === 0) {
-                    await client.query(`
-                        ALTER TABLE ${schemaName}.users 
-                        ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '{}'::jsonb
-                    `);
-                    console.log(`Schema ${schemaName} 更新成功：添加了 permissions 欄位 Schema updated successfully: added permissions column`);
-                }
-
-                await client.query('COMMIT');
-            } catch (error) {
-                await client.query('ROLLBACK');
-                console.error(`更新 Schema ${schemaName} 失敗 Failed to update schema:`, error);
-            }
+            const schemaName = schema.company_code;
+            
+            // 檢查並更新用戶表約束
+            await client.query(`
+                DO $$ 
+                BEGIN
+                    -- 刪除舊的約束
+                    IF EXISTS (
+                        SELECT 1 
+                        FROM information_schema.table_constraints 
+                        WHERE constraint_schema = '${schemaName}'
+                        AND table_name = 'users' 
+                        AND constraint_name = 'valid_role'
+                    ) THEN
+                        ALTER TABLE ${schemaName}.users DROP CONSTRAINT valid_role;
+                    END IF;
+                    
+                    -- 添加新的約束
+                    ALTER TABLE ${schemaName}.users 
+                    ADD CONSTRAINT valid_role 
+                    CHECK (role IN ('admin', 'staff', 'teacher', 'tenant'));
+                END $$;
+            `);
+            
+            console.log(`已更新 Schema ${schemaName} 的約束`);
         }
     } catch (error) {
-        console.error('更新 Schema 失敗 Failed to update schemas:', error);
+        console.error('更新 Schema 失敗:', error);
         throw error;
     } finally {
         client.release();
