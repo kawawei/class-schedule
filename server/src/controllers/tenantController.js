@@ -56,9 +56,9 @@ const tenantController = {
             // 創建管理員用戶
             const hashedPassword = await bcrypt.hash(password, 10);
             await client.query(
-                `INSERT INTO ${companyCode}.users (username, password, email, role)
-                 VALUES ($1, $2, '', 'tenant')`,
-                [username, hashedPassword]
+                `INSERT INTO ${companyCode}.users (username, password, email, role, name)
+                 VALUES ($1, $2, '', 'tenant', $3)`,
+                [username, hashedPassword, username]  // 使用 username 作為初始 name
             );
             
             await client.query('COMMIT');
