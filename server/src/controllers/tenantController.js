@@ -44,11 +44,11 @@ const tenantController = {
             const tenantResult = await client.query(
                 `INSERT INTO public.tenants (company_name, company_code, status)
                  VALUES ($1, $2, 'active')
-                 RETURNING id`,
+                 RETURNING company_code`,
                 [companyName, companyCode]
             );
             
-            const tenantId = tenantResult.rows[0].id;
+            const tenantCode = tenantResult.rows[0].company_code;
             
             // 創建租戶 Schema
             await createTenantSchema(companyCode);
@@ -67,8 +67,7 @@ const tenantController = {
                 success: true,
                 message: '註冊成功',
                 data: {
-                    tenantId,
-                    companyCode
+                    companyCode: tenantCode
                 }
             });
         } catch (error) {
