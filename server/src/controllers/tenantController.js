@@ -55,10 +55,12 @@ const tenantController = {
             
             // 創建管理員用戶
             const hashedPassword = await bcrypt.hash(password, 10);
+            // 使用 username@companyCode.com 作為默認 email
+            const defaultEmail = `${username}@${companyCode}.com`;
             await client.query(
                 `INSERT INTO ${companyCode}.users (username, password, email, role, name)
-                 VALUES ($1, $2, '', 'tenant', $3)`,
-                [username, hashedPassword, username]  // 使用 username 作為初始 name
+                 VALUES ($1, $2, $3, 'tenant', $4)`,
+                [username, hashedPassword, defaultEmail, username]  // 使用 username 作為初始 name
             );
             
             await client.query('COMMIT');
