@@ -173,7 +173,7 @@ const updateExistingSchemas = async () => {
                 END $$;
             `);
             
-            console.log(`已更新 Schema ${schemaName} 的約束`);
+            console.log(`已更新 Schema ${schemaName} 的約束 Updated constraints for schema`);
         }
     } catch (error) {
         console.error('更新 Schema 失敗:', error);
