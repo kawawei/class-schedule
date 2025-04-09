@@ -40,7 +40,7 @@ services:
       - "9006"  # 只暴露端口，不直接對外開放
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 3006
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
