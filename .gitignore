@@ -44,8 +44,8 @@ Thumbs.db
 coverage/
 
 # 配置文件 Configuration files
-config/
-config/secure/
+/config/
+/config/secure/
 
 # 環境變量文件 Environment variables
 .env.local
