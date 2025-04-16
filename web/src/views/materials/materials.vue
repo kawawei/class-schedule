@@ -104,7 +104,7 @@
                     <AppButton
                       type="primary"
                       class="edit-btn"
-                      @click.stop="handleEdit(row)"
+                      @click.stop="editQRCode(row)"
                       title="編輯"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -115,7 +115,7 @@
                     <AppButton
                       type="danger"
                       class="delete-btn"
-                      @click.stop="handleDelete(row)"
+                      @click.stop="deleteQRCode(row)"
                       title="刪除"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -135,62 +135,63 @@
     
     <!-- QRCode對話框 QRCode Dialog -->
     <AppDialog
-      v-model="qrcodeDialogVisible"
-      title="新增QRCode / Add QRCode"
-      size="md"
+      v-model:visible="qrcodeDialogVisible"
+      title="新增QRCode"
       @close="closeQRCodeDialog"
     >
-      <div class="qrcode-form">
-        <AppInput
-          v-model="qrcodeForm.name"
-          label="名稱 / Name"
-          placeholder="請輸入QRCode名稱"
-          required
-        />
-        <AppInput
-          v-model="qrcodeForm.redirectUrl"
-          label="跳轉連結 / Redirect URL"
-          placeholder="請輸入跳轉連結"
-          required
-        />
-        
-        <!-- QRCode預覽區域 QRCode Preview Area -->
-        <div class="qrcode-preview">
-          <div v-if="isGeneratingQRCode" class="loading">
-            <div class="spinner"></div>
-            <span>生成中... Generating...</span>
+      <template #content>
+        <div class="qrcode-form">
+          <div class="form-item">
+            <label>名稱 Name</label>
+            <AppInput
+              v-model="qrcodeForm.name"
+              placeholder="請輸入QRCode名稱 Please enter QRCode name"
+            />
           </div>
-          <img 
-            v-else-if="qrcodePreview" 
-            :src="qrcodePreview" 
-            alt="QRCode Preview"
-            class="preview-image"
-          />
-          <div v-else class="placeholder">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            <span>輸入連結後預覽QRCode</span>
-            <span>Enter URL to preview QRCode</span>
+          <div class="form-item">
+            <label>目標連結 Target URL</label>
+            <AppInput
+              v-model="qrcodeForm.target_url"
+              placeholder="請輸入目標連結 Please enter target URL"
+            />
+          </div>
+          <div v-if="qrcodeForm.error" class="error-message">
+            {{ qrcodeForm.error }}
           </div>
         </div>
-      </div>
+      </template>
       <template #footer>
         <div class="dialog-footer">
           <AppButton
             type="secondary"
             @click="closeQRCodeDialog"
           >
-            取消 / Cancel
+            取消 Cancel
           </AppButton>
           <AppButton
             type="primary"
+            :loading="loading"
             @click="submitQRCodeForm"
           >
-            確認 / Confirm
+            確認 Confirm
           </AppButton>
+        </div>
+      </template>
+    </AppDialog>
+
+    <!-- 刪除確認對話框 Delete Confirmation Dialog -->
+    <AppDialog
+      v-model="deleteConfirmVisible"
+      title="確認刪除 Confirm Delete"
+      size="sm"
+      @close="closeDeleteConfirm"
+      @confirm="confirmDelete"
+    >
+      <template #default>
+        <div class="delete-confirm-content">
+          <p>確定要刪除這個 QR Code 嗎？</p>
+          <p>Are you sure you want to delete this QR Code?</p>
+          <p v-if="qrcodeToDelete">名稱：{{ qrcodeToDelete.name }}</p>
         </div>
       </template>
     </AppDialog>
@@ -201,6 +202,8 @@
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppButton from '@/components/base/AppButton.vue';
 import DataTable from '@/components/base/DataTable.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
+import AppInput from '@/components/base/AppInput.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -208,7 +211,9 @@ export default {
   components: {
     AppHeader,
     AppButton,
-    DataTable
+    DataTable,
+    AppDialog,
+    AppInput
   },
   setup() {
     return {
@@ -290,6 +295,20 @@ export default {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.delete-confirm-content {
+  padding: 2rem;
+  text-align: center;
+  
+  p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+    
+    &:first-child {
+      font-weight: 500;
+    }
   }
 }
 </style> 

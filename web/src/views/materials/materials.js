@@ -1,10 +1,38 @@
-import { ref, h, reactive, watch } from 'vue';
+import { ref, h, reactive, onMounted, watch } from 'vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppButton from '@/components/base/AppButton.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import AppInput from '@/components/base/AppInput.vue';
-import QRCode from 'qrcode';
+import axios from 'axios';
+
+// 配置 axios 基礎 URL Configure axios base URL
+axios.defaults.baseURL = 'http://localhost:3006';
+
+// 配置 axios 請求攔截器 Configure axios request interceptor
+axios.interceptors.request.use(
+  (config) => {
+    // 從 localStorage 獲取 token Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      // 添加認證頭 Add authorization header
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// 格式化日期函數 Format date function
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}/${month}/${day}`;
+};
 
 // 標籤頁圖標組件 Tab Icon Components
 const MaterialIcon = {
@@ -86,24 +114,7 @@ export default {
     const loading = ref(false);
     
     // QRCode列表數據 QRCode list data
-    const qrcodeData = ref([
-      {
-        id: 1,
-        name: 'QRCode測試1',
-        qrcodeUrl: 'https://example.com/qr1',
-        redirectUrl: 'https://example.com/redirect1',
-        scanCount: 156,
-        createdAt: '2024-04-07 14:30:00'
-      },
-      {
-        id: 2,
-        name: 'QRCode測試2',
-        qrcodeUrl: 'https://example.com/qr2',
-        redirectUrl: 'https://example.com/redirect2',
-        scanCount: 89,
-        createdAt: '2024-04-07 15:45:00'
-      }
-    ]);
+    const qrcodeData = ref([]);
 
     // QRCode表格列定義 QRCode table column definitions
     const qrcodeColumns = [
@@ -114,10 +125,10 @@ export default {
         align: 'center'
       },
       {
-        key: 'qrcodeUrl',
+        key: 'qrcode_url',
         title: 'QRCode',
         width: 100,
-        render: (row) => `<img src="${row.qrcodeUrl}" alt="QRCode" style="width: 50px; height: 50px;">`
+        render: (row) => `<img src="${row.qrcode_url}" alt="QRCode" style="width: 50px; height: 50px;">`
       },
       {
         key: 'name',
@@ -125,20 +136,21 @@ export default {
         width: 200
       },
       {
-        key: 'scanCount',
+        key: 'scan_count',
         title: '掃描次數',
         width: 100,
         align: 'center'
       },
       {
-        key: 'redirectUrl',
-        title: '跳轉連結',
+        key: 'actual_url',
+        title: '目標連結',
         width: 300
       },
       {
-        key: 'createdAt',
+        key: 'created_at',
         title: '創建時間',
-        width: 160
+        width: 160,
+        render: (row) => formatDate(row.created_at)
       },
       {
         key: 'actions',
@@ -151,6 +163,9 @@ export default {
     // 切換標籤頁 Switch tab
     const switchTab = (tab) => {
       currentTab.value = tab;
+      if (tab === 'qrcode') {
+        fetchQRCodes();
+      }
     };
     
     // 打開添加教材對話框 Open add material dialog
@@ -160,86 +175,119 @@ export default {
     
     // QRCode對話框相關 QRCode dialog related
     const qrcodeDialogVisible = ref(false);
-    const qrcodeForm = reactive({
+    const qrcodeForm = ref({
       name: '',
-      redirectUrl: '',
-      actualUrl: ''
-    });
-    const qrcodePreview = ref('');
-    const isGeneratingQRCode = ref(false);
-    
-    // 監聽跳轉連結變化，自動生成QRCode
-    // Watch redirect URL changes, automatically generate QRCode
-    watch(() => qrcodeForm.redirectUrl, async (newUrl) => {
-      if (newUrl) {
-        await generateQRCode(newUrl);
-      } else {
-        qrcodePreview.value = '';
-      }
+      target_url: '',
+      error: ''
     });
     
-    // 生成QRCode Generate QRCode
-    const generateQRCode = async (url) => {
+    // 獲取 QR Code 列表 Get QR Code list
+    const fetchQRCodes = async () => {
       try {
-        isGeneratingQRCode.value = true;
-        // 生成後端重定向URL Generate backend redirect URL
-        const redirectUrl = `${window.location.origin}/api/qrcode/redirect/${Date.now()}`;
-        // 生成QRCode圖片 Generate QRCode image
-        const qrCodeDataUrl = await QRCode.toDataURL(redirectUrl, {
-          width: 200,
-          margin: 1,
-          color: {
-            dark: '#000000',
-            light: '#ffffff'
-          }
-        });
-        qrcodePreview.value = qrCodeDataUrl;
-        // 保存實際的目標URL Save actual target URL
-        qrcodeForm.actualUrl = url;
+        loading.value = true;
+        const response = await axios.get('/api/qrcode');
+        qrcodeData.value = response.data.data;
       } catch (error) {
-        console.error('生成QRCode失敗 Failed to generate QRCode:', error);
-        qrcodePreview.value = '';
+        console.error('獲取 QR Code 列表失敗 Failed to fetch QR Code list:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '獲取 QR Code 列表失敗 Failed to fetch QR Code list';
       } finally {
-        isGeneratingQRCode.value = false;
+        loading.value = false;
       }
     };
     
     // 打開QRCode對話框 Open QRCode dialog
     const openQRCodeDialog = () => {
       qrcodeDialogVisible.value = true;
+      qrcodeForm.value = {
+        name: '',
+        target_url: '',
+        error: ''
+      };
     };
     
     // 關閉QRCode對話框 Close QRCode dialog
     const closeQRCodeDialog = () => {
       qrcodeDialogVisible.value = false;
-      // 重置表單 Reset form
-      qrcodeForm.name = '';
-      qrcodeForm.redirectUrl = '';
-      qrcodePreview.value = '';
+      qrcodeForm.value = {
+        name: '',
+        target_url: '',
+        error: ''
+      };
     };
     
     // 提交QRCode表單 Submit QRCode form
     const submitQRCodeForm = async () => {
       try {
-        if (!qrcodeForm.name || !qrcodeForm.redirectUrl) {
-          throw new Error('請填寫完整資訊 Please fill in all information');
+        loading.value = true;
+        qrcodeForm.value.error = '';
+        
+        if (!qrcodeForm.value.name || !qrcodeForm.value.target_url) {
+          qrcodeForm.value.error = '請填寫所有必填欄位 Please fill in all required fields';
+          return;
         }
+
+        const response = await axios.post('/api/qrcode', {
+          name: qrcodeForm.value.name,
+          target_url: qrcodeForm.value.target_url
+        });
+
+        await fetchQRCodes();
         
-        // 準備提交數據 Prepare submission data
-        const qrcodeData = {
-          name: qrcodeForm.name,
-          redirectUrl: qrcodeForm.actualUrl, // 使用實際的目標URL Use actual target URL
-          type: 'redirect', // QRCode類型 QRCode type
-          status: 'active' // QRCode狀態 QRCode status
-        };
-        
-        // TODO: 調用API生成QRCode Call API to generate QRCode
-        console.log('提交QRCode表單 Submit QRCode form', qrcodeData);
-        
-        // 關閉對話框 Close dialog
         closeQRCodeDialog();
       } catch (error) {
-        console.error('生成QRCode失敗 Failed to generate QRCode:', error);
+        console.error('創建 QR Code 失敗 Failed to create QR Code:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '創建 QR Code 失敗 Failed to create QR Code';
+      } finally {
+        loading.value = false;
+      }
+    };
+    
+    // 編輯 QR Code Edit QR Code
+    const editQRCode = async (row) => {
+      try {
+        loading.value = true;
+        qrcodeForm.value = {
+          name: row.name,
+          target_url: row.target_url,
+          error: ''
+        };
+        qrcodeDialogVisible.value = true;
+      } catch (error) {
+        console.error('編輯 QR Code 失敗 Failed to edit QR Code:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '編輯 QR Code 失敗 Failed to edit QR Code';
+      } finally {
+        loading.value = false;
+      }
+    };
+    
+    // 刪除確認對話框狀態 Delete confirmation dialog state
+    const deleteConfirmVisible = ref(false);
+    const qrcodeToDelete = ref(null);
+
+    // 打開刪除確認對話框 Open delete confirmation dialog
+    const openDeleteConfirm = (row) => {
+      qrcodeToDelete.value = row;
+      deleteConfirmVisible.value = true;
+    };
+
+    // 關閉刪除確認對話框 Close delete confirmation dialog
+    const closeDeleteConfirm = () => {
+      deleteConfirmVisible.value = false;
+      qrcodeToDelete.value = null;
+    };
+
+    // 確認刪除 Confirm deletion
+    const confirmDelete = async () => {
+      try {
+        loading.value = true;
+        await axios.delete(`/api/qrcode/${qrcodeToDelete.value.id}`);
+        await fetchQRCodes();
+        closeDeleteConfirm();
+      } catch (error) {
+        console.error('刪除 QR Code 失敗 Failed to delete QR Code:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '刪除 QR Code 失敗 Failed to delete QR Code';
+      } finally {
+        loading.value = false;
       }
     };
     
@@ -255,6 +303,20 @@ export default {
         isLoggingOut.value = false;
       }
     };
+
+    // 組件掛載時獲取 QR Code 列表
+    onMounted(() => {
+      if (currentTab.value === 'qrcode') {
+        fetchQRCodes();
+      }
+    });
+
+    // 監聽標籤切換，切換到 QR Code 時獲取列表
+    watch(currentTab, (newTab) => {
+      if (newTab === 'qrcode') {
+        fetchQRCodes();
+      }
+    });
 
     return {
       userName,
@@ -272,8 +334,12 @@ export default {
       handleLogout,
       qrcodeDialogVisible,
       qrcodeForm,
-      qrcodePreview,
-      isGeneratingQRCode
+      editQRCode,
+      deleteQRCode: openDeleteConfirm,
+      deleteConfirmVisible,
+      closeDeleteConfirm,
+      confirmDelete,
+      qrcodeToDelete
     };
   }
 }; 
