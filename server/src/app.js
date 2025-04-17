@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const http = require('http');
+const path = require('path');
 const { mainPool, updateExistingSchemas } = require('./config/database');
 const tenantRoutes = require('./routes/tenantRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -23,10 +24,17 @@ const server = http.createServer(app);
 // 初始化 WebSocket 服務
 initializeWebSocket(server);
 
-// 中間件
+// 配置 CORS
 app.use(cors());
-app.use(express.json());
+
+// 配置日誌
 app.use(morgan('dev'));
+
+// 配置靜態文件服務 Configure static file service
+app.use(express.static(path.join(__dirname, '../public')));
+
+// 配置 JSON 解析
+app.use(express.json());
 
 // 健康檢查端點
 app.get('/health', (req, res) => {

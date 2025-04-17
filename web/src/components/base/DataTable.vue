@@ -27,7 +27,12 @@
           <tr v-for="(row, index) in data" :key="getRowKey(row, index)" @click="onRowClick($event, row, index)" :class="{ 'clickable': rowClickable }">
             <td v-for="column in columns" :key="column.key" :style="getColumnStyle(column)">
               <slot :name="column.key" :row="row" :index="index">
-                {{ getColumnValue(row, column) }}
+                <template v-if="column.render">
+                  <component :is="() => column.render(row)" />
+                </template>
+                <template v-else>
+                  {{ getColumnValue(row, column) }}
+                </template>
               </slot>
             </td>
           </tr>

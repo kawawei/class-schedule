@@ -1,5 +1,8 @@
 const { mainPool } = require('../config/database');
 const ApiError = require('../utils/apiError');
+const QRCode = require('qrcode');
+const path = require('path');
+const fs = require('fs');
 
 // URL 驗證函數 URL validation function
 const isValidUrl = (url) => {
@@ -13,11 +16,81 @@ const isValidUrl = (url) => {
     }
 };
 
+// 獲取下一個可用的序號 Get next available sequence number
+const getNextAvailableId = async (client, tenantId) => {
+    try {
+        // 獲取所有已使用的 ID Get all used IDs
+        const result = await client.query(
+            `SELECT id FROM public.qrcodes 
+             WHERE tenant_id = $1 
+             ORDER BY id`,
+            [tenantId]
+        );
+
+        const usedIds = result.rows.map(row => row.id);
+        
+        // 如果沒有記錄，從 1 開始 If no records, start from 1
+        if (usedIds.length === 0) {
+            return 1;
+        }
+
+        // 找出第一個可用的 ID Find first available ID
+        let nextId = 1;
+        for (const id of usedIds) {
+            if (id !== nextId) {
+                return nextId;
+            }
+            nextId++;
+        }
+        
+        // 如果沒有空缺，返回最大 ID + 1 If no gaps, return max ID + 1
+        return nextId;
+    } catch (error) {
+        console.error('獲取下一個可用序號失敗:', error);
+        throw error;
+    }
+};
+
+// 生成圖片文件名 Generate image filename
+const generateImageFilename = (id) => {
+    // 將數字轉換為 5 位數的字符串，不足補 0，並加上 qr 前綴
+    // Convert number to 5-digit string, pad with zeros, and add qr prefix
+    return `qr${String(id).padStart(5, '0')}.png`;
+};
+
+// 生成 QR Code 圖片 Generate QR Code image
+const generateQRCodeImage = async (url, id) => {
+    try {
+        // 生成文件名 Generate filename
+        const filename = generateImageFilename(id);
+        
+        // QR Code 圖片保存路徑 QR Code image save path
+        const qrcodePath = path.join(__dirname, '../../public/qrcodes', filename);
+        
+        // 生成 QR Code 圖片 Generate QR Code image
+        await QRCode.toFile(qrcodePath, url, {
+            errorCorrectionLevel: 'H', // 高容錯率 High error correction level
+            width: 400, // 圖片寬度 Image width
+            margin: 1, // 邊距 Margin
+            color: {
+                dark: '#000000', // 二維碼顏色 QR Code color
+                light: '#ffffff' // 背景顏色 Background color
+            }
+        });
+        
+        // 返回圖片的相對路徑 Return relative path of the image
+        return `/qrcodes/${filename}`;
+    } catch (error) {
+        console.error('生成 QR Code 圖片失敗:', error);
+        throw new Error('生成 QR Code 圖片失敗 Failed to generate QR Code image');
+    }
+};
+
 // 創建 QR Code
 const createQRCode = async (req, res, next) => {
     const client = await mainPool.connect();
     try {
-        const { name, target_url } = req.body;
+        const { name, target_url, preview_id } = req.body;
         const { companyCode } = req.user;
         
         // 驗證 URL Validate URL
@@ -25,7 +98,7 @@ const createQRCode = async (req, res, next) => {
             throw new ApiError(400, '無效的目標 URL Invalid target URL');
         }
         
-        // 檢查租戶是否存在且處於活動狀態
+        // 檢查租戶是否存在且處於活動狀態 Check if tenant exists and is active
         const tenantResult = await client.query(
             `SELECT id FROM public.tenants WHERE company_code = $1 AND status = 'active'`,
             [companyCode]
@@ -37,17 +110,20 @@ const createQRCode = async (req, res, next) => {
         
         const tenantId = tenantResult.rows[0].id;
         
-        // 生成 URL
-        const redirect_url = `${process.env.API_BASE_URL}/api/qrcode/redirect/${Date.now()}`;
-        const qrcode_url = `${process.env.API_BASE_URL}/api/qrcode/${Date.now()}`;
+        // 使用預覽時的 ID Use ID from preview
+        const id = preview_id;
         
-        // 插入新記錄
+        // 使用預覽時生成的 URL Use URLs generated during preview
+        const redirect_url = `${process.env.API_BASE_URL}/api/qrcode/redirect/${id}`;
+        const qrcode_url = `/qrcodes/qr${String(id).padStart(5, '0')}.png`;
+        
+        // 插入新記錄 Insert new record
         const result = await client.query(
             `INSERT INTO public.qrcodes (
-                name, qrcode_url, redirect_url, actual_url, tenant_id
-            ) VALUES ($1, $2, $3, $4, $5)
+                id, name, qrcode_url, redirect_url, actual_url, tenant_id
+            ) VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *`,
-            [name, qrcode_url, redirect_url, target_url, tenantId]
+            [id, name, qrcode_url, redirect_url, target_url, tenantId]
         );
         
         res.status(201).json({
@@ -157,7 +233,7 @@ const updateQRCode = async (req, res, next) => {
             throw new ApiError(400, '無效的目標 URL Invalid target URL');
         }
         
-        // 獲取租戶 ID
+        // 獲取租戶 ID Get tenant ID
         const tenantResult = await client.query(
             `SELECT id FROM public.tenants WHERE company_code = $1`,
             [companyCode]
@@ -169,17 +245,28 @@ const updateQRCode = async (req, res, next) => {
         
         const tenantId = tenantResult.rows[0].id;
         
+        // 獲取現有 QR Code 信息 Get existing QR Code info
+        const existingQRCode = await client.query(
+            `SELECT qrcode_url, redirect_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            [id, tenantId]
+        );
+        
+        if (existingQRCode.rows.length === 0) {
+            return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
+        }
+        
+        // 更新數據庫記錄，保持原有的 QR Code 圖片和重定向 URL，但重置掃描次數
+        // Update database record, keep original QR Code image and redirect URL, but reset scan count
         const result = await client.query(
             `UPDATE public.qrcodes 
-             SET name = $1, actual_url = $2, updated_at = CURRENT_TIMESTAMP
+             SET name = $1, 
+                 actual_url = $2, 
+                 scan_count = 0,
+                 updated_at = CURRENT_TIMESTAMP
              WHERE id = $3 AND tenant_id = $4
              RETURNING *`,
             [name, target_url, id, tenantId]
         );
-        
-        if (result.rows.length === 0) {
-            return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
-        }
         
         res.json({
             success: true,
@@ -216,16 +303,27 @@ const deleteQRCode = async (req, res, next) => {
         
         const tenantId = tenantResult.rows[0].id;
         
-        const result = await client.query(
-            `DELETE FROM public.qrcodes 
-             WHERE id = $1 AND tenant_id = $2
-             RETURNING *`,
+        // 獲取 QR Code 信息 Get QR Code info
+        const qrcodeResult = await client.query(
+            `SELECT qrcode_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
             [id, tenantId]
         );
         
-        if (result.rows.length === 0) {
+        if (qrcodeResult.rows.length === 0) {
             return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
         }
+        
+        // 刪除 QR Code 圖片 Delete QR Code image
+        const imagePath = path.join(__dirname, '../../public', qrcodeResult.rows[0].qrcode_url);
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+        }
+        
+        // 刪除數據庫記錄 Delete database record
+        await client.query(
+            `DELETE FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            [id, tenantId]
+        );
         
         res.json({
             success: true,
@@ -239,44 +337,57 @@ const deleteQRCode = async (req, res, next) => {
     }
 };
 
-// 處理 QR Code 重定向
+// 處理 QR Code 重定向 Handle QR Code redirect
 const handleRedirect = async (req, res, next) => {
     const client = await mainPool.connect();
     try {
         const { id } = req.params;
         
-        // 獲取 QR Code 信息
+        // 獲取 QR Code 信息 Get QR Code info
         const result = await client.query(
-            `SELECT id, actual_url FROM public.qrcodes WHERE redirect_url LIKE $1`,
-            [`%${id}%`]
+            `SELECT id, actual_url FROM public.qrcodes WHERE id = $1`,
+            [id]
         );
         
         if (result.rows.length === 0) {
-            return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
+            console.error(`QR Code not found for ID: ${id}`);
+            return res.status(404).json({
+                success: false,
+                message: 'QR Code 不存在 QR Code not found'
+            });
         }
         
         const qrCode = result.rows[0];
         
-        // 記錄掃描
-        await client.query(
-            `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
-             VALUES ($1, $2, $3)`,
-            [qrCode.id, req.ip, req.headers['user-agent']]
-        );
+        try {
+            // 記錄掃描 Record scan
+            await client.query(
+                `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
+                 VALUES ($1, $2, $3)`,
+                [qrCode.id, req.ip, req.headers['user-agent']]
+            );
+            
+            // 更新掃描次數 Update scan count
+            await client.query(
+                `UPDATE public.qrcodes 
+                 SET scan_count = scan_count + 1
+                 WHERE id = $1`,
+                [qrCode.id]
+            );
+        } catch (error) {
+            // 如果記錄掃描失敗，只記錄錯誤但不中斷重定向
+            // If recording scan fails, just log error but don't interrupt redirect
+            console.error('記錄掃描信息失敗 Failed to record scan:', error);
+        }
         
-        // 更新掃描次數
-        await client.query(
-            `UPDATE public.qrcodes 
-             SET scan_count = scan_count + 1
-             WHERE id = $1`,
-            [qrCode.id]
-        );
-        
-        // 重定向到目標 URL
+        // 重定向到目標 URL Redirect to target URL
         res.redirect(qrCode.actual_url);
     } catch (error) {
         console.error('處理重定向失敗 Failed to handle redirect:', error);
-        next(new ApiError(500, '處理重定向失敗 Failed to handle redirect'));
+        res.status(500).json({
+            success: false,
+            message: '處理重定向失敗 Failed to handle redirect'
+        });
     } finally {
         client.release();
     }
@@ -335,6 +446,57 @@ const getQRCodeStats = async (req, res, next) => {
     }
 };
 
+// 生成預覽 QR Code Generate preview QR Code
+const generatePreviewQRCode = async (req, res, next) => {
+  try {
+    const { target_url } = req.body;
+    const { companyCode } = req.user;
+    
+    // 驗證 URL Validate URL
+    if (!isValidUrl(target_url)) {
+      throw new ApiError(400, '無效的目標 URL Invalid target URL');
+    }
+    
+    // 獲取租戶 ID Get tenant ID
+    const client = await mainPool.connect();
+    try {
+      const tenantResult = await client.query(
+        `SELECT id FROM public.tenants WHERE company_code = $1`,
+        [companyCode]
+      );
+      
+      if (tenantResult.rows.length === 0) {
+        throw new ApiError(404, '租戶不存在 Tenant not found');
+      }
+      
+      const tenantId = tenantResult.rows[0].id;
+      
+      // 獲取下一個可用的序號 Get next available ID
+      const nextId = await getNextAvailableId(client, tenantId);
+      
+      // 生成重定向 URL Generate redirect URL
+      const redirect_url = `${process.env.API_BASE_URL}/api/qrcode/redirect/${nextId}`;
+      
+      // 生成 QR Code 圖片 Generate QR Code image
+      const qrcode_url = await generateQRCodeImage(redirect_url, nextId);
+      
+      res.json({
+        success: true,
+        data: {
+          id: nextId,
+          redirect_url,
+          qrcode_url
+        }
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('生成預覽 QR Code 失敗:', error);
+    next(new ApiError(500, '生成預覽 QR Code 失敗'));
+  }
+};
+
 module.exports = {
     createQRCode,
     getQRCodes,
@@ -342,5 +504,6 @@ module.exports = {
     updateQRCode,
     deleteQRCode,
     handleRedirect,
-    getQRCodeStats
+    getQRCodeStats,
+    generatePreviewQRCode
 }; 

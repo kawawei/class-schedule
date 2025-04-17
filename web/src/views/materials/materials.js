@@ -7,7 +7,8 @@ import AppInput from '@/components/base/AppInput.vue';
 import axios from 'axios';
 
 // 配置 axios 基礎 URL Configure axios base URL
-axios.defaults.baseURL = 'http://localhost:3006';
+const API_BASE_URL = 'http://localhost:3006';
+axios.defaults.baseURL = API_BASE_URL;
 
 // 配置 axios 請求攔截器 Configure axios request interceptor
 axios.interceptors.request.use(
@@ -18,9 +19,31 @@ axios.interceptors.request.use(
       // 添加認證頭 Add authorization header
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Request config:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data
+    });
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// 配置 axios 響應攔截器 Configure axios response interceptor
+axios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error('Response interceptor error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     return Promise.reject(error);
   }
 );
@@ -128,7 +151,19 @@ export default {
         key: 'qrcode_url',
         title: 'QRCode',
         width: 100,
-        render: (row) => `<img src="${row.qrcode_url}" alt="QRCode" style="width: 50px; height: 50px;">`
+        align: 'center',
+        render: (row) => {
+          // 使用完整的後端 URL Use complete backend URL
+          const fullUrl = `${API_BASE_URL}${row.qrcode_url}`;
+          return h('img', {
+            src: fullUrl,
+            alt: 'QRCode',
+            style: {
+              width: '50px',
+              height: '50px'
+            }
+          });
+        }
       },
       {
         key: 'name',
@@ -180,21 +215,33 @@ export default {
       target_url: '',
       error: '',
       preview_url: '', // 預覽用的中間跳轉連結 Preview redirect URL
-      qrcode_preview: '' // QRCode 預覽圖片 QRCode preview image
+      qrcode_preview: '', // QRCode 預覽圖片 QRCode preview image
+      preview_id: null, // 保存預覽 ID Save preview ID
+      is_editing: false // 標記為編輯模式 Mark as edit mode
     });
     
     // 更新預覽 Update preview
-    const updatePreview = () => {
+    const updatePreview = async () => {
       if (qrcodeForm.value.target_url) {
-        // 生成臨時 ID Generate temporary ID
-        const tempId = Date.now().toString(36); // 使用 base36 格式生成較短的 ID
-        // 設置預覽 URL Set preview URL
-        qrcodeForm.value.preview_url = `${axios.defaults.baseURL}/q/${tempId}`;
-        // 使用系統跳轉連結生成 QRCode Generate QRCode using system redirect URL
-        qrcodeForm.value.qrcode_preview = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrcodeForm.value.preview_url)}`;
+        try {
+          // 使用後端 API 生成預覽 QR Code Use backend API to generate preview QR Code
+          const response = await axios.post('/api/qrcode/preview', {
+            target_url: qrcodeForm.value.target_url
+          });
+          
+          if (response.data.success) {
+            qrcodeForm.value.preview_url = response.data.data.redirect_url;
+            qrcodeForm.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}`;
+            qrcodeForm.value.preview_id = response.data.data.id; // 保存預覽 ID Save preview ID
+          }
+        } catch (error) {
+          console.error('生成 QR Code 預覽失敗:', error);
+          qrcodeForm.value.error = '生成 QR Code 預覽失敗';
+        }
       } else {
         qrcodeForm.value.preview_url = '';
         qrcodeForm.value.qrcode_preview = '';
+        qrcodeForm.value.preview_id = null;
       }
     };
     
@@ -202,10 +249,17 @@ export default {
     const fetchQRCodes = async () => {
       try {
         loading.value = true;
+        console.log('Authorization token:', localStorage.getItem('token')); // 添加 token 日誌
         const response = await axios.get('/api/qrcode');
         qrcodeData.value = response.data.data;
       } catch (error) {
         console.error('獲取 QR Code 列表失敗 Failed to fetch QR Code list:', error);
+        console.error('錯誤詳細信息 Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers
+        });
         qrcodeForm.value.error = error.response?.data?.message || '獲取 QR Code 列表失敗 Failed to fetch QR Code list';
       } finally {
         loading.value = false;
@@ -220,7 +274,9 @@ export default {
         target_url: '',
         error: '',
         preview_url: '',
-        qrcode_preview: ''
+        qrcode_preview: '',
+        preview_id: null,
+        is_editing: false // 重置編輯模式標記 Reset edit mode flag
       };
     };
     
@@ -232,14 +288,16 @@ export default {
         target_url: '',
         error: '',
         preview_url: '',
-        qrcode_preview: ''
+        qrcode_preview: '',
+        preview_id: null,
+        is_editing: false // 重置編輯模式標記 Reset edit mode flag
       };
     };
     
     // 監聽目標連結變化 Watch target URL changes
-    watch(() => qrcodeForm.value.target_url, (newUrl) => {
+    watch(() => qrcodeForm.value.target_url, async (newUrl) => {
       if (newUrl) {
-        updatePreview();
+        await updatePreview();
       }
     });
     
@@ -262,17 +320,26 @@ export default {
           return;
         }
 
-        const response = await axios.post('/api/qrcode', {
-          name: qrcodeForm.value.name,
-          target_url: qrcodeForm.value.target_url
-        });
+        if (qrcodeForm.value.is_editing) {
+          // 更新現有 QR Code Update existing QR Code
+          await axios.put(`/api/qrcode/${qrcodeForm.value.id}`, {
+            name: qrcodeForm.value.name,
+            target_url: qrcodeForm.value.target_url
+          });
+        } else {
+          // 創建新的 QR Code Create new QR Code
+          await axios.post('/api/qrcode', {
+            name: qrcodeForm.value.name,
+            target_url: qrcodeForm.value.target_url,
+            preview_id: qrcodeForm.value.preview_id
+          });
+        }
 
         await fetchQRCodes();
-        
         closeQRCodeDialog();
       } catch (error) {
-        console.error('創建 QR Code 失敗 Failed to create QR Code:', error);
-        qrcodeForm.value.error = error.response?.data?.message || '創建 QR Code 失敗 Failed to create QR Code';
+        console.error('提交 QR Code 失敗 Failed to submit QR Code:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '提交 QR Code 失敗 Failed to submit QR Code';
       } finally {
         loading.value = false;
       }
@@ -281,18 +348,19 @@ export default {
     // 編輯 QR Code Edit QR Code
     const editQRCode = async (row) => {
       try {
-        loading.value = true;
         qrcodeForm.value = {
+          id: row.id, // 保存當前 QR Code 的 ID Save current QR Code ID
           name: row.name,
-          target_url: row.target_url,
-          error: ''
+          target_url: row.actual_url, // 使用當前的目標 URL Use current target URL
+          error: '',
+          preview_url: row.redirect_url, // 保持原有的重定向 URL Keep original redirect URL
+          qrcode_preview: `${API_BASE_URL}${row.qrcode_url}`, // 保持原有的 QR Code 圖片 Keep original QR Code image
+          is_editing: true // 標記為編輯模式 Mark as edit mode
         };
         qrcodeDialogVisible.value = true;
       } catch (error) {
         console.error('編輯 QR Code 失敗 Failed to edit QR Code:', error);
         qrcodeForm.value.error = error.response?.data?.message || '編輯 QR Code 失敗 Failed to edit QR Code';
-      } finally {
-        loading.value = false;
       }
     };
     
@@ -347,6 +415,13 @@ export default {
       }
     });
 
+    // 處理圖片加載錯誤 Handle image loading error
+    const handleImageError = (event) => {
+      console.error('QR Code 圖片加載失敗:', event);
+      // 設置預設圖片 Set default image
+      event.target.src = '/images/qrcode-placeholder.png';
+    };
+
     // 監聽標籤切換，切換到 QR Code 時獲取列表
     watch(currentTab, (newTab) => {
       if (newTab === 'qrcode') {
@@ -375,7 +450,8 @@ export default {
       deleteConfirmVisible,
       closeDeleteConfirm,
       confirmDelete,
-      qrcodeToDelete
+      qrcodeToDelete,
+      handleImageError
     };
   }
 }; 

@@ -53,4 +53,8 @@ coverage/
 
 # 依賴目錄 Dependencies
 dist/
-build/ 
+build/
+
+# QR Code 圖片 QR Code images
+/server/public/qrcodes/
+*.png 

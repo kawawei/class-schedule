@@ -68,43 +68,43 @@
               
               <!-- QRCode列表 QRCode List -->
               <DataTable
+                :loading="loading"
                 :columns="qrcodeColumns"
                 :data="qrcodeData"
-                row-key="id"
-                :loading="loading"
               >
-                <!-- QRCode圖片列 QRCode image column -->
-                <template #qrcodeUrl="{ row }">
-                  <img 
-                    :src="row.qrcodeUrl" 
+                <!-- QRCode 圖片顯示 QRCode image display -->
+                <template #qrcode_url="{ row }">
+                  <img
+                    :src="`http://localhost:3006${row.qrcode_url}?t=${new Date().getTime()}`"
                     :alt="row.name"
-                    class="qrcode-image"
-                  >
+                    style="width: 50px; height: 50px;"
+                    @error="handleImageError"
+                  />
                 </template>
 
                 <!-- 掃描次數列 Scan count column -->
-                <template #scanCount="{ row }">
-                  <span class="scan-count">{{ row.scanCount }}</span>
+                <template #scan_count="{ row }">
+                  <span class="scan-count">{{ row.scan_count }}</span>
                 </template>
 
-                <!-- 跳轉連結列 Redirect URL column -->
-                <template #redirectUrl="{ row }">
+                <!-- 目標連結列 Target URL column -->
+                <template #actual_url="{ row }">
                   <a 
-                    :href="row.redirectUrl" 
+                    :href="row.actual_url" 
                     target="_blank"
                     class="redirect-link"
                   >
-                    {{ row.redirectUrl }}
+                    {{ row.actual_url }}
                   </a>
                 </template>
 
-                <!-- 操作列 Actions column -->
+                <!-- 操作按鈕 Action buttons -->
                 <template #actions="{ row }">
                   <div class="action-buttons">
                     <AppButton
                       type="primary"
                       class="edit-btn"
-                      @click.stop="editQRCode(row)"
+                      @click="editQRCode(row)"
                       title="編輯"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -115,7 +115,7 @@
                     <AppButton
                       type="danger"
                       class="delete-btn"
-                      @click.stop="deleteQRCode(row)"
+                      @click="deleteQRCode(row)"
                       title="刪除"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
