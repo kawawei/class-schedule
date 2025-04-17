@@ -178,8 +178,25 @@ export default {
     const qrcodeForm = ref({
       name: '',
       target_url: '',
-      error: ''
+      error: '',
+      preview_url: '', // 預覽用的中間跳轉連結 Preview redirect URL
+      qrcode_preview: '' // QRCode 預覽圖片 QRCode preview image
     });
+    
+    // 更新預覽 Update preview
+    const updatePreview = () => {
+      if (qrcodeForm.value.target_url) {
+        // 生成臨時 ID Generate temporary ID
+        const tempId = Date.now().toString(36); // 使用 base36 格式生成較短的 ID
+        // 設置預覽 URL Set preview URL
+        qrcodeForm.value.preview_url = `${axios.defaults.baseURL}/q/${tempId}`;
+        // 使用系統跳轉連結生成 QRCode Generate QRCode using system redirect URL
+        qrcodeForm.value.qrcode_preview = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrcodeForm.value.preview_url)}`;
+      } else {
+        qrcodeForm.value.preview_url = '';
+        qrcodeForm.value.qrcode_preview = '';
+      }
+    };
     
     // 獲取 QR Code 列表 Get QR Code list
     const fetchQRCodes = async () => {
@@ -201,7 +218,9 @@ export default {
       qrcodeForm.value = {
         name: '',
         target_url: '',
-        error: ''
+        error: '',
+        preview_url: '',
+        qrcode_preview: ''
       };
     };
     
@@ -211,9 +230,18 @@ export default {
       qrcodeForm.value = {
         name: '',
         target_url: '',
-        error: ''
+        error: '',
+        preview_url: '',
+        qrcode_preview: ''
       };
     };
+    
+    // 監聽目標連結變化 Watch target URL changes
+    watch(() => qrcodeForm.value.target_url, (newUrl) => {
+      if (newUrl) {
+        updatePreview();
+      }
+    });
     
     // 提交QRCode表單 Submit QRCode form
     const submitQRCodeForm = async () => {
@@ -223,6 +251,14 @@ export default {
         
         if (!qrcodeForm.value.name || !qrcodeForm.value.target_url) {
           qrcodeForm.value.error = '請填寫所有必填欄位 Please fill in all required fields';
+          return;
+        }
+
+        // 檢查目標連結格式 Check target URL format
+        try {
+          new URL(qrcodeForm.value.target_url);
+        } catch (e) {
+          qrcodeForm.value.error = '請輸入有效的目標連結 Please enter a valid target URL';
           return;
         }
 

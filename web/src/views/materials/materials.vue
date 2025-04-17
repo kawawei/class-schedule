@@ -135,11 +135,12 @@
     
     <!-- QRCode對話框 QRCode Dialog -->
     <AppDialog
-      v-model:visible="qrcodeDialogVisible"
+      v-model="qrcodeDialogVisible"
       title="新增QRCode"
       @close="closeQRCodeDialog"
+      @confirm="submitQRCodeForm"
     >
-      <template #content>
+      <template #default>
         <div class="qrcode-form">
           <div class="form-item">
             <label>名稱 Name</label>
@@ -155,26 +156,31 @@
               placeholder="請輸入目標連結 Please enter target URL"
             />
           </div>
+          <!-- QRCode 預覽區域 QRCode Preview Area -->
+          <div v-if="qrcodeForm.target_url" class="qrcode-preview">
+            <h3 class="preview-title">QRCode 預覽 Preview</h3>
+            <div class="preview-content">
+              <div class="preview-info">
+                <div class="info-item">
+                  <p class="preview-label">系統跳轉連結 System Redirect URL:</p>
+                  <div class="preview-url-container">
+                    <p class="preview-url">{{ qrcodeForm.preview_url }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-qrcode">
+                <img 
+                  v-if="qrcodeForm.qrcode_preview" 
+                  :src="qrcodeForm.qrcode_preview" 
+                  alt="QRCode Preview"
+                  class="preview-image"
+                />
+              </div>
+            </div>
+          </div>
           <div v-if="qrcodeForm.error" class="error-message">
             {{ qrcodeForm.error }}
           </div>
-        </div>
-      </template>
-      <template #footer>
-        <div class="dialog-footer">
-          <AppButton
-            type="secondary"
-            @click="closeQRCodeDialog"
-          >
-            取消 Cancel
-          </AppButton>
-          <AppButton
-            type="primary"
-            :loading="loading"
-            @click="submitQRCodeForm"
-          >
-            確認 Confirm
-          </AppButton>
         </div>
       </template>
     </AppDialog>
@@ -231,71 +237,96 @@ export default {
   flex-direction: column;
   gap: 1.5rem;
   padding: 1.5rem;
-}
+  max-width: 500px;
+  margin: 0 auto;
 
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 1rem;
-  border-top: 1px solid var(--color-gray-200);
+  .form-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+  }
 }
 
 .qrcode-preview {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
+  margin-top: 1rem;
+  padding: 1.5rem;
   background-color: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  
-  .loading {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+
+  .preview-title {
+    margin: 0 0 1.5rem;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .preview-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-sm);
-    color: var(--text-secondary);
-    
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--color-gray-200);
-      border-top-color: var(--color-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    gap: 1.5rem;
+
+    .preview-info {
+      width: 100%;
+
+      .info-item {
+        .preview-label {
+          font-weight: 500;
+          color: var(--text-secondary);
+          margin: 0 0 0.5rem;
+          text-align: center;
+        }
+
+        .preview-url-container {
+          background-color: var(--bg-primary);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-gray-200);
+          padding: 0.75rem;
+
+          .preview-url {
+            margin: 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: var(--text-primary);
+            text-align: center;
+          }
+        }
+      }
     }
-  }
-  
-  .preview-image {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
-  }
-  
-  .placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-sm);
-    color: var(--text-secondary);
-    
-    svg {
-      color: var(--text-secondary);
-    }
-    
-    span {
-      font-size: var(--font-size-sm);
-      text-align: center;
+
+    .preview-qrcode {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      background-color: white;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-gray-200);
+
+      .preview-image {
+        width: 200px;
+        height: 200px;
+        object-fit: contain;
+      }
     }
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.error-message {
+  color: var(--color-danger);
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-danger-light);
 }
 
 .delete-confirm-content {
