@@ -490,7 +490,7 @@ const generatePreviewQRCode = async (req, res, next) => {
       
       // 生成重定向 URL Generate redirect URL
       const baseUrl = process.env.NODE_ENV === 'production' 
-          ? 'https://class-schedule.lihengtech.com.tw'
+          ? 'https://class-schedule.lihengtech.com.tw:9443'
           : process.env.API_BASE_URL;
       const redirect_url = `${baseUrl}/qrcode/redirect/${nextId}`;
       

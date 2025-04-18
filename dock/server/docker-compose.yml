@@ -53,7 +53,7 @@ services:
       JWT_EXPIRES_IN: 24h
       TZ: Asia/Taipei
       API_BASE_URL: /schedule-api
-      DOMAIN_URL: https://class-schedule.lihengtech.com.tw
+      DOMAIN_URL: https://class-schedule.lihengtech.com.tw:9443
     depends_on:
       postgres:
         condition: service_healthy
