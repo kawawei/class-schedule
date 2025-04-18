@@ -67,6 +67,12 @@ const generateQRCodeImage = async (url, id) => {
         // QR Code 圖片保存路徑 QR Code image save path
         const qrcodePath = path.join(__dirname, '../../public/qrcodes', filename);
         
+        // 確保目錄存在 Ensure directory exists
+        const dir = path.dirname(qrcodePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        
         // 生成 QR Code 圖片 Generate QR Code image
         await QRCode.toFile(qrcodePath, url, {
             errorCorrectionLevel: 'H', // 高容錯率 High error correction level
@@ -114,7 +120,7 @@ const createQRCode = async (req, res, next) => {
         const id = preview_id;
         
         // 使用預覽時生成的 URL Use URLs generated during preview
-        const redirect_url = `${process.env.API_BASE_URL}/api/qrcode/redirect/${id}`;
+        const redirect_url = `${process.env.API_BASE_URL}/qrcode/redirect/${id}`;
         const qrcode_url = `/qrcodes/qr${String(id).padStart(5, '0')}.png`;
         
         // 插入新記錄 Insert new record
@@ -483,7 +489,7 @@ const generatePreviewQRCode = async (req, res, next) => {
       const nextId = await getNextAvailableId(client, tenantId);
       
       // 生成重定向 URL Generate redirect URL
-      const redirect_url = `${process.env.API_BASE_URL}/api/qrcode/redirect/${nextId}`;
+      const redirect_url = `${process.env.API_BASE_URL}/qrcode/redirect/${nextId}`;
       
       // 生成 QR Code 圖片 Generate QR Code image
       const qrcode_url = await generateQRCodeImage(redirect_url, nextId);

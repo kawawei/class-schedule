@@ -38,6 +38,9 @@ services:
     image: talent-backend-prod
     expose:
       - "9006"  # 只暴露端口，不直接對外開放
+    volumes:
+      - ../../server/public/qrcodes:/app/public/qrcodes  # 掛載 QR Code 目錄
+      - /etc/localtime:/etc/localtime:ro  # 掛載主機時間文件
     environment:
       NODE_ENV: production
       PORT: 3006

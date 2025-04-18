@@ -30,9 +30,6 @@ app.use(cors());
 // 配置日誌
 app.use(morgan('dev'));
 
-// 配置靜態文件服務 Configure static file service
-app.use(express.static(path.join(__dirname, '../public')));
-
 // 配置 JSON 解析
 app.use(express.json());
 
@@ -45,7 +42,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// 路由
+// 路由 Routes
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -55,7 +52,10 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/teacher-reports', teacherReportRoutes);
 app.use('/api/qrcode', qrcodeRoutes);
 
-// 404 處理
+// 配置靜態文件服務 Configure static file service
+app.use('/api', express.static(path.join(__dirname, '../public')));
+
+// 處理未找到的路由 Handle 404 routes
 app.use((req, res, next) => {
     next(new ApiError(404, '找不到該路徑 Path not found'));
 });
@@ -66,7 +66,7 @@ app.use((err, req, res, next) => {
 
     // 如果是 API 錯誤 If it's an API error
     if (err instanceof ApiError) {
-        return res.status(err.statusCode).json({
+        return res.status(err.statusCode || 500).json({
             success: false,
             message: err.message,
             errors: err.errors

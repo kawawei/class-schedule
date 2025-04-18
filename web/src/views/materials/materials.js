@@ -157,14 +157,18 @@ export default {
         align: 'center',
         render: (row) => {
           // 使用完整的後端 URL Use complete backend URL
-          const fullUrl = `${API_BASE_URL}${row.qrcode_url}`;
+          const fullUrl = row.qrcode_url.startsWith('http') 
+            ? row.qrcode_url 
+            : `${API_BASE_URL}${row.qrcode_url}`;
           return h('img', {
             src: fullUrl,
-            alt: 'QRCode',
+            alt: row.name || 'QRCode',
             style: {
               width: '50px',
-              height: '50px'
-            }
+              height: '50px',
+              objectFit: 'contain'
+            },
+            onError: (event) => handleImageError(event)
           });
         }
       },
@@ -228,7 +232,7 @@ export default {
       if (qrcodeForm.value.target_url) {
         try {
           // 使用後端 API 生成預覽 QR Code Use backend API to generate preview QR Code
-          const response = await axios.post('/api/qrcode/preview', {
+          const response = await axios.post('/qrcode/preview', {
             target_url: qrcodeForm.value.target_url
           });
           
@@ -253,7 +257,7 @@ export default {
       try {
         loading.value = true;
         console.log('Authorization token:', localStorage.getItem('token')); // 添加 token 日誌
-        const response = await axios.get('/api/qrcode');
+        const response = await axios.get('/qrcode');
         qrcodeData.value = response.data.data;
       } catch (error) {
         console.error('獲取 QR Code 列表失敗 Failed to fetch QR Code list:', error);
@@ -317,21 +321,25 @@ export default {
 
         // 檢查目標連結格式 Check target URL format
         try {
-          new URL(qrcodeForm.value.target_url);
+          const url = new URL(qrcodeForm.value.target_url);
+          if (!url.protocol.startsWith('http')) {
+            qrcodeForm.value.error = '目標連結必須以 http:// 或 https:// 開頭 Target URL must start with http:// or https://';
+            return;
+          }
         } catch (e) {
-          qrcodeForm.value.error = '請輸入有效的目標連結 Please enter a valid target URL';
+          qrcodeForm.value.error = '請輸入有效的目標連結，例如：https://example.com Please enter a valid target URL, e.g., https://example.com';
           return;
         }
 
         if (qrcodeForm.value.is_editing) {
           // 更新現有 QR Code Update existing QR Code
-          await axios.put(`/api/qrcode/${qrcodeForm.value.id}`, {
+          await axios.put(`/qrcode/${qrcodeForm.value.id}`, {
             name: qrcodeForm.value.name,
             target_url: qrcodeForm.value.target_url
           });
         } else {
           // 創建新的 QR Code Create new QR Code
-          await axios.post('/api/qrcode', {
+          await axios.post('/qrcode', {
             name: qrcodeForm.value.name,
             target_url: qrcodeForm.value.target_url,
             preview_id: qrcodeForm.value.preview_id
@@ -387,7 +395,7 @@ export default {
     const confirmDelete = async () => {
       try {
         loading.value = true;
-        await axios.delete(`/api/qrcode/${qrcodeToDelete.value.id}`);
+        await axios.delete(`/qrcode/${qrcodeToDelete.value.id}`);
         await fetchQRCodes();
         closeDeleteConfirm();
       } catch (error) {

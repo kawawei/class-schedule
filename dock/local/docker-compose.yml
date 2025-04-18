@@ -35,6 +35,7 @@ services:
     volumes:
       - ../../server:/app
       - /app/node_modules
+      - ../../server/public/qrcodes:/app/public/qrcodes
       # 掛載主機時間文件 Mount host timezone file
       - /etc/localtime:/etc/localtime:ro
     environment:
@@ -48,7 +49,7 @@ services:
       - JWT_SECRET=talent_teacher_secret_key
       - JWT_EXPIRES_IN=24h
       - TZ=Asia/Taipei
-      - API_BASE_URL=http://localhost:3006
+      - API_BASE_URL=http://localhost:3006/api
     depends_on:
       - database
     networks:
