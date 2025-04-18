@@ -303,7 +303,8 @@ export default {
     
     // 監聽目標連結變化 Watch target URL changes
     watch(() => qrcodeForm.value.target_url, async (newUrl) => {
-      if (newUrl) {
+      // 只在非編輯模式下更新預覽 Only update preview in non-edit mode
+      if (newUrl && !qrcodeForm.value.is_editing) {
         await updatePreview();
       }
     });
