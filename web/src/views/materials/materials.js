@@ -276,6 +276,8 @@ export default {
     // 打開QRCode對話框 Open QRCode dialog
     const openQRCodeDialog = () => {
       qrcodeDialogVisible.value = true;
+      // 重置表單，新增模式下需要生成預覽
+      // Reset form, need to generate preview in create mode
       qrcodeForm.value = {
         name: '',
         target_url: '',
@@ -283,7 +285,7 @@ export default {
         preview_url: '',
         qrcode_preview: '',
         preview_id: null,
-        is_editing: false // 重置編輯模式標記 Reset edit mode flag
+        is_editing: false
       };
     };
     
@@ -303,11 +305,33 @@ export default {
     
     // 監聽目標連結變化 Watch target URL changes
     watch(() => qrcodeForm.value.target_url, async (newUrl) => {
-      // 只在非編輯模式下更新預覽 Only update preview in non-edit mode
+      // 只在新增模式下更新預覽
+      // Only update preview in create mode
       if (newUrl && !qrcodeForm.value.is_editing) {
         await updatePreview();
       }
     });
+    
+    // 編輯 QR Code Edit QR Code
+    const editQRCode = async (row) => {
+      try {
+        // 在編輯模式下，保持原有的系統跳轉連結和 QR Code，不會隨目標連結變化
+        // In edit mode, keep the original redirect URL and QR Code, won't change with target URL
+        qrcodeForm.value = {
+          id: row.id,
+          name: row.name,
+          target_url: row.actual_url,
+          error: '',
+          preview_url: row.redirect_url,
+          qrcode_preview: `${API_BASE_URL}${row.qrcode_url}`,
+          is_editing: true
+        };
+        qrcodeDialogVisible.value = true;
+      } catch (error) {
+        console.error('編輯 QR Code 失敗 Failed to edit QR Code:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '編輯 QR Code 失敗 Failed to edit QR Code';
+      }
+    };
     
     // 提交QRCode表單 Submit QRCode form
     const submitQRCodeForm = async () => {
@@ -354,25 +378,6 @@ export default {
         qrcodeForm.value.error = error.response?.data?.message || '提交 QR Code 失敗 Failed to submit QR Code';
       } finally {
         loading.value = false;
-      }
-    };
-    
-    // 編輯 QR Code Edit QR Code
-    const editQRCode = async (row) => {
-      try {
-        qrcodeForm.value = {
-          id: row.id, // 保存當前 QR Code 的 ID Save current QR Code ID
-          name: row.name,
-          target_url: row.actual_url, // 使用當前的目標 URL Use current target URL
-          error: '',
-          preview_url: row.redirect_url, // 保持原有的重定向 URL Keep original redirect URL
-          qrcode_preview: `${API_BASE_URL}${row.qrcode_url}`, // 保持原有的 QR Code 圖片 Keep original QR Code image
-          is_editing: true // 標記為編輯模式 Mark as edit mode
-        };
-        qrcodeDialogVisible.value = true;
-      } catch (error) {
-        console.error('編輯 QR Code 失敗 Failed to edit QR Code:', error);
-        qrcodeForm.value.error = error.response?.data?.message || '編輯 QR Code 失敗 Failed to edit QR Code';
       }
     };
     
