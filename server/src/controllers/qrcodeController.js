@@ -359,12 +359,15 @@ const handleRedirect = async (req, res, next) => {
     const client = await mainPool.connect();
     try {
         const { id } = req.params;
+        console.log('收到重定向請求，ID:', id);
         
         // 獲取 QR Code 信息 Get QR Code info
+        console.log('正在查詢 QR Code 信息...');
         const result = await client.query(
-            `SELECT id, actual_url FROM public.qrcodes WHERE id = $1`,
+            `SELECT id, actual_url, tenant_id FROM public.qrcodes WHERE id = $1`,
             [id]
         );
+        console.log('查詢結果:', result.rows);
         
         if (result.rows.length === 0) {
             console.error(`QR Code not found for ID: ${id}`);
@@ -375,9 +378,11 @@ const handleRedirect = async (req, res, next) => {
         }
         
         const qrCode = result.rows[0];
+        console.log('找到 QR Code，目標 URL:', qrCode.actual_url);
         
         try {
             // 記錄掃描 Record scan
+            console.log('記錄掃描信息...');
             await client.query(
                 `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
                  VALUES ($1, $2, $3)`,
@@ -391,16 +396,22 @@ const handleRedirect = async (req, res, next) => {
                  WHERE id = $1`,
                 [qrCode.id]
             );
+            console.log('掃描記錄已更新');
         } catch (error) {
-            // 如果記錄掃描失敗，只記錄錯誤但不中斷重定向
-            // If recording scan fails, just log error but don't interrupt redirect
             console.error('記錄掃描信息失敗 Failed to record scan:', error);
         }
         
         // 重定向到目標 URL Redirect to target URL
+        console.log('正在重定向到:', qrCode.actual_url);
         res.redirect(qrCode.actual_url);
     } catch (error) {
         console.error('處理重定向失敗 Failed to handle redirect:', error);
+        console.error('錯誤詳情:', {
+            message: error.message,
+            stack: error.stack,
+            query: error.query,
+            parameters: error.parameters
+        });
         res.status(500).json({
             success: false,
             message: '處理重定向失敗 Failed to handle redirect'
