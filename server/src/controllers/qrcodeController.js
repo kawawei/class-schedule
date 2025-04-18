@@ -384,23 +384,44 @@ const handleRedirect = async (req, res, next) => {
         
         const qrCode = result.rows[0];
         console.log('找到 QR Code，目標 URL:', qrCode.actual_url);
+
+        // 驗證 URL Validate URL
+        if (!isValidUrl(qrCode.actual_url)) {
+            console.error(`Invalid target URL: ${qrCode.actual_url}`);
+            return res.status(400).json({
+                success: false,
+                message: '無效的目標 URL Invalid target URL'
+            });
+        }
+
+        // 驗證租戶狀態 Validate tenant status
+        const tenantResult = await client.query(
+            `SELECT status FROM public.tenants WHERE id = $1`,
+            [qrCode.tenant_id]
+        );
+        
+        if (tenantResult.rows[0]?.status !== 'active') {
+            return res.status(403).json({
+                success: false,
+                message: '租戶無效或已停用 Invalid or inactive tenant'
+            });
+        }
         
         try {
-            // 記錄掃描 Record scan
-            console.log('記錄掃描信息...');
-            await client.query(
-                `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
-                 VALUES ($1, $2, $3)`,
-                [qrCode.id, req.ip, req.headers['user-agent']]
-            );
-            
-            // 更新掃描次數 Update scan count
-            await client.query(
-                `UPDATE public.qrcodes 
-                 SET scan_count = scan_count + 1
-                 WHERE id = $1`,
-                [qrCode.id]
-            );
+            // 並行處理掃描記錄和計數更新 Concurrently process scan record and count update
+            await Promise.all([
+                client.query(
+                    `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
+                     VALUES ($1, $2, $3)`,
+                    [qrCode.id, req.ip, req.headers['user-agent']]
+                ),
+                client.query(
+                    `UPDATE public.qrcodes 
+                     SET scan_count = scan_count + 1
+                     WHERE id = $1`,
+                    [qrCode.id]
+                )
+            ]);
             console.log('掃描記錄已更新');
         } catch (error) {
             console.error('記錄掃描信息失敗 Failed to record scan:', error);
