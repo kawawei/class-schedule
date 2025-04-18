@@ -285,14 +285,8 @@ const updateQRCode = async (req, res, next) => {
              id, tenantId]
         );
 
-        // 如果目標連結有變更，清除掃描記錄
-        // If target URL has changed, clear scan records
-        if (isTargetUrlChanged) {
-            await client.query(
-                `DELETE FROM public.qrcode_scans WHERE qr_code_id = $1`,
-                [id]
-            );
-        }
+        // 如果目標連結有變更，不需要清除掃描記錄，因為掃描次數直接存儲在 qrcodes 表中
+        // If target URL has changed, no need to clear scan records as scan count is stored directly in qrcodes table
         
         res.json({
             success: true,
@@ -408,23 +402,17 @@ const handleRedirect = async (req, res, next) => {
         }
         
         try {
-            // 並行處理掃描記錄和計數更新 Concurrently process scan record and count update
-            await Promise.all([
-                client.query(
-                    `INSERT INTO public.qrcode_scans (qr_code_id, ip_address, user_agent)
-                     VALUES ($1, $2, $3)`,
-                    [qrCode.id, req.ip, req.headers['user-agent']]
-                ),
-                client.query(
-                    `UPDATE public.qrcodes 
-                     SET scan_count = scan_count + 1
-                     WHERE id = $1`,
-                    [qrCode.id]
-                )
-            ]);
-            console.log('掃描記錄已更新');
+            // 只更新掃描次數，不再記錄詳細的掃描信息
+            // Only update scan count, no longer record detailed scan information
+            await client.query(
+                `UPDATE public.qrcodes 
+                 SET scan_count = scan_count + 1
+                 WHERE id = $1`,
+                [qrCode.id]
+            );
+            console.log('掃描次數已更新 Scan count updated');
         } catch (error) {
-            console.error('記錄掃描信息失敗 Failed to record scan:', error);
+            console.error('更新掃描次數失敗 Failed to update scan count:', error);
         }
         
         // 重定向到目標 URL Redirect to target URL
@@ -476,16 +464,17 @@ const getQRCodeStats = async (req, res, next) => {
             return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
         }
         
-        // 獲取掃描統計
+        // 獲取掃描統計（直接從 qrcodes 表獲取）
+        // Get scan statistics (directly from qrcodes table)
         const statsResult = await client.query(
             `SELECT 
-                COUNT(*) as total_scans,
-                COUNT(DISTINCT ip_address) as unique_visitors,
-                MIN(scan_time) as first_scan,
-                MAX(scan_time) as last_scan
-             FROM public.qrcode_scans
-             WHERE qr_code_id = $1`,
-            [id]
+                scan_count as total_scans,
+                scan_count as unique_visitors,
+                created_at as first_scan,
+                updated_at as last_scan
+             FROM public.qrcodes
+             WHERE id = $1 AND tenant_id = $2`,
+            [id, tenantId]
         );
         
         res.json({
