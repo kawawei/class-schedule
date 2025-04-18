@@ -52,6 +52,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h
       TZ: Asia/Taipei
+      API_BASE_URL: /schedule-api
     depends_on:
       postgres:
         condition: service_healthy
