@@ -1,4 +1,4 @@
-import { ref, h, reactive, onMounted, watch } from 'vue';
+import { ref, h, reactive, onMounted, watch, onUnmounted } from 'vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppButton from '@/components/base/AppButton.vue';
 import DataTable from '@/components/base/DataTable.vue';
@@ -423,6 +423,17 @@ export default {
     onMounted(() => {
       if (currentTab.value === 'qrcode') {
         fetchQRCodes();
+        // 設置自動刷新間隔（每 10 秒刷新一次）Set auto-refresh interval (refresh every 10 seconds)
+        const refreshInterval = setInterval(() => {
+          if (currentTab.value === 'qrcode') {
+            fetchQRCodes();
+          }
+        }, 10000);
+
+        // 在組件卸載時清除定時器 Clear interval when component is unmounted
+        onUnmounted(() => {
+          clearInterval(refreshInterval);
+        });
       }
     });
 
