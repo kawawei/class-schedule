@@ -489,7 +489,10 @@ const generatePreviewQRCode = async (req, res, next) => {
       const nextId = await getNextAvailableId(client, tenantId);
       
       // 生成重定向 URL Generate redirect URL
-      const redirect_url = `${process.env.API_BASE_URL}/qrcode/redirect/${nextId}`;
+      const baseUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://class-schedule.lihengtech.com.tw'
+          : process.env.API_BASE_URL;
+      const redirect_url = `${baseUrl}/qrcode/redirect/${nextId}`;
       
       // 生成 QR Code 圖片 Generate QR Code image
       const qrcode_url = await generateQRCodeImage(redirect_url, nextId);
