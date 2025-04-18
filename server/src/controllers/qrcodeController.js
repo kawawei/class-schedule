@@ -119,8 +119,11 @@ const createQRCode = async (req, res, next) => {
         // 使用預覽時的 ID Use ID from preview
         const id = preview_id;
         
-        // 使用預覽時生成的 URL Use URLs generated during preview
-        const redirect_url = `${process.env.API_BASE_URL}/qrcode/redirect/${id}`;
+        // 生成重定向 URL Generate redirect URL
+        const baseUrl = process.env.NODE_ENV === 'production' 
+            ? 'https://class-schedule.lihengtech.com.tw:9443'
+            : process.env.API_BASE_URL;
+        const redirect_url = `${baseUrl}/qrcode/redirect/${id}`;
         const qrcode_url = `/qrcodes/qr${String(id).padStart(5, '0')}.png`;
         
         // 插入新記錄 Insert new record
