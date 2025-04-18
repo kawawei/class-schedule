@@ -247,26 +247,38 @@ const updateQRCode = async (req, res, next) => {
         
         // 獲取現有 QR Code 信息 Get existing QR Code info
         const existingQRCode = await client.query(
-            `SELECT qrcode_url, redirect_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            `SELECT qrcode_url, actual_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
             [id, tenantId]
         );
         
         if (existingQRCode.rows.length === 0) {
             return next(new ApiError(404, 'QR Code 不存在 QR Code not found'));
         }
-        
-        // 更新數據庫記錄，保持原有的 QR Code 圖片和重定向 URL，但重置掃描次數
-        // Update database record, keep original QR Code image and redirect URL, but reset scan count
+
+        // 檢查目標連結是否有變更 Check if target URL has changed
+        const isTargetUrlChanged = existingQRCode.rows[0].actual_url !== target_url;
+
+        // 更新名稱和目標連結，如果目標連結有變更則重置掃描次數
+        // Update name and target URL, reset scan count if target URL has changed
         const result = await client.query(
             `UPDATE public.qrcodes 
              SET name = $1, 
-                 actual_url = $2, 
-                 scan_count = 0,
+                 actual_url = $2,
+                 scan_count = CASE WHEN $3 THEN 0 ELSE scan_count END,
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = $3 AND tenant_id = $4
+             WHERE id = $4 AND tenant_id = $5
              RETURNING *`,
-            [name, target_url, id, tenantId]
+            [name, target_url, isTargetUrlChanged, id, tenantId]
         );
+
+        // 如果目標連結有變更，清除掃描記錄
+        // If target URL has changed, clear scan records
+        if (isTargetUrlChanged) {
+            await client.query(
+                `DELETE FROM public.qrcode_scans WHERE qr_code_id = $1`,
+                [id]
+            );
+        }
         
         res.json({
             success: true,
@@ -274,11 +286,7 @@ const updateQRCode = async (req, res, next) => {
         });
     } catch (error) {
         console.error('更新 QR Code 失敗 Failed to update QR Code:', error);
-        if (error instanceof ApiError) {
-            next(error);
-        } else {
-            next(new ApiError(500, '更新 QR Code 失敗 Failed to update QR Code'));
-        }
+        next(new ApiError(500, '更新 QR Code 失敗 Failed to update QR Code'));
     } finally {
         client.release();
     }

@@ -75,10 +75,11 @@
                 <!-- QRCode 圖片顯示 QRCode image display -->
                 <template #qrcode_url="{ row }">
                   <img
-                    :src="`http://localhost:3006${row.qrcode_url}?t=${new Date().getTime()}`"
+                    :src="`${API_BASE_URL}${row.qrcode_url}?v=${row.id}-${row.updated_at}`"
                     :alt="row.name"
-                    style="width: 50px; height: 50px;"
+                    style="width: 50px; height: 50px; object-fit: contain;"
                     @error="handleImageError"
+                    :onerror="handleImageError"
                   />
                 </template>
 
@@ -136,7 +137,7 @@
     <!-- QRCode對話框 QRCode Dialog -->
     <AppDialog
       v-model="qrcodeDialogVisible"
-      title="新增QRCode"
+      :title="qrcodeForm.is_editing ? '編輯 QR Code' : '新增 QR Code'"
       @close="closeQRCodeDialog"
       @confirm="submitQRCodeForm"
     >
@@ -340,6 +341,17 @@ export default {
     &:first-child {
       font-weight: 500;
     }
+  }
+}
+
+img {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background-color: white;
+  padding: 2px;
+  
+  &[src="/images/qrcode-placeholder.png"] {
+    opacity: 0.5;
   }
 }
 </style> 

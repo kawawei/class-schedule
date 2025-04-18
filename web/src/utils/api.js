@@ -2,9 +2,9 @@
 import { toISOString, parseISOString } from './timezone';
 
 // API 基礎 URL API Base URL
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
+export const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/schedule-api'  // 生產環境使用相對路徑 Production environment uses relative path
-  : 'http://localhost:3006/api';  // 開發環境使用完整 URL Development environment uses full URL
+  : 'http://localhost:3006';  // 開發環境使用完整 URL Development environment uses full URL
 
 /**
  * 處理日期時間數據 Process date time data

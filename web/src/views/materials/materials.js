@@ -5,9 +5,9 @@ import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import axios from 'axios';
+import { API_BASE_URL } from '@/utils/api';  // 導入 API_BASE_URL Import API_BASE_URL
 
 // 配置 axios 基礎 URL Configure axios base URL
-const API_BASE_URL = 'http://localhost:3006';
 axios.defaults.baseURL = API_BASE_URL;
 
 // 配置 axios 請求攔截器 Configure axios request interceptor
@@ -138,6 +138,9 @@ export default {
     
     // QRCode列表數據 QRCode list data
     const qrcodeData = ref([]);
+
+    // 將 API_BASE_URL 添加到返回值中 Add API_BASE_URL to return value
+    const apiBaseUrl = ref(API_BASE_URL);
 
     // QRCode表格列定義 QRCode table column definitions
     const qrcodeColumns = [
@@ -415,11 +418,12 @@ export default {
       }
     });
 
-    // 處理圖片加載錯誤 Handle image loading error
+    // QR Code 圖片載入錯誤處理 QR Code image error handling
     const handleImageError = (event) => {
-      console.error('QR Code 圖片加載失敗:', event);
-      // 設置預設圖片 Set default image
+      // 設置預設圖片 Set default placeholder image
       event.target.src = '/images/qrcode-placeholder.png';
+      // 記錄錯誤 Log the error
+      console.warn('QR Code image failed to load:', event.target.alt);
     };
 
     // 監聽標籤切換，切換到 QR Code 時獲取列表
@@ -451,7 +455,8 @@ export default {
       closeDeleteConfirm,
       confirmDelete,
       qrcodeToDelete,
-      handleImageError
+      handleImageError,
+      API_BASE_URL: apiBaseUrl // 導出 API_BASE_URL Export API_BASE_URL
     };
   }
 }; 

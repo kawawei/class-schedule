@@ -56,5 +56,5 @@ dist/
 build/
 
 # QR Code 圖片 QR Code images
-/server/public/qrcodes/
-*.png 
+/server/public/qrcodes/*.png
+/server/public/qrcodes/ 
