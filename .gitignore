@@ -1,16 +1,17 @@
 # 依賴目錄 Dependencies directories
 node_modules/
-/web/node_modules/
-/server/node_modules/
-
-# 構建輸出 Build output
-/web/dist/
-/server/dist/
+**/node_modules/
+dist/
+build/
+**/dist/
 
 # 環境變量文件 Environment variables
-.env
-/server/.env
-/config/  # 配置目錄 Configuration directory
+.env*
+**/.env*
+
+# 配置目錄和文件 Configuration directories and files
+/config/
+/config/secure/
 
 # 日誌文件 Log files
 *.log
@@ -34,27 +35,14 @@ Thumbs.db
 # 臨時文件 Temporary files
 *.tmp
 *.temp
+.cache/
 
 # 數據庫文件 Database files
 *.sqlite
 *.db
 
-# 其他 Others
-.cache/
+# 測試覆蓋率 Test coverage
 coverage/
 
-# 配置文件 Configuration files
-/config/
-/config/secure/
-
-# 環境變量文件 Environment variables
-.env.local
-.env.*.local
-
-# 依賴目錄 Dependencies
-dist/
-build/
-
 # QR Code 圖片 QR Code images
-/server/public/qrcodes/*.png
 /server/public/qrcodes/ 
