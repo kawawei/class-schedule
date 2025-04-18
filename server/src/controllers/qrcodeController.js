@@ -256,7 +256,7 @@ const updateQRCode = async (req, res, next) => {
         
         // 獲取現有 QR Code 信息 Get existing QR Code info
         const existingQRCode = await client.query(
-            `SELECT qrcode_url, actual_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            `SELECT qrcode_url, redirect_url, actual_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
             [id, tenantId]
         );
         
@@ -274,10 +274,15 @@ const updateQRCode = async (req, res, next) => {
              SET name = $1, 
                  actual_url = $2,
                  scan_count = CASE WHEN $3 THEN 0 ELSE scan_count END,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4 AND tenant_id = $5
+                 updated_at = CURRENT_TIMESTAMP,
+                 redirect_url = $4,
+                 qrcode_url = $5
+             WHERE id = $6 AND tenant_id = $7
              RETURNING *`,
-            [name, target_url, isTargetUrlChanged, id, tenantId]
+            [name, target_url, isTargetUrlChanged, 
+             existingQRCode.rows[0].redirect_url,
+             existingQRCode.rows[0].qrcode_url,
+             id, tenantId]
         );
 
         // 如果目標連結有變更，清除掃描記錄
