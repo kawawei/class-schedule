@@ -65,4 +65,24 @@ CREATE INDEX IF NOT EXISTS idx_schedule_recurring_end_date ON course_schedules(r
 CREATE INDEX IF NOT EXISTS idx_schedule_series_id ON course_schedules(series_id);
 
 -- 設置權限 Set permissions
-ALTER TABLE course_schedules OWNER TO postgres; 
+ALTER TABLE course_schedules OWNER TO postgres;
+
+-- 創建 QR Code 表（如果不存在）Create QR Code table if not exists
+CREATE TABLE IF NOT EXISTS qrcodes (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    qrcode_url VARCHAR(255) NOT NULL,
+    redirect_url VARCHAR(255) NOT NULL,
+    actual_url VARCHAR(255) NOT NULL,
+    tenant_id INTEGER NOT NULL,
+    scan_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 創建 QR Code 表索引（如果不存在）Create indexes if not exists
+CREATE INDEX IF NOT EXISTS idx_qrcodes_tenant_id ON qrcodes(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_qrcodes_created_at ON qrcodes(created_at);
+
+-- 設置權限 Set permissions
+ALTER TABLE qrcodes OWNER TO postgres; 
