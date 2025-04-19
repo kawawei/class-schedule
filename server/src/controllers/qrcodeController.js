@@ -3,6 +3,8 @@ const ApiError = require('../utils/apiError');
 const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
+const PDFDocument = require('pdfkit');
 
 // URL 驗證函數 URL validation function
 const isValidUrl = (url) => {
@@ -543,6 +545,115 @@ const generatePreviewQRCode = async (req, res, next) => {
   }
 };
 
+// 下載 QR Code 圖片 Download QR Code image
+const downloadQRCode = async (req, res, next) => {
+    const client = await mainPool.connect();
+    try {
+        const { id } = req.params;
+        const { format = 'png' } = req.query; // 支援的格式：png, svg, jpg, pdf
+        const { companyCode } = req.user;
+        
+        // 獲取租戶 ID Get tenant ID
+        const tenantResult = await client.query(
+            `SELECT id FROM public.tenants WHERE company_code = $1`,
+            [companyCode]
+        );
+        
+        if (tenantResult.rows.length === 0) {
+            throw new ApiError(404, '租戶不存在 Tenant not found');
+        }
+        
+        const tenantId = tenantResult.rows[0].id;
+        
+        // 獲取 QR Code 信息 Get QR Code info
+        const qrcodeResult = await client.query(
+            `SELECT qrcode_url, redirect_url, name FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            [id, tenantId]
+        );
+        
+        if (qrcodeResult.rows.length === 0) {
+            throw new ApiError(404, 'QR Code 不存在 QR Code not found');
+        }
+        
+        const qrcode = qrcodeResult.rows[0];
+        const originalImagePath = path.join(__dirname, '../../public', qrcode.qrcode_url);
+        
+        // 檢查原始圖片是否存在 Check if original image exists
+        if (!fs.existsSync(originalImagePath)) {
+            throw new ApiError(404, 'QR Code 圖片不存在 QR Code image not found');
+        }
+        
+        // 根據請求的格式處理圖片 Process image based on requested format
+        switch (format.toLowerCase()) {
+            case 'png':
+                // PNG 格式直接返回原始圖片 Return original PNG image
+                res.download(originalImagePath, `${qrcode.name || 'qrcode'}.png`);
+                break;
+                
+            case 'svg':
+                // 生成 SVG 格式 Generate SVG format
+                const svgBuffer = await QRCode.toString(qrcode.redirect_url, {
+                    type: 'svg',
+                    errorCorrectionLevel: 'H',
+                    width: 400,
+                    margin: 1
+                });
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.setHeader('Content-Disposition', `attachment; filename="${qrcode.name || 'qrcode'}.svg"`);
+                res.send(svgBuffer);
+                break;
+                
+            case 'jpg':
+            case 'jpeg':
+                // 將 PNG 轉換為 JPG Convert PNG to JPG
+                const jpgBuffer = await sharp(originalImagePath)
+                    .jpeg()
+                    .toBuffer();
+                res.setHeader('Content-Type', 'image/jpeg');
+                res.setHeader('Content-Disposition', `attachment; filename="${qrcode.name || 'qrcode'}.jpg"`);
+                res.send(jpgBuffer);
+                break;
+                
+            case 'pdf':
+                // 創建 PDF 文件 Create PDF file
+                const doc = new PDFDocument({
+                    size: 'A4',
+                    margin: 50
+                });
+                
+                // 設置 PDF 響應頭 Set PDF response headers
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="${qrcode.name || 'qrcode'}.pdf"`);
+                
+                // 將 PDF 流導向響應 Pipe PDF stream to response
+                doc.pipe(res);
+                
+                // 添加 QR Code 圖片到 PDF Add QR Code image to PDF
+                doc.image(originalImagePath, {
+                    fit: [400, 400],
+                    align: 'center',
+                    valign: 'center'
+                });
+                
+                // 結束 PDF 文檔 End PDF document
+                doc.end();
+                break;
+                
+            default:
+                throw new ApiError(400, '不支援的格式 Unsupported format');
+        }
+    } catch (error) {
+        console.error('下載 QR Code 失敗 Failed to download QR Code:', error);
+        if (error instanceof ApiError) {
+            next(error);
+        } else {
+            next(new ApiError(500, '下載 QR Code 失敗 Failed to download QR Code'));
+        }
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     createQRCode,
     getQRCodes,
@@ -551,5 +662,6 @@ module.exports = {
     deleteQRCode,
     handleRedirect,
     getQRCodeStats,
-    generatePreviewQRCode
+    generatePreviewQRCode,
+    downloadQRCode
 }; 

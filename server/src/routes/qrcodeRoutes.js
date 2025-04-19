@@ -21,6 +21,9 @@ router.get('/', qrcodeController.getQRCodes);
 // 獲取單個 QR Code
 router.get('/:id', qrcodeController.getQRCode);
 
+// 下載 QR Code Download QR Code
+router.get('/download/:id', qrcodeController.downloadQRCode);
+
 // 更新 QR Code
 router.put('/:id', qrcodeController.updateQRCode);
 

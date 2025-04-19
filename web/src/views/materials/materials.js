@@ -197,8 +197,74 @@ export default {
       {
         key: 'actions',
         title: '操作',
-        width: 120,
-        align: 'center'
+        width: 200,
+        align: 'center',
+        render: (row) => {
+          return h('div', { class: 'action-buttons' }, [
+            // 編輯按鈕 Edit button
+            h(AppButton, {
+              type: 'primary',
+              class: 'edit-btn',
+              onClick: () => editQRCode(row),
+              title: '編輯'
+            }, () => h('svg', {
+              xmlns: 'http://www.w3.org/2000/svg',
+              width: '16',
+              height: '16',
+              viewBox: '0 0 24 24',
+              fill: 'none',
+              stroke: 'currentColor',
+              'stroke-width': '2',
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round'
+            }, [
+              h('path', { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' }),
+              h('path', { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' })
+            ])),
+            // 下載按鈕 Download button
+            h(AppButton, {
+              type: 'info',
+              class: 'download-btn',
+              onClick: () => openDownloadDialog(row),
+              title: '下載'
+            }, () => h('svg', {
+              xmlns: 'http://www.w3.org/2000/svg',
+              width: '16',
+              height: '16',
+              viewBox: '0 0 24 24',
+              fill: 'none',
+              stroke: 'currentColor',
+              'stroke-width': '2',
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round'
+            }, [
+              h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+              h('polyline', { points: '7 10 12 15 17 10' }),
+              h('line', { x1: '12', y1: '15', x2: '12', y2: '3' })
+            ])),
+            // 刪除按鈕 Delete button
+            h(AppButton, {
+              type: 'danger',
+              class: 'delete-btn',
+              onClick: () => deleteQRCode(row),
+              title: '刪除'
+            }, () => h('svg', {
+              xmlns: 'http://www.w3.org/2000/svg',
+              width: '16',
+              height: '16',
+              viewBox: '0 0 24 24',
+              fill: 'none',
+              stroke: 'currentColor',
+              'stroke-width': '2',
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round'
+            }, [
+              h('path', { d: 'M3 6h18' }),
+              h('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' }),
+              h('path', { d: 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' })
+            ]))
+          ]);
+        }
       }
     ];
     
@@ -458,6 +524,73 @@ export default {
       }
     });
 
+    // 下載對話框狀態 Download dialog state
+    const downloadDialogVisible = ref(false);
+    const qrcodeToDownload = ref(null);
+    const selectedFormat = ref('png');
+
+    // 打開下載對話框 Open download dialog
+    const openDownloadDialog = (row) => {
+      qrcodeToDownload.value = row;
+      downloadDialogVisible.value = true;
+    };
+
+    // 關閉下載對話框 Close download dialog
+    const closeDownloadDialog = () => {
+      downloadDialogVisible.value = false;
+      qrcodeToDownload.value = null;
+      selectedFormat.value = 'png';
+    };
+
+    // 下載 QR Code Download QR Code
+    const downloadQRCode = async () => {
+      try {
+        loading.value = true;
+        const format = selectedFormat.value;
+        const id = qrcodeToDownload.value.id;
+        
+        // 使用 axios 發送請求 Send request using axios
+        const response = await axios.get(`/qrcode/download/${id}`, {
+          params: { format },
+          responseType: 'blob'  // 設置響應類型為 blob Set response type to blob
+        });
+        
+        // 創建 Blob URL Create Blob URL
+        const blob = new Blob([response.data], { 
+          type: response.headers['content-type'] 
+        });
+        const url = window.URL.createObjectURL(blob);
+        
+        // 創建下載連結 Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `qrcode-${id}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理 Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        closeDownloadDialog();
+      } catch (error) {
+        console.error('下載 QR Code 失敗 Failed to download QR Code:', error);
+        // 如果是 blob 響應，需要讀取錯誤信息 If it's a blob response, need to read error message
+        if (error.response?.data instanceof Blob) {
+          const text = await error.response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            qrcodeForm.value.error = errorData.message || '下載 QR Code 失敗 Failed to download QR Code';
+          } catch (e) {
+            qrcodeForm.value.error = '下載 QR Code 失敗 Failed to download QR Code';
+          }
+        } else {
+          qrcodeForm.value.error = error.response?.data?.message || '下載 QR Code 失敗 Failed to download QR Code';
+        }
+      } finally {
+        loading.value = false;
+      }
+    };
+
     return {
       userName,
       isLoggingOut,
@@ -481,7 +614,14 @@ export default {
       confirmDelete,
       qrcodeToDelete,
       handleImageError,
-      API_BASE_URL: apiBaseUrl // 導出 API_BASE_URL Export API_BASE_URL
+      API_BASE_URL: apiBaseUrl,
+      // 添加下載相關的屬性 Add download related properties
+      downloadDialogVisible,
+      qrcodeToDownload,
+      selectedFormat,
+      openDownloadDialog,
+      closeDownloadDialog,
+      downloadQRCode
     };
   }
 }; 

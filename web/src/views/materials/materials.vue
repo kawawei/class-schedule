@@ -104,7 +104,7 @@
                   <div class="action-buttons">
                     <AppButton
                       type="primary"
-                      class="edit-btn"
+                      class="action-btn edit-btn"
                       @click="editQRCode(row)"
                       title="編輯"
                     >
@@ -114,8 +114,20 @@
                       </svg>
                     </AppButton>
                     <AppButton
+                      type="primary"
+                      class="action-btn download-btn"
+                      @click="openDownloadDialog(row)"
+                      title="下載"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    </AppButton>
+                    <AppButton
                       type="danger"
-                      class="delete-btn"
+                      class="action-btn delete-btn"
                       @click="deleteQRCode(row)"
                       title="刪除"
                     >
@@ -196,10 +208,40 @@
     >
       <template #default>
         <div class="delete-confirm-content">
-          <p>確定要刪除這個 QR Code 嗎？</p>
-          <p>Are you sure you want to delete this QR Code?</p>
+          <p>確定要刪除這個 QR Code 嗎？此操作無法撤銷。</p>
+          <p>Are you sure you want to delete this QR Code? This action cannot be undone.</p>
           <p v-if="qrcodeToDelete">名稱：{{ qrcodeToDelete.name }}</p>
         </div>
+      </template>
+    </AppDialog>
+
+    <!-- QR Code 下載對話框 QR Code download dialog -->
+    <AppDialog
+      v-model="downloadDialogVisible"
+      title="下載 QR Code Download QR Code"
+      @close="closeDownloadDialog"
+    >
+      <div class="download-dialog-content">
+        <div class="format-selection">
+          <label>選擇格式 Select Format:</label>
+          <select v-model="selectedFormat">
+            <option value="png">PNG</option>
+            <option value="svg">SVG</option>
+            <option value="jpg">JPG</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </div>
+        <div class="preview" v-if="qrcodeToDownload">
+          <img 
+            :src="`${API_BASE_URL}${qrcodeToDownload.qrcode_url}`" 
+            :alt="qrcodeToDownload.name || 'QR Code Preview'"
+            @error="handleImageError"
+          >
+        </div>
+      </div>
+      <template #footer>
+        <AppButton type="default" @click="closeDownloadDialog">取消 Cancel</AppButton>
+        <AppButton type="primary" @click="downloadQRCode">下載 Download</AppButton>
       </template>
     </AppDialog>
   </div>
@@ -352,6 +394,71 @@ img {
   
   &[src="/images/qrcode-placeholder.png"] {
     opacity: 0.5;
+  }
+}
+
+.download-dialog-content {
+  padding: 20px;
+}
+
+.format-selection {
+  margin-bottom: 20px;
+}
+
+.format-selection label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.format-selection select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.preview {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.preview img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+
+  :deep(.action-btn) {
+    padding: 4px 8px;
+    background: var(--color-gray-100) !important;
+    border: 1px solid var(--color-gray-200) !important;
+    color: var(--color-gray-600);
+    transition: all 0.3s ease;
+    min-width: unset !important;
+    height: unset !important;
+
+    &:hover {
+      background: var(--color-primary-light) !important;
+      border-color: var(--color-primary) !important;
+      color: var(--color-primary);
+    }
+
+    &.delete-btn:hover {
+      background: var(--color-danger-light) !important;
+      border-color: var(--color-danger) !important;
+      color: var(--color-danger);
+    }
+
+    svg {
+      display: block;
+    }
   }
 }
 </style> 
