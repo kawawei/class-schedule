@@ -1,4 +1,4 @@
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, reactive } from 'vue';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { scheduleAPI, courseAPI } from '@/utils/api';
@@ -19,7 +19,7 @@ export default {
     }
   },
 
-  emits: ['update:visible', 'close', 'edit', 'save', 'delete'],
+  emits: ['update:visible', 'close', 'edit', 'save', 'delete', 'updated'],
 
   setup(props, { emit }) {
     // 編輯模式狀態 Edit mode state
@@ -55,21 +55,25 @@ export default {
     });
 
     // 表單數據 Form data
-    const formData = ref({
+    const formData = reactive({
       id: null,
+      courseType: '',
       schoolName: '',
       className: '',
       teacherId: null,
       teacherName: '',
       assistantName: '',
-      courseType: '',
-      date: null,
-      startTime: null,
-      endTime: null,
-      courseFee: 0,
-      teacherFee: 0,
-      assistantFee: 0,
-      assistants: []
+      startTime: '',
+      endTime: '',
+      date: '',
+      courseFee: '0',
+      teacherFee: '0',
+      assistantFee: '0',
+      county: '',  // 添加縣市欄位 Add county field
+      district: '',  // 添加區域欄位 Add district field
+      notes: '',  // 添加備註欄位 Add notes field
+      assistants: [],
+      series_id: null
     });
 
     // 課程種類選項 Course type options
@@ -161,14 +165,28 @@ export default {
 
     // 初始化表單數據 Initialize form data
     const initializeFormData = () => {
-      formData.value = { ...props.scheduleData };
-      
-      formData.value.assistants = [];
-      if (props.scheduleData.assistantName) {
-        formData.value.assistants.push({
-          id: '',
-          name: props.scheduleData.assistantName,
-          fee: props.scheduleData.assistantFee || 0
+      if (props.scheduleData) {
+        // 直接設置 reactive 對象的屬性 Directly set properties of reactive object
+        formData.id = props.scheduleData.id;
+        formData.county = props.scheduleData.county || '';
+        formData.district = props.scheduleData.district || '';
+        formData.schoolName = props.scheduleData.schoolName || '';
+        formData.className = props.scheduleData.className || '';
+        formData.teacherId = props.scheduleData.teacherId || null;
+        formData.teacherName = props.scheduleData.teacherName || '';
+        formData.courseType = props.scheduleData.courseType || '';
+        formData.date = props.scheduleData.date || '';
+        formData.startTime = props.scheduleData.startTime || '';
+        formData.endTime = props.scheduleData.endTime || '';
+        formData.courseFee = props.scheduleData.courseFee || 0;
+        formData.teacherFee = props.scheduleData.teacherFee || 0;
+        formData.notes = props.scheduleData.notes || '';
+        formData.assistants = props.scheduleData.assistants || [];
+        
+        console.log('初始化表單數據:', {
+          county: formData.county,
+          district: formData.district,
+          // 其他字段...
         });
       }
     };
@@ -254,11 +272,11 @@ export default {
       };
       
       await nextTick();
-      formData.value.assistants.push(newAssistant);
+      formData.assistants.push(newAssistant);
     };
 
     const removeAssistant = (index) => {
-      formData.value.assistants.splice(index, 1);
+      formData.assistants.splice(index, 1);
     };
 
     // 批量更新相關狀態和函數 Batch update related states and functions
@@ -277,35 +295,40 @@ export default {
     const handleBatchUpdateConfirm = async (type = 'single') => {
       console.log('[ScheduleDetailDialog] 用戶確認批量修改', type);
       
-      const selectedTeacher = teachers.value.find(t => t.value === formData.value.teacherId);
+      const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
       const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
 
       let assistantName = '';
-      if (formData.value.assistants.length > 0) {
-        const selectedAssistant = assistants.value.find(a => a.value === formData.value.assistants[0].id);
+      if (formData.assistants.length > 0) {
+        const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
         assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
       }
 
-      const updatedCourseData = {
-        id: formData.value.id,
-        courseType: formData.value.courseType,
-        schoolName: formData.value.schoolName,
-        teacherName: teacherName,
-        teacherId: formData.value.teacherId,
-        assistantName: assistantName,
-        startTime: formData.value.startTime,
-        endTime: formData.value.endTime,
-        date: formData.value.date,
-        className: formData.value.className,
-        courseFee: formData.value.courseFee,
-        teacherFee: formData.value.teacherFee,
-        assistantFee: formData.value.assistants[0]?.fee || '',
+      const updateData = {
+        id: formData.id,
+        school_name: formData.schoolName.trim(),
+        class_name: formData.className.trim(),
+        course_type: formData.courseType,
+        teacher_id: formData.teacherId,
+        date: formData.date,
+        start_time: formData.startTime,
+        end_time: formData.endTime,
+        course_fee: formData.courseFee ? Number(formData.courseFee) : null,
+        teacher_fee: formData.teacherFee ? Number(formData.teacherFee) : null,
+        county: formData.county?.trim() || null,
+        district: formData.district?.trim() || null,
+        notes: formData.notes?.trim() || null,
+        assistants: formData.assistants.map(assistant => ({
+          id: assistant.id,
+          assistant_id: assistant.assistant_id,
+          fee: Number(assistant.fee) || 0
+        })),
         updateType: type,
         series_id: props.scheduleData.series_id
       };
 
-      console.log('提交的課程數據:', updatedCourseData);
-      emit('save', updatedCourseData);
+      console.log('提交的課程數據:', updateData);
+      emit('save', updateData);
       
       showBatchUpdateConfirm.value = false;
       emit('update:visible', false);
@@ -314,79 +337,103 @@ export default {
     // 檢查是否只修改了日期 Check if only date is changed
     const isDateChanged = () => {
       const originalData = props.scheduleData;
-      const currentData = formData.value;
+      const currentData = formData;
       
       console.log('原始數據:', originalData);
       console.log('當前數據:', currentData);
       
-      const isOnlyDateChanged = (
-        originalData.schoolName === currentData.schoolName &&
-        originalData.className === currentData.className &&
-        originalData.teacherId === currentData.teacherId &&
-        originalData.courseType === currentData.courseType &&
-        originalData.startTime === currentData.startTime &&
-        originalData.endTime === currentData.endTime &&
-        originalData.courseFee === currentData.courseFee &&
-        originalData.teacherFee === currentData.teacherFee &&
-        originalData.assistantFee === currentData.assistantFee &&
-        originalData.date !== currentData.date
-      );
+      // 檢查日期是否有變更 Check if date has changed
+      const dateChanged = originalData.date !== currentData.date;
       
-      console.log('是否只修改了日期:', isOnlyDateChanged);
       console.log('日期比較:', {
         originalDate: originalData.date,
         currentDate: currentData.date,
-        isDifferent: originalData.date !== currentData.date
+        isDifferent: dateChanged
       });
       
-      return isOnlyDateChanged;
+      return dateChanged;
     };
 
-    // 提交處理函數 Submit handler
-    const handleSubmit = () => {
-      console.log('開始處理提交');
-      console.log('課程數據:', {
-        hasSeriesId: !!props.scheduleData?.series_id,
-        isDateOnlyChanged: isDateChanged()
-      });
-      
-      if (props.scheduleData?.series_id && !isDateChanged()) {
-        console.log('顯示批量修改確認對話框');
-        showBatchUpdateConfirm.value = true;
-        return;
+    // 處理提交 Handle submit
+    const handleSubmit = async () => {
+      try {
+        // 驗證必填欄位 Validate required fields
+        if (!formData.schoolName.trim()) {
+          Message.error('請輸入學校名稱 Please enter school name');
+          return;
+        }
+        if (!formData.className.trim()) {
+          Message.error('請輸入班級名稱 Please enter class name');
+          return;
+        }
+        if (!formData.date) {
+          Message.error('請選擇日期 Please select date');
+          return;
+        }
+        if (!formData.startTime) {
+          Message.error('請選擇開始時間 Please select start time');
+          return;
+        }
+        if (!formData.endTime) {
+          Message.error('請選擇結束時間 Please select end time');
+          return;
+        }
+
+        // 準備更新數據 Prepare update data
+        const updateData = {
+          school_name: formData.schoolName.trim(),
+          class_name: formData.className.trim(),
+          course_type: formData.courseType,
+          teacher_id: formData.teacherId,
+          date: formData.date,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+          course_fee: formData.courseFee ? Number(formData.courseFee) : null,
+          teacher_fee: formData.teacherFee ? Number(formData.teacherFee) : null,
+          county: formData.county?.trim() || null,
+          district: formData.district?.trim() || null,
+          notes: formData.notes?.trim() || null,
+          assistants: formData.assistants.map(assistant => ({
+            id: assistant.id,
+            assistant_id: assistant.assistant_id,
+            fee: Number(assistant.fee) || 0
+          }))
+        };
+
+        console.log('準備更新的數據:', updateData);
+
+        // 檢查是否為重複性課程 Check if it's a recurring course
+        if (props.scheduleData?.series_id) {
+          console.log('這是重複性課程，series_id:', props.scheduleData.series_id);
+          
+          // 如果日期有變更，顯示確認對話框 If date has changed, show confirmation dialog
+          if (isDateChanged()) {
+            console.log('日期已變更，顯示批量更新確認');
+            showBatchUpdateConfirm.value = true;
+            return;
+          }
+          
+          // 如果其他欄位有變更，也顯示確認對話框
+          // If other fields have changed, also show confirmation dialog
+          showBatchUpdateConfirm.value = true;
+          return;
+        }
+
+        // 如果不是重複性課程，直接更新 If not a recurring course, update directly
+        const response = await scheduleAPI.updateSchedule(formData.id, updateData);
+        console.log('更新成功:', response);
+
+        if (response.success) {
+          Message.success('課程更新成功 Course updated successfully');
+          emit('updated', response.data);
+          emit('update:visible', false);
+        } else {
+          Message.error(response.message || '更新失敗 Update failed');
+        }
+      } catch (error) {
+        console.error('更新課程失敗:', error);
+        Message.error('更新課程失敗 Failed to update course');
       }
-      
-      console.log('直接提交更新');
-      
-      const selectedTeacher = teachers.value.find(t => t.value === formData.value.teacherId);
-      const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
-
-      let assistantName = '';
-      if (formData.value.assistants.length > 0) {
-        const selectedAssistant = assistants.value.find(a => a.value === formData.value.assistants[0].id);
-        assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
-      }
-
-      const updatedCourseData = {
-        id: props.scheduleData.id,
-        courseType: formData.value.courseType,
-        schoolName: formData.value.schoolName,
-        teacherName: teacherName,
-        teacherId: formData.value.teacherId,
-        assistantName: assistantName,
-        startTime: formData.value.startTime,
-        endTime: formData.value.endTime,
-        date: formData.value.date,
-        className: formData.value.className,
-        courseFee: formData.value.courseFee,
-        teacherFee: formData.value.teacherFee,
-        assistantFee: formData.value.assistants[0]?.fee || '',
-        updateType: 'single'
-      };
-
-      console.log('提交的課程數據:', updatedCourseData);
-      emit('save', updatedCourseData);
-      handleClose();
     };
 
     // 關閉對話框 Close dialog
@@ -401,32 +448,45 @@ export default {
       () => props.scheduleData,
       (newData) => {
         if (newData) {
-          console.log('接收到的原始課程數據:', newData);
-          
-          formData.value = {
+          console.log('接收到的課程數據:', {
             id: newData.id,
-            schoolName: newData.schoolName || '',
-            className: newData.className || '',
-            courseType: newData.courseType || '',
-            date: newData.date || '',
-            startTime: newData.startTime || '',
-            endTime: newData.endTime || '',
-            courseFee: newData.courseFee || 0,
-            teacherFee: newData.teacherFee || 0,
-            assistantFee: newData.assistantFee || 0,
-            teacherId: newData.teacherId,
-            teacherName: newData.teacherId === null ? '待訂 / Pending' : newData.teacherName || '',
-            assistantName: newData.assistantName || '',
-            teacher: newData.teacher || null,
-            assistants: newData.assistants || []
-          };
+            schoolName: newData.schoolName,
+            className: newData.className,
+            county: newData.county,
+            district: newData.district,
+            notes: newData.notes
+          });
           
-          originalData.value = { ...formData.value };
-          console.log('設置後的表單數據:', formData.value);
-          console.log('保存的原始數據:', originalData.value);
+          // 更新表單數據
+          formData.id = newData.id;
+          formData.courseType = newData.courseType || '';
+          formData.schoolName = newData.schoolName || '';
+          formData.className = newData.className || '';
+          formData.teacherId = newData.teacherId;
+          formData.teacherName = newData.teacherId === null ? '待訂 / Pending' : newData.teacherName || '';
+          formData.assistantName = newData.assistantName || '';
+          formData.startTime = newData.startTime || '';
+          formData.endTime = newData.endTime || '';
+          formData.date = newData.date || '';
+          formData.courseFee = newData.courseFee || '0';
+          formData.teacherFee = newData.teacherFee || '0';
+          formData.assistantFee = newData.assistantFee || '0';
+          formData.county = newData.county || '';
+          formData.district = newData.district || '';
+          formData.notes = newData.notes || '';
+          formData.assistants = Array.isArray(newData.assistants) ? newData.assistants : [];
+          formData.series_id = newData.series_id || null;
+
+          console.log('更新後的表單數據:', {
+            schoolName: formData.schoolName,
+            className: formData.className,
+            county: formData.county,
+            district: formData.district,
+            notes: formData.notes
+          });
         }
       },
-      { immediate: true }
+      { immediate: true, deep: true }
     );
 
     return {

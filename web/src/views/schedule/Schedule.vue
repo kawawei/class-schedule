@@ -451,8 +451,8 @@ export default defineComponent({
             courseType: courseData.course_type,
             schoolName: courseData.school_name,
             className: courseData.class_name,
-            teacherId: courseData.teacher_id,  // 直接使用 teacher_id
-            teacherName: courseData.teacher?.name || '',  // 使用可選鏈獲取教師名稱
+            teacherId: courseData.teacher_id,
+            teacherName: courseData.teacher?.name || '',
             assistantName: courseData.assistants?.[0]?.assistant_id,
             startTime: courseData.start_time,
             endTime: courseData.end_time,
@@ -460,17 +460,28 @@ export default defineComponent({
             courseFee: courseData.course_fee,
             teacherFee: courseData.teacher_fee,
             assistantFee: courseData.assistants?.[0]?.fee || 0,
+            county: courseData.county || '',
+            district: courseData.district || '',
+            notes: courseData.notes || '',  // 確保包含備註字段
             teacher: courseData.teacher,
             assistants: courseData.assistants || [],
             series_id: courseData.series_id
           };
-          console.log('處理後的課程數據 Processed course data:', selectedCourseData.value);
+          
+          console.log('處理後的課程數據:', {
+            schoolName: selectedCourseData.value.schoolName,
+            className: selectedCourseData.value.className,
+            county: selectedCourseData.value.county,
+            district: selectedCourseData.value.district,
+            notes: selectedCourseData.value.notes
+          });
+          
           showScheduleDetailDialog.value = true;
         } else {
           Message.error('獲取課程詳情失敗 Failed to get course details');
         }
       } catch (error) {
-        console.error('獲取課程詳情失敗 Failed to get course details:', error);
+        console.error('獲取課程詳情失敗:', error);
         Message.error('獲取課程詳情失敗 Failed to get course details');
       }
     };
@@ -586,14 +597,45 @@ export default defineComponent({
 
         console.log('準備更新的課程數據 Course data to update:', updatedData);
 
-        const response = await scheduleAPI.updateSchedule(updatedData.id, updatedData);
+        // 從 updatedData 中提取 id，其餘作為更新數據
+        // Extract id from updatedData, use the rest as update data
+        const { id, ...scheduleData } = updatedData;
+        const response = await scheduleAPI.updateSchedule(id, scheduleData);
+        
         if (response.success) {
           console.log('後端更新成功，重新獲取所有課程數據 Backend update successful, refetching all course data');
           
           // 重新獲取所有課程數據 Refetch all course data
           await fetchCourseSchedules();
           
-          showScheduleDetailDialog.value = false;
+          // 重新獲取並更新當前選中課程的詳細信息
+          // Refetch and update current selected course details
+          const updatedCourseResponse = await scheduleAPI.getSchedule(id);
+          if (updatedCourseResponse.success) {
+            const courseData = updatedCourseResponse.data;
+            selectedCourseData.value = {
+              id: courseData.id,
+              courseType: courseData.course_type,
+              schoolName: courseData.school_name,
+              className: courseData.class_name,
+              teacherId: courseData.teacher_id,
+              teacherName: courseData.teacher?.name || '',
+              assistantName: courseData.assistants?.[0]?.assistant_id,
+              startTime: courseData.start_time,
+              endTime: courseData.end_time,
+              date: courseData.date,
+              courseFee: courseData.course_fee,
+              teacherFee: courseData.teacher_fee,
+              assistantFee: courseData.assistants?.[0]?.fee || 0,
+              county: courseData.county || '',
+              district: courseData.district || '',
+              notes: courseData.notes || '',
+              teacher: courseData.teacher,
+              assistants: courseData.assistants || [],
+              series_id: courseData.series_id
+            };
+          }
+          
           Message.success('課程更新成功 Course updated successfully');
         } else {
           console.error('更新課程失敗 Failed to update course:', response.message);

@@ -11,6 +11,16 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       comment: '排課ID Schedule ID'
     },
+    county: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: '縣市 County'
+    },
+    district: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: '區域 District'
+    },
     school_name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -48,13 +58,20 @@ module.exports = (sequelize) => {
     },
     course_fee: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
+      allowNull: true,
+      defaultValue: null,
       comment: '課程鐘點費 Course Fee'
     },
     teacher_fee: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
+      allowNull: true,
+      defaultValue: null,
       comment: '老師實拿鐘點 Teacher Fee'
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '備註 Notes'
     },
     company_code: {
       type: DataTypes.STRING,
@@ -124,6 +141,10 @@ module.exports = (sequelize) => {
       {
         fields: ['recurring_end_date'],
         name: 'idx_schedule_recurring_end_date'
+      },
+      {
+        fields: ['county', 'district'],
+        name: 'idx_schedule_location'
       }
     ]
   });

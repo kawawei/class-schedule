@@ -7,7 +7,25 @@
     @update:model-value="handleVisibleChange"
   >
     <div class="course-form">
-      <!-- 第一行：補習班名稱 First row: School Name -->
+      <!-- 第一行：縣市和區域 First row: County and District -->
+      <div class="form-row">
+        <AppInput
+          v-model="formData.county"
+          label="縣市 / County"
+          placeholder="縣市"
+          :disabled="!isEditing || isTeacher"
+          required
+        />
+        <AppInput
+          v-model="formData.district"
+          label="區域 / District"
+          placeholder="區域"
+          :disabled="!isEditing || isTeacher"
+          required
+        />
+      </div>
+
+      <!-- 第二行：補習班名稱 Second row: School Name -->
       <AppInput
         v-model="formData.schoolName"
         label="補習班名稱 / School Name"
@@ -16,7 +34,7 @@
         required
       />
 
-      <!-- 第二行：班級名稱和老師 Second row: Class Name and Teacher -->
+      <!-- 第三行：班級名稱和老師 Third row: Class Name and Teacher -->
       <div class="form-row">
         <AppInput
           v-model="formData.className"
@@ -45,7 +63,7 @@
         />
       </div>
 
-      <!-- 第三行：課程種類 Third row: Course Type -->
+      <!-- 第四行：課程種類 Fourth row: Course Type -->
       <AppSelect
         v-model="formData.courseType"
         label="課程種類 / Course Type"
@@ -55,7 +73,7 @@
         required
       />
 
-      <!-- 第四行：日期和時間 Fourth row: Date and Time -->
+      <!-- 第五行：日期和時間 Fifth row: Date and Time -->
       <div class="form-row">
         <AppInput
           v-model="formData.date"
@@ -82,7 +100,7 @@
         </div>
       </div>
 
-      <!-- 第五行：費用 Fifth row: Fees -->
+      <!-- 第六行：費用 Sixth row: Fees -->
       <div class="form-row">
         <AppInput
           v-if="!isTeacher"
@@ -98,6 +116,18 @@
           type="number"
           :disabled="!isEditing || isTeacher"
           required
+        />
+      </div>
+
+      <!-- 第七行：備註 Seventh row: Notes -->
+      <div class="form-row">
+        <AppInput
+          v-model="formData.notes"
+          label="備註 / Notes"
+          type="textarea"
+          placeholder="請輸入備註"
+          :disabled="!isEditing || isTeacher"
+          class="notes-input"
         />
       </div>
 

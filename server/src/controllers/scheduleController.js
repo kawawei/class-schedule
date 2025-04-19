@@ -36,6 +36,27 @@ const scheduleController = {
       // Get schedule list with teacher and assistant information
       const schedules = await CourseSchedule.findAll({
         where,
+        attributes: [
+          'id',
+          'county',  // 添加縣市字段 Add county field
+          'district',  // 添加區域字段 Add district field
+          'school_name',
+          'class_name',
+          'course_type',
+          'teacher_id',
+          'date',
+          'start_time',
+          'end_time',
+          'course_fee',
+          'teacher_fee',
+          'notes',
+          'company_code',
+          'is_recurring',
+          'series_id',
+          'recurring_days',
+          'recurring_start_date',
+          'recurring_end_date'
+        ],
         include: [
           {
             model: Teacher,
@@ -79,6 +100,27 @@ const scheduleController = {
           id,
           company_code: companyCode
         },
+        attributes: [
+          'id',
+          'county',  // 添加縣市字段 Add county field
+          'district',  // 添加區域字段 Add district field
+          'school_name',
+          'class_name',
+          'course_type',
+          'teacher_id',
+          'date',
+          'start_time',
+          'end_time',
+          'course_fee',
+          'teacher_fee',
+          'notes',
+          'company_code',
+          'is_recurring',
+          'series_id',
+          'recurring_days',
+          'recurring_start_date',
+          'recurring_end_date'
+        ],
         include: [
           {
             model: Teacher,
@@ -261,7 +303,9 @@ const scheduleController = {
         const schedule = await CourseSchedule.create({
           ...scheduleData,
           series_id: null,  // 單次課程設置 series_id 為 null Set series_id to null for single course
-          company_code: companyCode
+          company_code: companyCode,
+          course_fee: scheduleData.course_fee || null,  // 允許空值 Allow null
+          teacher_fee: scheduleData.teacher_fee || null,  // 允許空值 Allow null
         });
         
         // 如果有助教，創建助教排課 Create assistant schedules if any
@@ -323,14 +367,17 @@ const scheduleController = {
 
       // 準備更新數據 Prepare update data
       const updateData = {
-        school_name: scheduleData.schoolName,
-        class_name: scheduleData.className,
-        course_type: scheduleData.courseType,
-        teacher_id: scheduleData.teacherId,
-        start_time: scheduleData.startTime,
-        end_time: scheduleData.endTime,
-        course_fee: scheduleData.courseFee,
-        teacher_fee: scheduleData.teacherFee
+        school_name: scheduleData.school_name,
+        class_name: scheduleData.class_name,
+        course_type: scheduleData.course_type,
+        teacher_id: scheduleData.teacher_id,
+        start_time: scheduleData.start_time,
+        end_time: scheduleData.end_time,
+        course_fee: scheduleData.course_fee || null,
+        teacher_fee: scheduleData.teacher_fee || null,
+        county: scheduleData.county,
+        district: scheduleData.district,
+        notes: scheduleData.notes
       };
 
       // 只有在單一更新時才更新日期 Only update date for single updates
@@ -344,22 +391,22 @@ const scheduleController = {
         console.log('更新系列課程，系列ID:', existingSchedule.series_id);
         
         // 檢查時間衝突 Check for time conflicts
-        if (scheduleData.startTime && scheduleData.endTime) {
+        if (scheduleData.start_time && scheduleData.end_time) {
           const conflictingSchedule = await CourseSchedule.findOne({
             where: {
               id: { [Op.ne]: id },
               company_code: companyCode,
-              teacher_id: scheduleData.teacherId || existingSchedule.teacher_id,
+              teacher_id: scheduleData.teacher_id || existingSchedule.teacher_id,
               date: existingSchedule.date, // 使用當前課程的日期 Use current course's date
               [Op.or]: [
                 {
                   start_time: {
-                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
                   }
                 },
                 {
                   end_time: {
-                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
                   }
                 }
               ]
@@ -372,13 +419,19 @@ const scheduleController = {
         }
 
         // 更新所有相關課程 Update all related courses
-        const [updatedCount, updatedSchedules] = await CourseSchedule.update(updateData, {
-          where: {
-            series_id: existingSchedule.series_id,
-            company_code: companyCode
+        const [updatedCount, updatedSchedules] = await CourseSchedule.update(
+          {
+            ...updateData,
+            updated_at: new Date()
           },
-          returning: true
-        });
+          {
+            where: {
+              series_id: existingSchedule.series_id,
+              company_code: companyCode
+            },
+            returning: true
+          }
+        );
 
         // 更新助教排課 Update assistant schedules
         if (scheduleData.assistants) {
@@ -418,22 +471,22 @@ const scheduleController = {
         console.log('更新單一課程，ID:', id);
 
         // 檢查時間衝突 Check for time conflicts
-        if (scheduleData.date && scheduleData.startTime && scheduleData.endTime) {
+        if (scheduleData.date && scheduleData.start_time && scheduleData.end_time) {
           const conflictingSchedule = await CourseSchedule.findOne({
             where: {
               id: { [Op.ne]: id },
               company_code: companyCode,
-              teacher_id: scheduleData.teacherId || existingSchedule.teacher_id,
+              teacher_id: scheduleData.teacher_id || existingSchedule.teacher_id,
               date: scheduleData.date,
               [Op.or]: [
                 {
                   start_time: {
-                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
                   }
                 },
                 {
                   end_time: {
-                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
                   }
                 }
               ]

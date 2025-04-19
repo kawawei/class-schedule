@@ -8,13 +8,39 @@
     @close="handleClose"
   >
     <div class="add-course-form">
-      <!-- 第一行：補習班名稱和班級名稱 First row: School Name and Class Name -->
+      <!-- 第一行：縣市和區域 First row: County and District -->
       <div class="form-row">
-        <AppInput
+        <AppSelect
+          v-model="formData.county"
+          label="縣市 / County"
+          :options="countyOptions"
+          placeholder="請選擇縣市"
+          required
+          searchable
+          @change="handleCountyChange"
+        />
+        <AppSelect
+          v-model="formData.district"
+          label="區域 / District"
+          :options="districtOptions"
+          placeholder="請選擇區域"
+          required
+          searchable
+          :disabled="!formData.county"
+        />
+      </div>
+
+      <!-- 第二行：補習班名稱和班級名稱 Second row: School Name and Class Name -->
+      <div class="form-row">
+        <AppSelect
           v-model="formData.schoolName"
           label="補習班名稱 / School Name"
+          :options="schoolNameOptions"
           placeholder="請輸入補習班名稱"
           required
+          searchable
+          allow-custom-value
+          @search="handleSchoolNameSearch"
         />
         <AppInput
           v-model="formData.className"
@@ -24,7 +50,7 @@
         />
       </div>
 
-      <!-- 第二行：課程種類和老師 Second row: Course Type and Teacher -->
+      <!-- 第三行：課程種類和老師 Third row: Course Type and Teacher -->
       <div class="form-row">
         <AppSelect
           v-model="formData.courseType"
@@ -44,7 +70,7 @@
         />
       </div>
 
-      <!-- 第三行：日期和時間 Third row: Date and Time -->
+      <!-- 第四行：日期和時間 Fourth row: Date and Time -->
       <div class="time-selection">
         <AppInput
           v-model="formData.date"
@@ -90,20 +116,29 @@
       </div>
 
       <!-- 第五行：課程費用 Fifth row: Course Fees -->
-      <div class="form-row">
+      <div class="time-selection">
         <AppInput
           v-model="formData.courseFee"
-          label="課程鐘點費 / Course Fee"
+          label="課程鐘點費"
           type="number"
-          placeholder="請輸入課程鐘點費"
-          required
+          placeholder="請輸入課程鐘點費，預設為 0"
         />
         <AppInput
           v-model="formData.teacherFee"
-          label="老師實拿鐘點 / Teacher's Fee"
+          label="老師實拿鐘點"
           type="number"
-          placeholder="請輸入老師實拿鐘點"
-          required
+          placeholder="請輸入老師實拿鐘點，預設為 0"
+        />
+      </div>
+
+      <!-- 第六行：備註 Sixth row: Notes -->
+      <div class="form-row">
+        <AppInput
+          v-model="formData.notes"
+          label="備註 / Notes (選填 / Optional)"
+          type="textarea"
+          placeholder="請輸入備註"
+          class="notes-input"
         />
       </div>
 
@@ -223,21 +258,188 @@ export default {
       { label: '週日 / Sun', value: 7 }
     ];
 
+    // 縣市選項 County options
+    const countyOptions = [
+      { value: '台北市', label: '台北市' },
+      { value: '新北市', label: '新北市' }
+    ];
+    
+    // 區域選項 District options
+    const districtOptions = ref([]);
+    
+    // 縣市區域映射 County-district mapping
+    const countyDistrictMap = {
+      '台北市': [
+        { value: '北投區', label: '北投區' },
+        { value: '士林區', label: '士林區' },
+        { value: '大同區', label: '大同區' },
+        { value: '中山區', label: '中山區' },
+        { value: '松山區', label: '松山區' },
+        { value: '內湖區', label: '內湖區' },
+        { value: '萬華區', label: '萬華區' },
+        { value: '中正區', label: '中正區' },
+        { value: '大安區', label: '大安區' },
+        { value: '信義區', label: '信義區' },
+        { value: '南港區', label: '南港區' },
+        { value: '文山區', label: '文山區' }
+      ],
+      '新北市': [
+        { value: '板橋區', label: '板橋區' },
+        { value: '三重區', label: '三重區' },
+        { value: '中和區', label: '中和區' },
+        { value: '永和區', label: '永和區' },
+        { value: '新莊區', label: '新莊區' },
+        { value: '新店區', label: '新店區' },
+        { value: '土城區', label: '土城區' },
+        { value: '蘆洲區', label: '蘆洲區' },
+        { value: '樹林區', label: '樹林區' },
+        { value: '汐止區', label: '汐止區' },
+        { value: '鶯歌區', label: '鶯歌區' },
+        { value: '三峽區', label: '三峽區' },
+        { value: '淡水區', label: '淡水區' },
+        { value: '瑞芳區', label: '瑞芳區' },
+        { value: '五股區', label: '五股區' },
+        { value: '泰山區', label: '泰山區' },
+        { value: '林口區', label: '林口區' },
+        { value: '深坑區', label: '深坑區' },
+        { value: '石碇區', label: '石碇區' },
+        { value: '坪林區', label: '坪林區' },
+        { value: '三芝區', label: '三芝區' },
+        { value: '石門區', label: '石門區' },
+        { value: '八里區', label: '八里區' },
+        { value: '平溪區', label: '平溪區' },
+        { value: '雙溪區', label: '雙溪區' },
+        { value: '貢寮區', label: '貢寮區' },
+        { value: '金山區', label: '金山區' },
+        { value: '萬里區', label: '萬里區' },
+        { value: '烏來區', label: '烏來區' }
+      ]
+    };
+    
     // 表單數據 Form data
     const formData = reactive({
       schoolName: '',
       className: '',
       courseType: '',
+      county: '',
+      district: '',
       date: '',
       endDate: '',
       startTime: '',
       endTime: '',
       teacherId: '',
-      courseFee: '',
-      teacherFee: '',
+      courseFee: '0',  // 預設為 0 Default to 0
+      teacherFee: '0',  // 預設為 0 Default to 0
+      notes: '',  // 新增備註欄位 Add notes field
       assistants: [],
-      recurringDays: Array(7).fill(false)  // 重複性選項 Recurring options
+      recurringDays: Array(7).fill(false)
     });
+
+    // 處理縣市變更 Handle county change
+    const handleCountyChange = () => {
+      if (!formData) return;  // 確保 formData 已初始化 Ensure formData is initialized
+      
+      console.log('選擇的縣市:', formData.county);
+      // 立即更新區域選項 Immediately update district options
+      if (formData.county) {
+        const districts = countyDistrictMap[formData.county];
+        console.log('對應的區域:', districts);
+        districtOptions.value = districts || [];
+        // 重置區域選擇 Reset district selection
+        formData.district = '';
+      } else {
+        districtOptions.value = [];
+      }
+      console.log('設置的區域選項:', districtOptions.value);
+    };
+
+    // 監聽縣市變化 Watch county changes
+    watch(
+      () => formData.county,
+      (newValue) => {
+        if (newValue) {
+          handleCountyChange();
+        }
+      }
+    );
+
+    // 補習班名稱選項 School name options
+    const schoolNameOptions = ref([]);
+
+    // 獲取補習班名稱列表 Get school name list
+    const fetchSchoolNames = async () => {
+      try {
+        const response = await scheduleAPI.getAllSchedules();
+        if (response.success) {
+          // 從所有課程中提取不重複的補習班名稱
+          // Extract unique school names from all courses
+          const uniqueSchoolNames = [...new Set(response.data
+            .map(schedule => schedule.school_name)
+            .filter(name => name)  // 過濾掉空值 Filter out empty values
+          )];
+          
+          // 轉換為選項格式 Convert to options format
+          schoolNameOptions.value = uniqueSchoolNames.map(name => ({
+            label: name,
+            value: name
+          }));
+
+          // 如果當前有選擇的補習班名稱但不在列表中，添加到選項中
+          // If current school name is not in the list, add it
+          if (formData.schoolName && !schoolNameOptions.value.some(option => option.value === formData.schoolName)) {
+            schoolNameOptions.value.unshift({
+              label: formData.schoolName,
+              value: formData.schoolName
+            });
+          }
+        }
+      } catch (error) {
+        console.error('獲取補習班名稱列表失敗:', error);
+      }
+    };
+
+    // 處理補習班名稱搜尋 Handle school name search
+    const handleSchoolNameSearch = async (searchText) => {
+      try {
+        console.log('搜尋文字:', searchText);  // 添加日誌
+        // 如果搜尋文字少於2個字元，顯示所有選項
+        // If search text is less than 2 characters, show all options
+        if (searchText.length < 2) {
+          await fetchSchoolNames();
+          return;
+        }
+
+        // 過濾符合搜尋文字的選項
+        // Filter options that match search text
+        const searchLower = searchText.toLowerCase();
+        let filteredOptions = schoolNameOptions.value.filter(option =>
+          option.label.toLowerCase().includes(searchLower)
+        );
+
+        // 如果輸入的值不在現有選項中，將其添加為新選項（放在最前面）
+        // If input value is not in existing options, add it as a new option (at the beginning)
+        const exactMatch = filteredOptions.some(option => 
+          option.value === searchText  // 使用完全匹配而不是轉換為小寫
+        );
+
+        if (!exactMatch) {
+          filteredOptions = [{
+            label: searchText,
+            value: searchText
+          }, ...filteredOptions];
+        }
+
+        console.log('過濾後的選項:', filteredOptions);  // 添加日誌
+        schoolNameOptions.value = filteredOptions;
+        
+        // 確保 formData.schoolName 被設置為完整的輸入值
+        // Ensure formData.schoolName is set to the complete input value
+        formData.schoolName = searchText;
+        console.log('設置的補習班名稱:', formData.schoolName);  // 添加日誌
+      } catch (error) {
+        console.error('搜尋補習班名稱失敗:', error);
+      }
+    };
 
     // 計算日期範圍內的星期幾 Calculate weekdays within date range
     const calculateAvailableWeekdays = () => {
@@ -398,9 +600,15 @@ export default {
       }
     };
 
-    // 組件掛載時只獲取課程種類 Only fetch course types when component is mounted
+    // 組件掛載時獲取數據 Get data when component is mounted
     onMounted(async () => {
-      await fetchCourseTypes();
+      await Promise.all([
+        fetchCourseTypes(),
+        fetchSchoolNames()
+      ]);
+      
+      // 初始化時調用一次 Call once during initialization
+      handleCountyChange();
     });
 
     // 處理對話框可見性變化 Handle dialog visibility change
@@ -417,13 +625,16 @@ export default {
         schoolName: '',
         className: '',
         courseType: '',
+        county: '',
+        district: '',
         date: '',
         endDate: '',
         startTime: '',
         endTime: '',
         teacherId: '',
-        courseFee: '',
-        teacherFee: '',
+        courseFee: '0',
+        teacherFee: '0',
+        notes: '',  // 重置備註欄位 Reset notes field
         assistants: [],
         recurringDays: Array(7).fill(false)
       });
@@ -450,37 +661,43 @@ export default {
 
     // 處理提交 Handle submit
     const handleSubmit = async () => {
-      if (loading.value) return; // 如果正在加載中，直接返回 If loading, return directly
+      if (loading.value) return;
       
       try {
         loading.value = true;
+        
+        // 確保鐘點費為數字，如果為空則設為 0
+        // Ensure fees are numbers, set to 0 if empty
+        const courseFee = formData.courseFee === '' ? 0 : Number(formData.courseFee);
+        const teacherFee = formData.teacherFee === '' ? 0 : Number(formData.teacherFee);
         
         // 創建課程數據 Create course data
         const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
         const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
 
-        let assistantName = '';
-        let assistantFee = '';
-        if (formData.assistants.length > 0) {
-          const selectedAssistant = assistants.value.find(a => a.value === formData.assistants[0].id);
-          assistantName = selectedAssistant ? selectedAssistant.label.split(' / ')[0] : '';
-          assistantFee = formData.assistants[0].fee;
+        // 確保補習班名稱不為空 Ensure school name is not empty
+        if (!formData.schoolName) {
+          Message.error('請輸入補習班名稱 / Please enter school name');
+          return;
         }
 
         // 基本課程數據 Base course data
         const baseEventData = {
-          school_name: formData.schoolName,
+          school_name: formData.schoolName,  // 直接使用用戶輸入的值，不進行 trim Directly use user input without trim
           class_name: formData.className,
           course_type: formData.courseType,
-          teacher_id: formData.teacherId,
+          teacher_id: formData.teacherId || null,  // 確保 teacher_id 為 null 而不是空字串
+          county: formData.county,  // 添加縣市資訊
+          district: formData.district,  // 添加區域資訊
           start_time: formData.startTime,
           end_time: formData.endTime,
-          course_fee: formData.courseFee,
-          teacher_fee: formData.teacherFee,
+          course_fee: courseFee,
+          teacher_fee: teacherFee,
+          notes: formData.notes,
           company_code: localStorage.getItem('companyCode'),
           assistants: formData.assistants.map(assistant => ({
-            id: assistant.id,
-            fee: assistant.fee
+            id: assistant.id || null,  // 確保助教 ID 為 null 而不是空字串
+            fee: Number(assistant.fee) || 0  // 確保助教鐘點費為數字
           }))
         };
 
@@ -578,6 +795,11 @@ export default {
       addAssistant,
       removeAssistant,
       handleCourseTypeChange,
+      countyOptions,
+      districtOptions,
+      handleCountyChange,
+      schoolNameOptions,
+      handleSchoolNameSearch,
     };
   }
 };
@@ -589,21 +811,27 @@ export default {
   flex-direction: column;
   gap: 1.5rem;
   padding: 1.5rem;
-  width: 100%;  // 改為 100% 寬度
-  max-width: 720px;  // 設置最大寬度
-  margin: 0 auto;  // 居中顯示
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     align-items: start;
+    width: 100%;
+
+    &:has(> :only-child) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .time-selection {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 1fr;  // 改為兩列，確保對齊
     gap: 1.5rem;
+    width: 100%;
   }
 
   .assistant-list {
@@ -726,5 +954,15 @@ export default {
   gap: 1rem;
   padding: 1rem;
   border-top: 1px solid var(--color-gray-200);
+}
+
+.notes-input {
+  width: 100%;
+  grid-column: 1 / -1;
+  
+  :deep(textarea) {
+    min-height: 100px;
+    resize: vertical;
+  }
 }
 </style> 

@@ -1,8 +1,21 @@
 <template>
   <div class="app-select-wrapper" :class="{ 'has-error': error }">
     <label v-if="label" class="select-label" :for="id">{{ label }}</label>
-    <div class="select-container">
+    <div class="select-container" @click="toggleDropdown">
+      <input
+        v-if="searchable"
+        ref="searchInput"
+        v-model="searchQuery"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :required="required"
+        class="app-select"
+        @focus="handleFocus"
+        @blur="handleBlurDelayed"
+        @input="handleSearch"
+      />
       <select
+        v-else
         :id="id"
         :value="modelValue"
         :disabled="disabled"
@@ -22,6 +35,22 @@
         </option>
       </select>
       <div class="select-arrow"></div>
+      
+      <!-- 下拉選單 Dropdown menu -->
+      <div v-if="searchable && isOpen" class="select-dropdown">
+        <div
+          v-for="option in filteredOptions"
+          :key="option.value"
+          class="select-option"
+          :class="{ 'selected': option.value === modelValue }"
+          @mousedown.prevent="selectOption(option)"
+        >
+          {{ option.label }}
+        </div>
+        <div v-if="filteredOptions.length === 0" class="select-no-results">
+          無符合結果 / No results found
+        </div>
+      </div>
     </div>
     <p v-if="error" class="select-error">{{ error }}</p>
   </div>
@@ -77,9 +106,54 @@ export default {
     error: {
       type: String,
       default: ''
+    },
+    // 是否可搜尋 Whether the select is searchable
+    searchable: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:modelValue', 'focus', 'blur'],
+  emits: ['update:modelValue', 'focus', 'blur', 'search'],
+  
+  data() {
+    return {
+      isOpen: false,
+      searchQuery: '',
+      selectedLabel: ''
+    }
+  },
+  
+  computed: {
+    /**
+     * 過濾後的選項 Filtered options
+     * @returns {Array} 過濾後的選項列表 Filtered options list
+     */
+    filteredOptions() {
+      if (!this.searchQuery) return this.options;
+      
+      const query = this.searchQuery.toLowerCase();
+      return this.options.filter(option =>
+        option.label.toLowerCase().includes(query)
+      );
+    }
+  },
+  
+  watch: {
+    /**
+     * 監聽選中值變化 Watch modelValue changes
+     */
+    modelValue: {
+      immediate: true,
+      handler(newValue) {
+        const option = this.options.find(opt => opt.value === newValue);
+        if (option) {
+          this.searchQuery = option.label;
+          this.selectedLabel = option.label;
+        }
+      }
+    }
+  },
+  
   methods: {
     /**
      * 更新選單值 Update select value
@@ -103,6 +177,47 @@ export default {
      */
     handleBlur(event) {
       this.$emit('blur', event);
+    },
+    
+    /**
+     * 切換下拉選單 Toggle dropdown
+     */
+    toggleDropdown() {
+      if (!this.disabled) {
+        this.isOpen = !this.isOpen;
+      }
+    },
+    
+    /**
+     * 處理搜尋 Handle search
+     */
+    handleSearch() {
+      this.isOpen = true;
+      this.$emit('search', this.searchQuery);
+    },
+    
+    /**
+     * 選擇選項 Select option
+     * @param {Object} option - 選中的選項 Selected option
+     */
+    selectOption(option) {
+      this.searchQuery = option.label;
+      this.selectedLabel = option.label;
+      this.$emit('update:modelValue', option.value);
+      this.isOpen = false;
+    },
+    
+    /**
+     * 延遲處理失焦事件 Handle blur with delay
+     */
+    handleBlurDelayed() {
+      setTimeout(() => {
+        this.isOpen = false;
+        if (!this.options.some(opt => opt.label === this.searchQuery)) {
+          this.searchQuery = this.selectedLabel;
+        }
+        this.handleBlur();
+      }, 200);
     }
   }
 }
@@ -200,5 +315,47 @@ export default {
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-xs);
   color: var(--color-danger);
+}
+
+.select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  margin-top: 4px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.select-option {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: var(--color-gray-100);
+  }
+  
+  &.selected {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+  }
+}
+
+.select-no-results {
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.app-select {
+  &[type="text"] {
+    cursor: text;
+  }
 }
 </style> 
