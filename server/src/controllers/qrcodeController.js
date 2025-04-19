@@ -61,7 +61,7 @@ const generateImageFilename = (id) => {
 };
 
 // 生成 QR Code 圖片 Generate QR Code image
-const generateQRCodeImage = async (url, id) => {
+const generateQRCodeImage = async (url, id, customOptions = {}) => {
     try {
         // 生成文件名 Generate filename
         const filename = generateImageFilename(id);
@@ -74,17 +74,36 @@ const generateQRCodeImage = async (url, id) => {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
+
+        // 驗證並處理自定義選項 Validate and process custom options
+        const validatedOptions = {
+            // 錯誤糾正級別（L:7%, M:15%, Q:25%, H:30%）Error correction level
+            errorCorrectionLevel: ['L', 'M', 'Q', 'H'].includes(customOptions.errorCorrectionLevel) 
+                ? customOptions.errorCorrectionLevel 
+                : 'H',
+            
+            // 圖片寬度（200-1000px）Image width
+            width: Math.min(Math.max(Number(customOptions.width) || 400, 200), 1000),
+            
+            // 邊距（0-4）Margin
+            margin: Math.min(Math.max(Number(customOptions.margin) || 1, 0), 4),
+            
+            // 顏色設置 Color settings
+            color: {
+                // 前景色（必須是有效的十六進制顏色）Foreground color (must be valid hex)
+                dark: /^#[0-9A-Fa-f]{6}$/.test(customOptions.foregroundColor) 
+                    ? customOptions.foregroundColor 
+                    : customOptions.color?.dark || '#000000',
+                
+                // 背景色（必須是有效的十六進制顏色）Background color (must be valid hex)
+                light: /^#[0-9A-Fa-f]{6}$/.test(customOptions.backgroundColor)
+                    ? customOptions.backgroundColor
+                    : customOptions.color?.light || '#FFFFFF'
+            }
+        };
         
         // 生成 QR Code 圖片 Generate QR Code image
-        await QRCode.toFile(qrcodePath, url, {
-            errorCorrectionLevel: 'H', // 高容錯率 High error correction level
-            width: 400, // 圖片寬度 Image width
-            margin: 1, // 邊距 Margin
-            color: {
-                dark: '#000000', // 二維碼顏色 QR Code color
-                light: '#ffffff' // 背景顏色 Background color
-            }
-        });
+        await QRCode.toFile(qrcodePath, url, validatedOptions);
         
         // 返回圖片的相對路徑 Return relative path of the image
         return `/qrcodes/${filename}`;
@@ -98,7 +117,7 @@ const generateQRCodeImage = async (url, id) => {
 const createQRCode = async (req, res, next) => {
     const client = await mainPool.connect();
     try {
-        const { name, target_url, preview_id } = req.body;
+        const { name, target_url, preview_id, custom_style = {} } = req.body;
         const { companyCode } = req.user;
         
         // 驗證 URL Validate URL
@@ -126,15 +145,17 @@ const createQRCode = async (req, res, next) => {
             ? 'https://class-schedule.lihengtech.com.tw:9443/schedule-api'
             : process.env.API_BASE_URL;
         const redirect_url = `${baseUrl}/qrcode/redirect/${id}`;
-        const qrcode_url = `/qrcodes/qr${String(id).padStart(5, '0')}.png`;
+        
+        // 生成 QR Code 圖片，使用預覽時的自定義樣式 Generate QR Code image with custom style from preview
+        const qrcode_url = await generateQRCodeImage(redirect_url, id, custom_style);
         
         // 插入新記錄 Insert new record
         const result = await client.query(
             `INSERT INTO public.qrcodes (
-                id, name, qrcode_url, redirect_url, actual_url, tenant_id
-            ) VALUES ($1, $2, $3, $4, $5, $6)
+                id, name, qrcode_url, redirect_url, actual_url, tenant_id, custom_style
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *`,
-            [id, name, qrcode_url, redirect_url, target_url, tenantId]
+            [id, name, qrcode_url, redirect_url, target_url, tenantId, custom_style]
         );
         
         res.status(201).json({
@@ -142,11 +163,11 @@ const createQRCode = async (req, res, next) => {
             data: result.rows[0]
         });
     } catch (error) {
-        console.error('創建 QR Code 時發生錯誤:', error);
+        console.error('創建 QR Code 失敗:', error);
         if (error instanceof ApiError) {
             next(error);
         } else {
-            next(new ApiError(500, '創建 QR Code 失敗 Failed to create QR Code', error));
+            next(new ApiError(500, '創建 QR Code 失敗 Failed to create QR Code'));
         }
     } finally {
         client.release();
@@ -236,7 +257,7 @@ const updateQRCode = async (req, res, next) => {
     const client = await mainPool.connect();
     try {
         const { id } = req.params;
-        const { name, target_url } = req.body;
+        const { name, target_url, custom_style = {} } = req.body;
         const { companyCode } = req.user;
         
         // 驗證 URL Validate URL
@@ -258,7 +279,7 @@ const updateQRCode = async (req, res, next) => {
         
         // 獲取現有 QR Code 信息 Get existing QR Code info
         const existingQRCode = await client.query(
-            `SELECT qrcode_url, redirect_url, actual_url FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            `SELECT qrcode_url, redirect_url, actual_url, custom_style FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
             [id, tenantId]
         );
         
@@ -269,34 +290,69 @@ const updateQRCode = async (req, res, next) => {
         // 檢查目標連結是否有變更 Check if target URL has changed
         const isTargetUrlChanged = existingQRCode.rows[0].actual_url !== target_url;
 
-        // 更新名稱和目標連結，如果目標連結有變更則重置掃描次數
-        // Update name and target URL, reset scan count if target URL has changed
+        // 只允許修改特定字段 Only allow specific fields to be modified
+        const allowedFields = [
+            'foregroundColor',
+            'backgroundColor',
+            'margin',
+            'width'
+        ];
+        
+        const filteredStyle = Object.keys(custom_style)
+            .filter(key => allowedFields.includes(key))
+            .reduce((obj, key) => {
+                obj[key] = custom_style[key];
+                return obj;
+            }, {});
+
+        // 合併現有樣式和新的自定義樣式 Merge existing style with new custom style
+        const mergedStyle = {
+            ...existingQRCode.rows[0].custom_style,
+            ...filteredStyle
+        };
+
+        // 更新記錄 Update record
         const result = await client.query(
             `UPDATE public.qrcodes 
              SET name = $1, 
                  actual_url = $2,
-                 scan_count = CASE WHEN $3 THEN 0 ELSE scan_count END,
-                 updated_at = CURRENT_TIMESTAMP,
-                 redirect_url = $4,
-                 qrcode_url = $5
-             WHERE id = $6 AND tenant_id = $7
+                 custom_style = $3,
+                 scan_count = CASE WHEN $4 THEN 0 ELSE scan_count END,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $5 AND tenant_id = $6
              RETURNING *`,
-            [name, target_url, isTargetUrlChanged, 
-             existingQRCode.rows[0].redirect_url,
-             existingQRCode.rows[0].qrcode_url,
-             id, tenantId]
+            [name, target_url, mergedStyle, isTargetUrlChanged, id, tenantId]
         );
 
-        // 如果目標連結有變更，不需要清除掃描記錄，因為掃描次數直接存儲在 qrcodes 表中
-        // If target URL has changed, no need to clear scan records as scan count is stored directly in qrcodes table
+        // 如果樣式有變更，重新生成 QR Code If style has changed, regenerate QR Code
+        if (Object.keys(filteredStyle).length > 0) {
+            const qrcode_url = await generateQRCodeImage(
+                result.rows[0].redirect_url, 
+                id, 
+                mergedStyle
+            );
+            
+            await client.query(
+                `UPDATE public.qrcodes 
+                 SET qrcode_url = $1
+                 WHERE id = $2`,
+                [qrcode_url, id]
+            );
+            
+            result.rows[0].qrcode_url = qrcode_url;
+        }
         
         res.json({
             success: true,
             data: result.rows[0]
         });
     } catch (error) {
-        console.error('更新 QR Code 失敗 Failed to update QR Code:', error);
-        next(new ApiError(500, '更新 QR Code 失敗 Failed to update QR Code'));
+        console.error('更新 QR Code 失敗:', error);
+        if (error instanceof ApiError) {
+            next(error);
+        } else {
+            next(new ApiError(500, '更新 QR Code 失敗 Failed to update QR Code'));
+        }
     } finally {
         client.release();
     }
@@ -494,7 +550,7 @@ const getQRCodeStats = async (req, res, next) => {
 // 生成預覽 QR Code Generate preview QR Code
 const generatePreviewQRCode = async (req, res, next) => {
   try {
-    const { target_url } = req.body;
+    const { target_url, custom_style = {}, preview_id } = req.body;  // 添加 preview_id 參數
     const { companyCode } = req.user;
     
     // 驗證 URL Validate URL
@@ -516,8 +572,9 @@ const generatePreviewQRCode = async (req, res, next) => {
       
       const tenantId = tenantResult.rows[0].id;
       
-      // 獲取下一個可用的序號 Get next available ID
-      const nextId = await getNextAvailableId(client, tenantId);
+      // 如果提供了 preview_id，使用它；否則獲取新的 ID
+      // If preview_id is provided, use it; otherwise get a new ID
+      const nextId = preview_id || await getNextAvailableId(client, tenantId);
       
       // 生成重定向 URL Generate redirect URL
       const baseUrl = process.env.NODE_ENV === 'production' 
@@ -525,8 +582,8 @@ const generatePreviewQRCode = async (req, res, next) => {
           : process.env.API_BASE_URL;
       const redirect_url = `${baseUrl}/qrcode/redirect/${nextId}`;
       
-      // 生成 QR Code 圖片 Generate QR Code image
-      const qrcode_url = await generateQRCodeImage(redirect_url, nextId);
+      // 生成 QR Code 圖片，傳入自定義樣式 Generate QR Code image with custom style
+      const qrcode_url = await generateQRCodeImage(redirect_url, nextId, custom_style);
       
       res.json({
         success: true,
@@ -567,7 +624,7 @@ const downloadQRCode = async (req, res, next) => {
         
         // 獲取 QR Code 信息 Get QR Code info
         const qrcodeResult = await client.query(
-            `SELECT qrcode_url, redirect_url, name FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
+            `SELECT qrcode_url, redirect_url, name, custom_style FROM public.qrcodes WHERE id = $1 AND tenant_id = $2`,
             [id, tenantId]
         );
         
@@ -592,11 +649,16 @@ const downloadQRCode = async (req, res, next) => {
                 
             case 'svg':
                 // 生成 SVG 格式 Generate SVG format
+                const customStyle = qrcode.custom_style || {};
                 const svgBuffer = await QRCode.toString(qrcode.redirect_url, {
                     type: 'svg',
-                    errorCorrectionLevel: 'H',
-                    width: 400,
-                    margin: 1
+                    errorCorrectionLevel: customStyle.errorCorrectionLevel || 'H',
+                    width: customStyle.width || 400,
+                    margin: customStyle.margin || 1,
+                    color: {
+                        dark: customStyle.color?.dark || '#000000',
+                        light: customStyle.color?.light || '#ffffff'
+                    }
                 });
                 res.setHeader('Content-Type', 'image/svg+xml');
                 res.setHeader('Content-Disposition', `attachment; filename="${qrcode.name || 'qrcode'}.svg"`);
