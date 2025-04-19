@@ -124,6 +124,11 @@ const scheduleController = {
       
       console.log('接收到的課程數據:', scheduleData);
       
+      // 處理待訂教師的情況 Handle pending teacher case
+      if (scheduleData.teacher_id === "待訂 / Pending") {
+        scheduleData.teacher_id = null;
+      }
+      
       // 檢查是否為重複性課程 Check if it's a recurring course
       if (scheduleData.is_recurring) {
         console.log('處理重複性課程創建');
@@ -146,22 +151,26 @@ const scheduleController = {
           if (scheduleData.recurring_days.includes(frontendDayOfWeek)) {
             console.log('檢查日期:', currentDate.toISOString().split('T')[0]);
             
-            const existingSchedule = await CourseSchedule.findOne({
-              where: {
-                start_time: {
-                  [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                },
-                company_code: companyCode,
-                teacher_id: scheduleData.teacher_id,
-                date: currentDate.toISOString().split('T')[0]
-              }
-            });
-            
-            if (existingSchedule) {
-              return res.status(400).json({
-                success: false,
-                message: `在 ${currentDate.toISOString().split('T')[0]} 已有課程安排 Course already scheduled on ${currentDate.toISOString().split('T')[0]}`
+            // 只有在有指定教師時才檢查時間衝突
+            // Only check time conflicts if a teacher is specified
+            if (scheduleData.teacher_id !== null) {
+              const existingSchedule = await CourseSchedule.findOne({
+                where: {
+                  start_time: {
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
+                  },
+                  company_code: companyCode,
+                  teacher_id: scheduleData.teacher_id,
+                  date: currentDate.toISOString().split('T')[0]
+                }
               });
+              
+              if (existingSchedule) {
+                return res.status(400).json({
+                  success: false,
+                  message: `在 ${currentDate.toISOString().split('T')[0]} 已有課程安排 Course already scheduled on ${currentDate.toISOString().split('T')[0]}`
+                });
+              }
             }
           }
           
@@ -217,29 +226,34 @@ const scheduleController = {
         // 檢查單一課程是否有時間衝突
         // Check if single course has time conflicts
         console.log('處理單次課程創建');
-        const existingSchedule = await CourseSchedule.findOne({
-          where: {
-            company_code: companyCode,
-            teacher_id: scheduleData.teacher_id,
-            date: scheduleData.date,
-            [Op.or]: [
-              {
-                start_time: {
-                  [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                }
-              },
-              {
-                end_time: {
-                  [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                }
-              }
-            ]
-          }
-        });
         
-        if (existingSchedule) {
-          console.log('發現時間衝突:', existingSchedule.get({ plain: true }));
-          throw new ApiError(400, '該時段已有課程安排 This time slot is already scheduled');
+        // 只有在有指定教師時才檢查時間衝突
+        // Only check time conflicts if a teacher is specified
+        if (scheduleData.teacher_id !== null) {
+          const existingSchedule = await CourseSchedule.findOne({
+            where: {
+              company_code: companyCode,
+              teacher_id: scheduleData.teacher_id,
+              date: scheduleData.date,
+              [Op.or]: [
+                {
+                  start_time: {
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
+                  }
+                },
+                {
+                  end_time: {
+                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
+                  }
+                }
+              ]
+            }
+          });
+          
+          if (existingSchedule) {
+            console.log('發現時間衝突:', existingSchedule.get({ plain: true }));
+            throw new ApiError(400, '該時段已有課程安排 This time slot is already scheduled');
+          }
         }
         
         // 創建單一課程排課 Create single schedule

@@ -356,20 +356,25 @@ export default {
         const response = await teacherAPI.getAllTeachers();
         
         if (response.success) {
-          // 過濾出教授該課程種類的老師
-          // Filter teachers who teach this course type
-          teachers.value = response.data
-            .filter(teacher => {
-              const teacherData = teacher.dataValues || teacher;
-              return teacherData.teaching_categories.includes(courseType);
-            })
-            .map(teacher => {
-              const teacherData = teacher.dataValues || teacher;
-              return {
-                label: `${teacherData.name} / Teacher ${teacherData.name}`,
-                value: teacherData.id
-              };
-            });
+          // 添加"待訂"選項作為第一個選項 Add "Pending" option as the first option
+          teachers.value = [
+            {
+              label: '待訂 / Pending',
+              value: null
+            },
+            ...response.data
+              .filter(teacher => {
+                const teacherData = teacher.dataValues || teacher;
+                return teacherData.teaching_categories.includes(courseType);
+              })
+              .map(teacher => {
+                const teacherData = teacher.dataValues || teacher;
+                return {
+                  label: `${teacherData.name} / Teacher ${teacherData.name}`,
+                  value: teacherData.id
+                };
+              })
+          ];
         } else {
           Message.error(response.message || '獲取老師列表失敗');
         }

@@ -28,8 +28,8 @@ module.exports = (sequelize) => {
     },
     teacher_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      comment: '授課老師ID Teacher ID'
+      allowNull: true,
+      comment: '授課老師ID (null 表示待訂教師) Teacher ID (null means pending assignment)'
     },
     date: {
       type: DataTypes.DATEONLY,
