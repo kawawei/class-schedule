@@ -368,7 +368,7 @@ export default {
       }
 
       const updatedCourseData = {
-        id: formData.value.id,
+        id: props.scheduleData.id,
         courseType: formData.value.courseType,
         schoolName: formData.value.schoolName,
         teacherName: teacherName,
@@ -404,6 +404,7 @@ export default {
           console.log('接收到的原始課程數據:', newData);
           
           formData.value = {
+            id: newData.id,
             schoolName: newData.schoolName || '',
             className: newData.className || '',
             courseType: newData.courseType || '',

@@ -588,37 +588,11 @@ export default defineComponent({
 
         const response = await scheduleAPI.updateSchedule(updatedData.id, updatedData);
         if (response.success) {
-          // 更新本地數據而不是重新獲取 Update local data instead of refetching
-          const updatedEvent = courseEvents.value.find(event => event.id === updatedData.id);
-          if (updatedEvent) {
-            // 更新事件數據 Update event data
-            Object.assign(updatedEvent, {
-              courseType: updatedData.courseType,
-              schoolName: updatedData.schoolName,
-              teacherName: updatedData.teacherName,
-              assistantName: updatedData.assistantName,
-              startTime: updatedData.startTime,
-              endTime: updatedData.endTime,
-              date: updatedData.date,
-              className: updatedData.className,
-              courseFee: updatedData.courseFee,
-              teacherFee: updatedData.teacherFee,
-              assistantFee: updatedData.assistantFee
-            });
-
-            // 重新計算位置 Recalculate position
-            if (updatedData.startTime) {
-              const [hours, minutes] = updatedData.startTime.split(':').map(Number);
-              updatedEvent.position.row = (hours - 8) * 2 + Math.floor(minutes / 30) + 1;
-            }
-            
-            if (updatedData.date) {
-              const date = new Date(updatedData.date);
-              const day = date.getDay();
-              updatedEvent.position.column = day === 0 ? 7 : day;
-            }
-          }
-
+          console.log('後端更新成功，重新獲取所有課程數據 Backend update successful, refetching all course data');
+          
+          // 重新獲取所有課程數據 Refetch all course data
+          await fetchCourseSchedules();
+          
           showScheduleDetailDialog.value = false;
           Message.success('課程更新成功 Course updated successfully');
         } else {
