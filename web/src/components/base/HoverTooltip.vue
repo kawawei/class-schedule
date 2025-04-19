@@ -7,15 +7,17 @@
     @mouseleave="handleMouseLeave"
   >
     <slot></slot>
-    <Transition name="fade">
-      <div 
-        v-if="shouldShow" 
-        class="tooltip"
-        :style="tooltipStyle"
-      >
-        <slot name="content"></slot>
-      </div>
-    </Transition>
+    <Teleport to="body">
+      <Transition name="fade">
+        <div 
+          v-if="shouldShow" 
+          class="tooltip"
+          :style="tooltipStyle"
+        >
+          <slot name="content"></slot>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -165,7 +167,7 @@ export default defineComponent({
 
 .tooltip {
   position: fixed;
-  z-index: 9999;
+  z-index: 999999999;
   padding: 16px 20px;
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
@@ -178,6 +180,7 @@ export default defineComponent({
   word-wrap: break-word;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   line-height: 1.5;
+  isolation: isolate;
   
   // 改進內容樣式 Improve content styling
   :deep(.tooltip-content) {

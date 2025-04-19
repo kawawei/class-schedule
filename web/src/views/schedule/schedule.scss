@@ -17,17 +17,19 @@
 .schedule-content {
   padding-top: var(--spacing-sm); // 減少頂部間距 Reduce top padding
   flex: 1; // 佔據剩餘空間 Take remaining space
+  position: relative;
 }
 
 .calendar-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
   
   .toolbar-left, .toolbar-right {
     display: flex;
@@ -189,6 +191,7 @@
   width: 100%; // 確保日曆容器使用全部可用寬度
   display: flex; // 添加 flex 布局
   flex-direction: column; // 垂直排列
+  position: relative;
   
   &.month-view {
     height: calc(100vh - 120px); // 同步調整月視圖高度
@@ -196,5 +199,12 @@
   
   &.week-view, &.day-view {
     height: calc(100vh - 120px); // 同步調整週視圖和日視圖高度
+  }
+}
+
+// 添加篩選相關樣式 Add filter related styles
+.toolbar-left {
+  .filter-dropdown-wrapper {
+    margin-left: var(--spacing-md);
   }
 } 

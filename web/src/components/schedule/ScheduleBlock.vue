@@ -502,56 +502,122 @@ export default defineComponent({
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .schedule-block-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   cursor: pointer;
+  z-index: 1; // 設置基礎層級
 }
 
 .schedule-block-container {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1; // 與父元素相同的層級
 }
 
 .schedule-block {
+  position: relative;
   width: 100%;
   height: 100%;
+  padding: 4px;
   border-radius: var(--radius-sm);
-  padding: 0.25rem 0.5rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  box-shadow: none;
-  display: flex;
-  align-items: center;
-  margin: 1px;
-  text-align: left;
-  font-family: inherit;
-  position: relative;
+  transition: all 0.2s ease;
+  z-index: 1; // 基礎層級
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 2; // 懸浮時提升一層
+  }
+
+  &.dragging {
+    opacity: 0.5;
+  }
 
   .block-content {
-    width: 100%;
-    position: relative;
+    height: 100%;
+    overflow: hidden;
+    font-size: var(--font-size-sm);
+  }
+
+  .course-type {
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 2px;
+  }
+
+  .time-range {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .tooltip {
+    position: absolute;
+    min-width: 200px;
+    max-width: 300px;
+    padding: var(--spacing-md);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
     
-    .scroll-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      white-space: nowrap;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      cursor: ew-resize;
+    p {
+      margin: 4px 0;
+      line-height: 1.4;
       
-      &::-webkit-scrollbar {
-        display: none;
+      strong {
+        font-weight: var(--font-weight-medium);
+        margin-right: 4px;
       }
-      
-      > * {
-        flex-shrink: 0;
-      }
+    }
+  }
+
+  .tooltip-section {
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+    
+    &:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  // 下拉選單樣式 Dropdown styles
+  .select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .select-option {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+    
+    &:hover {
+      background-color: var(--color-gray-100);
+    }
+    
+    &.selected {
+      background-color: var(--color-primary-light);
+      color: var(--color-primary);
     }
   }
 
@@ -585,5 +651,8 @@ export default defineComponent({
   }
 }
 
-// ... 其他樣式保持不變 ...
+:deep(.tooltip) {
+  z-index: 999999999 !important; // 確保 tooltip 永遠在最上層
+  position: fixed !important;
+}
 </style> 

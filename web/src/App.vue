@@ -9,6 +9,7 @@ import { onMounted } from 'vue';
 import { initWebSocket, closeWebSocket } from '@/utils/websocket';
 import Message from '@/utils/message';
 import courseDataService from '@/services/courseDataService';
+import { courseAPI } from '@/utils/api';
 
 export default {
   name: 'App',
@@ -174,12 +175,15 @@ export default {
     // 初始化課程數據 Initialize course data
     const initializeCourseData = async () => {
       try {
-        // 從 API 獲取課程數據 Get course data from API
-        const response = await fetch('/api/courses');
-        const coursesData = await response.json();
+        // 使用 courseAPI 獲取課程數據 Get course data using courseAPI
+        const response = await courseAPI.getAllCourses();
         
-        // 設置課程數據到服務中 Set course data to service
-        courseDataService.setCourses(coursesData);
+        if (response.success) {
+          // 設置課程數據到服務中 Set course data to service
+          courseDataService.setCourses(response.data);
+        } else {
+          console.error('初始化課程數據失敗 Failed to load course data:', response.message);
+        }
       } catch (error) {
         console.error('初始化課程數據失敗 Failed to load course data:', error);
       }

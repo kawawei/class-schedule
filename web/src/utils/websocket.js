@@ -25,7 +25,9 @@ export const initWebSocket = (userId, role) => {
     // 創建新的 WebSocket 連接
     // Create new WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}/ws`;
+    const wsUrl = process.env.NODE_ENV === 'production'
+      ? `${protocol}//${window.location.host}/ws`  // 生產環境使用相對路徑
+      : `${protocol}//localhost:3006/ws`;  // 開發環境使用完整 URL
     console.log('[WebSocket] 嘗試連接到服務器 Attempting to connect to server:', wsUrl);
     console.log('[WebSocket] 用戶信息 User info:', { userId, role });
     

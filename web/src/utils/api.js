@@ -505,6 +505,40 @@ const scheduleAPI = {
    */
   getAssistants: () => {
     return apiRequest('/assistants', 'GET', null, true);
+  },
+
+  /**
+   * 獲取所有補習班列表 Get all schools
+   * @returns {Promise} 補習班列表 School list
+   */
+  getSchools: () => {
+    return apiRequest('/schools', 'GET', null, true);
+  },
+
+  /**
+   * 獲取所有區域列表 Get all districts
+   * @returns {Promise} 區域列表 District list
+   */
+  getDistricts: () => {
+    return apiRequest('/districts', 'GET', null, true);
+  },
+
+  /**
+   * 獲取所有課程類型列表 Get all course types
+   * @returns {Promise} 課程類型列表 Course type list
+   */
+  getCourseTypes: () => {
+    return apiRequest('/course-types', 'GET', null, true);
+  },
+
+  /**
+   * 獲取課程排程列表 Get schedules
+   * @param {Object} params - 查詢參數 Query parameters
+   * @returns {Promise} 課程排程列表 Schedule list
+   */
+  getSchedules: (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/schedules?${queryString}`, 'GET', null, true);
   }
 };
 
