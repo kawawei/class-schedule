@@ -544,6 +544,8 @@ export default {
 
     // 下載 QR Code Download QR Code
     const downloadQRCode = async () => {
+      if (loading.value) return; // 如果正在下載中，直接返回 If downloading, return directly
+      
       try {
         loading.value = true;
         const format = selectedFormat.value;

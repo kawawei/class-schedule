@@ -219,7 +219,6 @@
     <AppDialog
       v-model="downloadDialogVisible"
       title="下載 QR Code Download QR Code"
-      @close="closeDownloadDialog"
     >
       <div class="download-dialog-content">
         <div class="format-selection">
@@ -240,8 +239,8 @@
         </div>
       </div>
       <template #footer>
-        <AppButton type="default" @click="closeDownloadDialog">取消 Cancel</AppButton>
-        <AppButton type="primary" @click="downloadQRCode">下載 Download</AppButton>
+        <AppButton type="secondary" @click="closeDownloadDialog">取消 Cancel</AppButton>
+        <AppButton type="primary" @click="downloadQRCode" :loading="loading">下載 Download</AppButton>
       </template>
     </AppDialog>
   </div>
