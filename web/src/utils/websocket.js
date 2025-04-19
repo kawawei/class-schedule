@@ -25,7 +25,7 @@ export const initWebSocket = (userId, role) => {
     // 創建新的 WebSocket 連接
     // Create new WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:3006`;
+    const wsUrl = `${protocol}//${window.location.hostname}/ws`;
     console.log('[WebSocket] 嘗試連接到服務器 Attempting to connect to server:', wsUrl);
     console.log('[WebSocket] 用戶信息 User info:', { userId, role });
     
