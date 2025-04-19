@@ -304,10 +304,10 @@ const scheduleController = {
   updateSchedule: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const scheduleData = req.body; // 直接使用 req.body 作為 scheduleData
-      const companyCode = req.user.companyCode;
+      const { updateType = 'single', ...scheduleData } = req.body;
+      const { companyCode } = req.user;
 
-      console.log('接收到的更新請求 Update request received:', { id, scheduleData }); // 添加日誌 Add log
+      console.log('接收到的更新請求 Update request received:', { id, scheduleData, updateType });
 
       // 檢查課程是否存在 Check if course exists
       const existingSchedule = await CourseSchedule.findOne({
@@ -321,93 +321,167 @@ const scheduleController = {
         throw new ApiError(404, '課程不存在 Course does not exist');
       }
 
-      // 檢查時間衝突 Check for time conflicts
-      if (scheduleData.date && scheduleData.startTime && scheduleData.endTime) {
-        const conflictingSchedule = await CourseSchedule.findOne({
-          where: {
-            id: { [Op.ne]: id },
-            company_code: companyCode,
-            teacher_id: scheduleData.teacherId || existingSchedule.teacher_id,
-            date: scheduleData.date,
-            [Op.or]: [
-              {
-                start_time: {
-                  [Op.between]: [scheduleData.startTime, scheduleData.endTime]
-                }
-              },
-              {
-                end_time: {
-                  [Op.between]: [scheduleData.startTime, scheduleData.endTime]
-                }
-              }
-            ]
-          }
-        });
-
-        if (conflictingSchedule) {
-          throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
-        }
-      }
-
-      // 確保時間格式正確 Ensure time format is correct
-      if (scheduleData.endTime && !scheduleData.endTime.includes(':')) {
-        scheduleData.endTime = scheduleData.endTime + ':00';
-      }
-      if (scheduleData.startTime && !scheduleData.startTime.includes(':')) {
-        scheduleData.startTime = scheduleData.startTime + ':00';
-      }
-
       // 準備更新數據 Prepare update data
       const updateData = {
         school_name: scheduleData.schoolName,
         class_name: scheduleData.className,
         course_type: scheduleData.courseType,
         teacher_id: scheduleData.teacherId,
-        date: scheduleData.date,
         start_time: scheduleData.startTime,
         end_time: scheduleData.endTime,
         course_fee: scheduleData.courseFee,
         teacher_fee: scheduleData.teacherFee
       };
 
-      console.log('準備更新的數據 Data to update:', updateData); // 添加日誌 Add log
-
-      // 更新課程排課 Update course schedule
-      const [updatedCount, updatedSchedules] = await CourseSchedule.update(updateData, {
-        where: {
-          id,
-          company_code: companyCode
-        },
-        returning: true
-      });
-
-      // 更新助教排課 Update assistant schedules
-      if (scheduleData.assistants) {
-        // 刪除原有的助教排課 Delete existing assistant schedules
-        await CourseAssistant.destroy({
-          where: { schedule_id: id }
-        });
-        
-        // 創建新的助教排課 Create new assistant schedules
-        if (scheduleData.assistants.length > 0) {
-          const assistantSchedules = scheduleData.assistants.map(assistant => ({
-            schedule_id: id,
-            assistant_id: assistant.id,
-            fee: assistant.fee,
-            company_code: companyCode
-          }));
-          
-          await CourseAssistant.bulkCreate(assistantSchedules);
-        }
+      // 只有在單一更新時才更新日期 Only update date for single updates
+      if (updateType === 'single' && scheduleData.date) {
+        updateData.date = scheduleData.date;
       }
-      
-      console.log('課程更新成功 Course updated successfully:', updatedSchedules[0]); // 添加日誌 Add log
-      
-      res.json({
-        success: true,
-        data: updatedSchedules[0],
-        message: '課程排課更新成功 Schedule updated successfully'
-      });
+
+      // 根據更新類型執行不同的更新操作
+      if (updateType === 'series' && existingSchedule.series_id) {
+        // 更新整個系列的課程 Update all courses in the series
+        console.log('更新系列課程，系列ID:', existingSchedule.series_id);
+        
+        // 檢查時間衝突 Check for time conflicts
+        if (scheduleData.startTime && scheduleData.endTime) {
+          const conflictingSchedule = await CourseSchedule.findOne({
+            where: {
+              id: { [Op.ne]: id },
+              company_code: companyCode,
+              teacher_id: scheduleData.teacherId || existingSchedule.teacher_id,
+              date: existingSchedule.date, // 使用當前課程的日期 Use current course's date
+              [Op.or]: [
+                {
+                  start_time: {
+                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                  }
+                },
+                {
+                  end_time: {
+                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                  }
+                }
+              ]
+            }
+          });
+
+          if (conflictingSchedule) {
+            throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
+          }
+        }
+
+        // 更新所有相關課程 Update all related courses
+        const [updatedCount, updatedSchedules] = await CourseSchedule.update(updateData, {
+          where: {
+            series_id: existingSchedule.series_id,
+            company_code: companyCode
+          },
+          returning: true
+        });
+
+        // 更新助教排課 Update assistant schedules
+        if (scheduleData.assistants) {
+          // 刪除所有相關的助教記錄 Delete all related assistant records
+          await CourseAssistant.destroy({
+            where: {
+              schedule_id: {
+                [Op.in]: updatedSchedules.map(s => s.id)
+              }
+            }
+          });
+
+          // 創建新的助教排課 Create new assistant schedules
+          if (scheduleData.assistants.length > 0) {
+            const assistantSchedules = updatedSchedules.flatMap(schedule => 
+              scheduleData.assistants.map(assistant => ({
+                schedule_id: schedule.id,
+                assistant_id: assistant.id,
+                fee: assistant.fee,
+                company_code: companyCode
+              }))
+            );
+
+            await CourseAssistant.bulkCreate(assistantSchedules);
+          }
+        }
+
+        console.log('系列課程更新成功 Series courses updated successfully');
+        
+        res.json({
+          success: true,
+          data: updatedSchedules,
+          message: '系列課程更新成功 Series courses updated successfully'
+        });
+      } else {
+        // 更新單一課程 Update single course
+        console.log('更新單一課程，ID:', id);
+
+        // 檢查時間衝突 Check for time conflicts
+        if (scheduleData.date && scheduleData.startTime && scheduleData.endTime) {
+          const conflictingSchedule = await CourseSchedule.findOne({
+            where: {
+              id: { [Op.ne]: id },
+              company_code: companyCode,
+              teacher_id: scheduleData.teacherId || existingSchedule.teacher_id,
+              date: scheduleData.date,
+              [Op.or]: [
+                {
+                  start_time: {
+                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                  }
+                },
+                {
+                  end_time: {
+                    [Op.between]: [scheduleData.startTime, scheduleData.endTime]
+                  }
+                }
+              ]
+            }
+          });
+
+          if (conflictingSchedule) {
+            throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
+          }
+        }
+
+        // 更新單一課程 Update single course
+        const [updatedCount, updatedSchedules] = await CourseSchedule.update(updateData, {
+          where: {
+            id,
+            company_code: companyCode
+          },
+          returning: true
+        });
+
+        // 更新助教排課 Update assistant schedules
+        if (scheduleData.assistants) {
+          // 刪除原有的助教排課 Delete existing assistant schedules
+          await CourseAssistant.destroy({
+            where: { schedule_id: id }
+          });
+
+          // 創建新的助教排課 Create new assistant schedules
+          if (scheduleData.assistants.length > 0) {
+            const assistantSchedules = scheduleData.assistants.map(assistant => ({
+              schedule_id: id,
+              assistant_id: assistant.id,
+              fee: assistant.fee,
+              company_code: companyCode
+            }));
+
+            await CourseAssistant.bulkCreate(assistantSchedules);
+          }
+        }
+
+        console.log('單一課程更新成功 Single course updated successfully');
+        
+        res.json({
+          success: true,
+          data: updatedSchedules[0],
+          message: '課程更新成功 Course updated successfully'
+        });
+      }
     } catch (error) {
       console.error('更新課程排課失敗 Failed to update schedule:', error);
       if (error instanceof ApiError) {

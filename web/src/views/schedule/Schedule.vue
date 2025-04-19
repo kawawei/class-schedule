@@ -439,26 +439,30 @@ export default defineComponent({
         console.log('獲取到的課程詳情 Course details received:', response);
         
         if (response.success) {
+          const courseData = response.data;
+          console.log('後端返回的原始數據 Backend raw data:', courseData);
+          
           // 檢查是否為重複性課程 Check if it's a recurring course
-          const isRecurring = response.data.series_id != null;
+          const isRecurring = courseData.series_id != null;
           console.log('是否為重複性課程 Is recurring course:', isRecurring);
           
           selectedCourseData.value = {
-            id: response.data.id,
-            courseType: response.data.course_type,
-            schoolName: response.data.school_name,
-            className: response.data.class_name,
-            teacherName: response.data.teacher?.name,
-            assistantName: response.data.assistants?.[0]?.assistant_id,
-            startTime: response.data.start_time,
-            endTime: response.data.end_time,
-            date: response.data.date,
-            courseFee: response.data.course_fee,
-            teacherFee: response.data.teacher_fee,
-            assistantFee: response.data.assistants?.[0]?.fee || 0,
-            teacher: response.data.teacher,
-            assistants: response.data.assistants || [],
-            series_id: response.data.series_id // 添加 series_id 到課程數據中
+            id: courseData.id,
+            courseType: courseData.course_type,
+            schoolName: courseData.school_name,
+            className: courseData.class_name,
+            teacherId: courseData.teacher_id,  // 直接使用 teacher_id
+            teacherName: courseData.teacher?.name || '',  // 使用可選鏈獲取教師名稱
+            assistantName: courseData.assistants?.[0]?.assistant_id,
+            startTime: courseData.start_time,
+            endTime: courseData.end_time,
+            date: courseData.date,
+            courseFee: courseData.course_fee,
+            teacherFee: courseData.teacher_fee,
+            assistantFee: courseData.assistants?.[0]?.fee || 0,
+            teacher: courseData.teacher,
+            assistants: courseData.assistants || [],
+            series_id: courseData.series_id
           };
           console.log('處理後的課程數據 Processed course data:', selectedCourseData.value);
           showScheduleDetailDialog.value = true;
@@ -580,12 +584,41 @@ export default defineComponent({
           throw new Error('課程ID不存在 Course ID does not exist');
         }
 
-        console.log('準備更新的課程數據 Course data to update:', updatedData); // 添加日誌 Add log
+        console.log('準備更新的課程數據 Course data to update:', updatedData);
 
         const response = await scheduleAPI.updateSchedule(updatedData.id, updatedData);
         if (response.success) {
-          // 重新獲取課程數據 Refetch course data
-          await fetchCourseSchedules();
+          // 更新本地數據而不是重新獲取 Update local data instead of refetching
+          const updatedEvent = courseEvents.value.find(event => event.id === updatedData.id);
+          if (updatedEvent) {
+            // 更新事件數據 Update event data
+            Object.assign(updatedEvent, {
+              courseType: updatedData.courseType,
+              schoolName: updatedData.schoolName,
+              teacherName: updatedData.teacherName,
+              assistantName: updatedData.assistantName,
+              startTime: updatedData.startTime,
+              endTime: updatedData.endTime,
+              date: updatedData.date,
+              className: updatedData.className,
+              courseFee: updatedData.courseFee,
+              teacherFee: updatedData.teacherFee,
+              assistantFee: updatedData.assistantFee
+            });
+
+            // 重新計算位置 Recalculate position
+            if (updatedData.startTime) {
+              const [hours, minutes] = updatedData.startTime.split(':').map(Number);
+              updatedEvent.position.row = (hours - 8) * 2 + Math.floor(minutes / 30) + 1;
+            }
+            
+            if (updatedData.date) {
+              const date = new Date(updatedData.date);
+              const day = date.getDay();
+              updatedEvent.position.column = day === 0 ? 7 : day;
+            }
+          }
+
           showScheduleDetailDialog.value = false;
           Message.success('課程更新成功 Course updated successfully');
         } else {
