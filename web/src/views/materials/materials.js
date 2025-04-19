@@ -7,6 +7,10 @@ import AppInput from '@/components/base/AppInput.vue';
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/api';  // 導入 API_BASE_URL Import API_BASE_URL
 
+// WebSocket 連接 URL（將 http/https 替換為 ws/wss）
+// WebSocket connection URL (replace http/https with ws/wss)
+const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/ws';
+
 // 配置 axios 基礎 URL Configure axios base URL
 axios.defaults.baseURL = API_BASE_URL;
 
@@ -290,31 +294,42 @@ export default {
       preview_url: '', // 預覽用的中間跳轉連結 Preview redirect URL
       qrcode_preview: '', // QRCode 預覽圖片 QRCode preview image
       preview_id: null, // 保存預覽 ID Save preview ID
-      is_editing: false // 標記為編輯模式 Mark as edit mode
+      is_editing: false, // 標記為編輯模式 Mark as edit mode
+      custom_style: { // 自定義樣式設置 Custom style settings
+        foregroundColor: '#000000', // 前景色 Foreground color (改用駝峰命名)
+        backgroundColor: '#FFFFFF', // 背景色 Background color (改用駝峰命名)
+        margin: 4, // 邊距 Margin
+        width: 200, // 寬度 Width
+        errorCorrectionLevel: 'M' // 容錯級別 Error correction level (改用駝峰命名)
+      }
     });
     
     // 更新預覽 Update preview
     const updatePreview = async () => {
-      if (qrcodeForm.value.target_url) {
-        try {
-          // 使用後端 API 生成預覽 QR Code Use backend API to generate preview QR Code
+      try {
+        if (qrcodeForm.value.target_url) {
           const response = await axios.post('/qrcode/preview', {
-            target_url: qrcodeForm.value.target_url
+            target_url: qrcodeForm.value.target_url,
+            custom_style: qrcodeForm.value.custom_style,
+            preview_id: qrcodeForm.value.preview_id  // 如果有預覽 ID，則使用它 Use preview_id if available
           });
+
+          // 更新 QR Code 預覽圖片 Update QR Code preview image
+          qrcodeForm.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}?t=${Date.now()}`;
           
-          if (response.data.success) {
+          // 只在非編輯模式下更新系統跳轉連結 Only update redirect URL in non-edit mode
+          if (!qrcodeForm.value.is_editing) {
             qrcodeForm.value.preview_url = response.data.data.redirect_url;
-            qrcodeForm.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}`;
-            qrcodeForm.value.preview_id = response.data.data.id; // 保存預覽 ID Save preview ID
+            qrcodeForm.value.preview_id = response.data.data.id;
           }
-        } catch (error) {
-          console.error('生成 QR Code 預覽失敗:', error);
-          qrcodeForm.value.error = '生成 QR Code 預覽失敗';
+        } else {
+          qrcodeForm.value.preview_url = '';
+          qrcodeForm.value.qrcode_preview = '';
+          qrcodeForm.value.preview_id = null;
         }
-      } else {
-        qrcodeForm.value.preview_url = '';
-        qrcodeForm.value.qrcode_preview = '';
-        qrcodeForm.value.preview_id = null;
+      } catch (error) {
+        console.error('生成 QR Code 預覽失敗:', error);
+        qrcodeForm.value.error = error.response?.data?.message || '生成 QR Code 預覽失敗';
       }
     };
     
@@ -351,7 +366,14 @@ export default {
         preview_url: '',
         qrcode_preview: '',
         preview_id: null,
-        is_editing: false
+        is_editing: false,
+        custom_style: {
+          foregroundColor: '#000000',
+          backgroundColor: '#FFFFFF',
+          margin: 4,
+          width: 200,
+          errorCorrectionLevel: 'M'
+        }
       };
     };
     
@@ -365,19 +387,47 @@ export default {
         preview_url: '',
         qrcode_preview: '',
         preview_id: null,
-        is_editing: false // 重置編輯模式標記 Reset edit mode flag
+        is_editing: false, // 重置編輯模式標記 Reset edit mode flag
+        custom_style: {
+          foregroundColor: '#000000',
+          backgroundColor: '#FFFFFF',
+          margin: 4,
+          width: 200,
+          errorCorrectionLevel: 'M'
+        }
       };
     };
     
     // 監聽目標連結變化 Watch target URL changes
     watch(() => qrcodeForm.value.target_url, async (newUrl) => {
-      // 只在新增模式下更新預覽
-      // Only update preview in create mode
-      if (newUrl && !qrcodeForm.value.is_editing) {
+      if (newUrl) {
         await updatePreview();
       }
     });
-    
+
+    // 監聽樣式變化 Watch style changes
+    watch(() => qrcodeForm.value.custom_style, async (newStyle) => {
+      if (qrcodeForm.value.target_url) {
+        try {
+          const response = await axios.post('/qrcode/preview', {
+            target_url: qrcodeForm.value.target_url,
+            custom_style: newStyle,
+            preview_id: qrcodeForm.value.preview_id  // 保持使用相同的預覽 ID Keep using the same preview ID
+          });
+          
+          qrcodeForm.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}?t=${Date.now()}`; // 添加時間戳避免緩存 Add timestamp to avoid caching
+          
+          // 只在非編輯模式下更新系統跳轉連結 Only update redirect URL in non-edit mode
+          if (!qrcodeForm.value.is_editing) {
+            qrcodeForm.value.preview_url = response.data.data.redirect_url;
+          }
+        } catch (error) {
+          console.error('更新 QR Code 預覽失敗:', error);
+          qrcodeForm.value.error = error.response?.data?.message || '更新 QR Code 預覽失敗';
+        }
+      }
+    }, { deep: true });
+
     // 編輯 QR Code Edit QR Code
     const editQRCode = async (row) => {
       try {
@@ -390,7 +440,18 @@ export default {
           error: '',
           preview_url: row.redirect_url,
           qrcode_preview: `${API_BASE_URL}${row.qrcode_url}`,
-          is_editing: true
+          is_editing: true,
+          custom_style: {
+            // 在編輯模式下，只保留可以修改的樣式參數
+            // In edit mode, only keep modifiable style parameters
+            foregroundColor: row.custom_style?.foregroundColor || '#000000',
+            backgroundColor: row.custom_style?.backgroundColor || '#FFFFFF',
+            margin: row.custom_style?.margin || 4,
+            width: row.custom_style?.width || 200,
+            // 保持原有的容錯率，不允許修改
+            // Keep original error correction level, not modifiable
+            errorCorrectionLevel: row.custom_style?.errorCorrectionLevel || 'M'
+          }
         };
         qrcodeDialogVisible.value = true;
       } catch (error) {
@@ -426,14 +487,16 @@ export default {
           // 更新現有 QR Code Update existing QR Code
           await axios.put(`/qrcode/${qrcodeForm.value.id}`, {
             name: qrcodeForm.value.name,
-            target_url: qrcodeForm.value.target_url
+            target_url: qrcodeForm.value.target_url,
+            custom_style: qrcodeForm.value.custom_style // 添加自定義樣式 Add custom style
           });
         } else {
           // 創建新的 QR Code Create new QR Code
           await axios.post('/qrcode', {
             name: qrcodeForm.value.name,
             target_url: qrcodeForm.value.target_url,
-            preview_id: qrcodeForm.value.preview_id
+            preview_id: qrcodeForm.value.preview_id,
+            custom_style: qrcodeForm.value.custom_style // 添加自定義樣式 Add custom style
           });
         }
 
@@ -491,21 +554,92 @@ export default {
       }
     };
 
-    // 組件掛載時獲取 QR Code 列表
+    // WebSocket 相關狀態 WebSocket related state
+    const ws = ref(null);
+    const isWsConnected = ref(false);
+    const reconnectAttempts = ref(0);
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000; // 3 秒後重試 Retry after 3 seconds
+
+    // 連接 WebSocket Connect WebSocket
+    const connectWebSocket = () => {
+      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+        return; // 如果已經連接，直接返回 If already connected, return directly
+      }
+
+      try {
+        ws.value = new WebSocket(WS_URL);
+
+        ws.value.onopen = () => {
+          console.log('WebSocket connected');
+          isWsConnected.value = true;
+          reconnectAttempts.value = 0; // 重置重連次數 Reset reconnect attempts
+        };
+
+        ws.value.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'qrcode_scanned') {
+              // 更新對應 QR Code 的掃描次數 Update scan count of corresponding QR Code
+              const qrcode = qrcodeData.value.find(item => item.id === data.qrcode_id);
+              if (qrcode) {
+                qrcode.scan_count = data.scan_count;
+              }
+            }
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
+        };
+
+        ws.value.onclose = () => {
+          console.log('WebSocket disconnected');
+          isWsConnected.value = false;
+          
+          // 嘗試重新連接 Try to reconnect
+          if (reconnectAttempts.value < maxReconnectAttempts) {
+            reconnectAttempts.value++;
+            console.log(`Attempting to reconnect (${reconnectAttempts.value}/${maxReconnectAttempts})...`);
+            setTimeout(connectWebSocket, reconnectDelay);
+          }
+        };
+
+        ws.value.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+      }
+    };
+
+    // 關閉 WebSocket Close WebSocket
+    const closeWebSocket = () => {
+      if (ws.value) {
+        ws.value.close();
+        ws.value = null;
+      }
+    };
+
+    // 在組件掛載時連接 WebSocket Connect WebSocket when component is mounted
     onMounted(() => {
       if (currentTab.value === 'qrcode') {
         fetchQRCodes();
-        // 設置自動刷新間隔（每 10 秒刷新一次）Set auto-refresh interval (refresh every 10 seconds)
-        const refreshInterval = setInterval(() => {
-          if (currentTab.value === 'qrcode') {
-            fetchQRCodes();
-          }
-        }, 10000);
+        connectWebSocket();
+      }
+    });
 
-        // 在組件卸載時清除定時器 Clear interval when component is unmounted
-        onUnmounted(() => {
-          clearInterval(refreshInterval);
-        });
+    // 在組件卸載時關閉 WebSocket Close WebSocket when component is unmounted
+    onUnmounted(() => {
+      closeWebSocket();
+    });
+
+    // 監聽標籤切換 Watch tab changes
+    watch(currentTab, (newTab) => {
+      if (newTab === 'qrcode') {
+        fetchQRCodes();
+        connectWebSocket();
+      } else {
+        closeWebSocket();
       }
     });
 
@@ -516,13 +650,6 @@ export default {
       // 記錄錯誤 Log the error
       console.warn('QR Code image failed to load:', event.target.alt);
     };
-
-    // 監聽標籤切換，切換到 QR Code 時獲取列表
-    watch(currentTab, (newTab) => {
-      if (newTab === 'qrcode') {
-        fetchQRCodes();
-      }
-    });
 
     // 下載對話框狀態 Download dialog state
     const downloadDialogVisible = ref(false);
@@ -623,7 +750,8 @@ export default {
       selectedFormat,
       openDownloadDialog,
       closeDownloadDialog,
-      downloadQRCode
+      downloadQRCode,
+      isWsConnected, // 可選：如果需要在 UI 中顯示連接狀態 Optional: if need to show connection status in UI
     };
   }
 }; 

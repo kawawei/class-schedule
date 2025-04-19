@@ -104,7 +104,7 @@
                   <div class="action-buttons">
                     <AppButton
                       type="primary"
-                      class="action-btn edit-btn"
+                      class="edit-btn"
                       @click="editQRCode(row)"
                       title="編輯"
                     >
@@ -113,9 +113,10 @@
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                       </svg>
                     </AppButton>
+                    <!-- 下載按鈕 Download button -->
                     <AppButton
                       type="primary"
-                      class="action-btn download-btn"
+                      class="download-btn"
                       @click="openDownloadDialog(row)"
                       title="下載"
                     >
@@ -127,7 +128,7 @@
                     </AppButton>
                     <AppButton
                       type="danger"
-                      class="action-btn delete-btn"
+                      class="delete-btn"
                       @click="deleteQRCode(row)"
                       title="刪除"
                     >
@@ -168,6 +169,42 @@
               v-model="qrcodeForm.target_url"
               placeholder="請輸入目標連結 Please enter target URL"
             />
+          </div>
+          <!-- QRCode 樣式設置 QRCode Style Settings -->
+          <div class="form-item">
+            <label>QRCode 樣式設置 QRCode Style Settings</label>
+            <div class="style-settings">
+              <div class="style-item">
+                <label>前景色 Foreground Color</label>
+                <input type="color" v-model="qrcodeForm.custom_style.foregroundColor" />
+              </div>
+              <div class="style-item">
+                <label>背景色 Background Color</label>
+                <input type="color" v-model="qrcodeForm.custom_style.backgroundColor" />
+              </div>
+              <div class="style-item">
+                <label>邊距 Margin</label>
+                <input type="number" v-model="qrcodeForm.custom_style.margin" min="0" max="10" />
+              </div>
+              <div class="style-item">
+                <label>寬度 Width</label>
+                <input type="number" v-model="qrcodeForm.custom_style.width" min="100" max="1000" />
+              </div>
+              <!-- 容錯率設置 Error Correction Level -->
+              <div class="form-item">
+                <label>容錯率 Error Correction Level</label>
+                <select 
+                  v-model="qrcodeForm.custom_style.errorCorrectionLevel"
+                  :disabled="qrcodeForm.is_editing"
+                  :title="qrcodeForm.is_editing ? '編輯模式下不能修改容錯率 Cannot modify error correction level in edit mode' : ''"
+                >
+                  <option value="L">L - 低 (7%)</option>
+                  <option value="M">M - 中 (15%)</option>
+                  <option value="Q">Q - 較高 (25%)</option>
+                  <option value="H">H - 高 (30%)</option>
+                </select>
+              </div>
+            </div>
           </div>
           <!-- QRCode 預覽區域 QRCode Preview Area -->
           <div v-if="qrcodeForm.target_url" class="qrcode-preview">
@@ -219,6 +256,7 @@
     <AppDialog
       v-model="downloadDialogVisible"
       title="下載 QR Code Download QR Code"
+      @close="closeDownloadDialog"
     >
       <div class="download-dialog-content">
         <div class="format-selection">
@@ -232,15 +270,15 @@
         </div>
         <div class="preview" v-if="qrcodeToDownload">
           <img 
-            :src="`${API_BASE_URL}${qrcodeToDownload.qrcode_url}`" 
+            :src="`${API_BASE_URL}${qrcodeToDownload.qrcode_url}?t=${Date.now()}&style=${encodeURIComponent(JSON.stringify(qrcodeToDownload.custom_style))}`"
             :alt="qrcodeToDownload.name || 'QR Code Preview'"
             @error="handleImageError"
           >
         </div>
       </div>
       <template #footer>
-        <AppButton type="secondary" @click="closeDownloadDialog">取消 Cancel</AppButton>
-        <AppButton type="primary" @click="downloadQRCode" :loading="loading">下載 Download</AppButton>
+        <AppButton type="default" @click="closeDownloadDialog">取消 Cancel</AppButton>
+        <AppButton type="primary" @click="downloadQRCode">下載 Download</AppButton>
       </template>
     </AppDialog>
   </div>
@@ -290,6 +328,54 @@ export default {
     label {
       font-weight: 500;
       color: var(--text-primary);
+    }
+  }
+
+  .style-settings {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-gray-200);
+
+    .style-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+
+      input[type="color"] {
+        width: 100%;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        font-size: 0.9rem;
+      }
+
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        font-size: 0.9rem;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+      }
     }
   }
 }
@@ -434,25 +520,31 @@ img {
   gap: 8px;
   justify-content: center;
 
-  :deep(.action-btn) {
+  :deep(button) {
     padding: 4px 8px;
-    background: var(--color-gray-100) !important;
-    border: 1px solid var(--color-gray-200) !important;
-    color: var(--color-gray-600);
-    transition: all 0.3s ease;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
     min-width: unset !important;
     height: unset !important;
+    opacity: 1 !important;
 
     &:hover {
-      background: var(--color-primary-light) !important;
-      border-color: var(--color-primary) !important;
       color: var(--color-primary);
+      background: var(--bg-hover) !important;
     }
 
     &.delete-btn:hover {
-      background: var(--color-danger-light) !important;
-      border-color: var(--color-danger) !important;
       color: var(--color-danger);
+    }
+
+    &.download-btn {
+      color: var(--color-info);
+      
+      &:hover {
+        color: var(--color-info-dark);
+      }
     }
 
     svg {
