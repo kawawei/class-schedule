@@ -5,8 +5,10 @@
 </template>
 
 <script>
+import { onMounted } from 'vue';
 import { initWebSocket, closeWebSocket } from '@/utils/websocket';
 import Message from '@/utils/message';
+import courseDataService from '@/services/courseDataService';
 
 export default {
   name: 'App',
@@ -166,6 +168,33 @@ export default {
         console.error('[App] 通知數據 Notification data:', notification);
       }
     }
+  },
+
+  setup() {
+    // 初始化課程數據 Initialize course data
+    const initializeCourseData = async () => {
+      try {
+        // 從 API 獲取課程數據 Get course data from API
+        const response = await fetch('/api/courses');
+        const coursesData = await response.json();
+        
+        // 設置課程數據到服務中 Set course data to service
+        courseDataService.setCourses(coursesData);
+      } catch (error) {
+        console.error('初始化課程數據失敗 Failed to load course data:', error);
+      }
+    };
+
+    // 組件掛載時獲取數據 Get data when component is mounted
+    onMounted(() => {
+      initializeCourseData();
+    });
+
+    return {
+      // 如果需要在模板中使用，可以返回相關方法或數據
+      // Return methods or data if needed in template
+      initializeCourseData
+    };
   }
 }
 </script>

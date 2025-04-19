@@ -362,7 +362,9 @@ export default {
           Message.error('請輸入學校名稱 Please enter school name');
           return;
         }
-        if (!formData.className.trim()) {
+        // 只有在新增課程時才驗證班級名稱
+        // Only validate class name when adding new course
+        if (!props.scheduleData?.id && !formData.className.trim()) {
           Message.error('請輸入班級名稱 Please enter class name');
           return;
         }

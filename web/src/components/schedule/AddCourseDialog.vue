@@ -46,7 +46,6 @@
           v-model="formData.className"
           label="班級名稱 / Class Name"
           placeholder="請輸入班級名稱"
-          required
         />
       </div>
 
@@ -684,7 +683,7 @@ export default {
         // 基本課程數據 Base course data
         const baseEventData = {
           school_name: formData.schoolName,  // 直接使用用戶輸入的值，不進行 trim Directly use user input without trim
-          class_name: formData.className,
+          class_name: formData.className || null,  // 如果為空則設為 null If empty, set to null
           course_type: formData.courseType,
           teacher_id: formData.teacherId || null,  // 確保 teacher_id 為 null 而不是空字串
           county: formData.county,  // 添加縣市資訊

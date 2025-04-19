@@ -1,41 +1,114 @@
 <!-- 課程方塊組件 Schedule Block Component -->
 <template>
   <div class="schedule-block-wrapper">
-    <button 
-      type="button"
-      class="schedule-block"
-      :class="[`course-type-${courseType}`, { 'has-assistant': assistantName }]"
-      :style="blockStyle"
-      :data-date="date"
-      :data-start-time="startTime"
-      draggable="true"
-      @dragstart="handleDragStart"
-      @dragend="handleDragEnd"
-      @click="handleBlockClick"
-    >
-      <!-- 時間和課程類型 Time and Course Type -->
-      <div class="block-header">
-        <span class="time">{{ formatTime(startTime) }}-{{ formatTime(endTime) }}</span>
-        <span class="course-type">{{ courseTypeLabel }}</span>
-      </div>
-
-      <!-- 補習班和教師信息 School and Teacher Info -->
-      <div class="block-content">
-        <div class="school-name">{{ title || `${className} - ${teacherName}` }}</div>
-        <div class="teacher-info">
-          <span class="teacher">{{ location || schoolName }}</span>
-          <span v-if="assistantName" class="assistant">{{ assistantName }}</span>
+    <HoverTooltip :offset="{ x: 10, y: -10 }" v-model="isHovering">
+      <template #default>
+        <div class="schedule-block-container">
+          <button 
+            type="button"
+            class="schedule-block"
+            :class="[
+              { 
+                'pending-teacher': !teacherName || teacherName === '待訂',
+                'has-teacher': teacherName && teacherName !== '待訂'
+              }
+            ]"
+            :style="blockStyle"
+            :data-date="date"
+            :data-start-time="startTime"
+            draggable="true"
+            @dragstart="handleDragStart"
+            @dragend="handleDragEnd"
+            @click="handleBlockClick"
+          >
+            <div class="block-content" ref="blockContent">
+              <div class="scroll-container" ref="scrollContainer">
+                <!-- 時間 Time -->
+                <span class="time">{{ formatTime(startTime) }}-{{ formatTime(endTime) }}</span>
+                <!-- 區域（前兩字） Area (first 2 chars) -->
+                <span class="area" v-if="district">{{ truncateText(district, 2) }}</span>
+                <!-- 補習班（前三字） School (first 3 chars) -->
+                <span class="school">{{ truncateText(schoolName, 3) }}</span>
+                <!-- 課程種類和老師名稱 Course type and teacher name -->
+                <span class="teacher" :class="{ 'pending': !teacherName || teacherName === '待訂' }">
+                  {{ courseType }}&nbsp;&nbsp;&nbsp;&nbsp;{{ !teacherName || teacherName === '待訂' ? '待訂' : teacherName }}
+                </span>
+              </div>
+            </div>
+          </button>
         </div>
-      </div>
-    </button>
+      </template>
+
+      <!-- 懸浮窗口內容 Tooltip Content -->
+      <template #content>
+        <div class="tooltip-content" v-if="tooltipData">
+          <div class="tooltip-header">
+            <span class="course-type">{{ tooltipData.courseType }}</span>
+            <span class="course-count" v-if="seriesInfo?.count > 1">
+              (共 {{ seriesInfo.count }} 堂
+              <span v-if="seriesInfo.firstDate && seriesInfo.lastDate">
+                {{ seriesInfo.firstDate }} - {{ seriesInfo.lastDate }}
+              </span>)
+            </span>
+          </div>
+          <div class="tooltip-info">
+            <p><strong>時間：</strong>{{ formatTime(tooltipData.startTime) }}-{{ formatTime(tooltipData.endTime) }}</p>
+            <p><strong>地點：</strong>{{ tooltipData.county }} {{ tooltipData.district }}</p>
+            <p><strong>補習班：</strong>{{ tooltipData.schoolName }}</p>
+            <p><strong>老師：</strong>{{ !tooltipData.teacherName || tooltipData.teacherName === '待訂' ? '待訂' : tooltipData.teacherName }}</p>
+            <p v-if="tooltipData.assistantName"><strong>助教：</strong>{{ tooltipData.assistantName }}</p>
+            <p><strong>班級：</strong>{{ tooltipData.className || '無' }}</p>
+            
+            <!-- 備註 Notes -->
+            <div class="notes-section">
+              <strong>備註：</strong>
+              <span class="notes-content">{{ tooltipData.notes || '無' }}</span>
+            </div>
+            
+            <!-- 費用信息 Fee Information -->
+            <div class="fees-section">
+              <h4>課程費用：</h4>
+              <p>
+                <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
+                <span v-if="seriesInfo?.totalFees?.courseFee">
+                  / 總計：{{ formatCurrency(seriesInfo.totalFees.courseFee) }}
+                </span>
+              </p>
+              <p>
+                <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                <span v-if="seriesInfo?.totalFees?.teacherFee">
+                  / 總計：{{ formatCurrency(seriesInfo.totalFees.teacherFee) }}
+                </span>
+              </p>
+              <p v-if="tooltipData.assistantFee">
+                <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
+                <span v-if="seriesInfo?.totalFees?.assistantFee">
+                  / 總計：{{ formatCurrency(seriesInfo.totalFees.assistantFee) }}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="isHovering" class="tooltip-loading">
+          加載中...
+        </div>
+      </template>
+    </HoverTooltip>
   </div>
 </template>
 
 <script>
-import { defineComponent, computed } from 'vue';
+import { defineComponent, computed, ref, onMounted, inject, watch } from 'vue';
+import HoverTooltip from '../base/HoverTooltip.vue';
+import { scheduleAPI } from '@/utils/api';
+import './ScheduleBlock.scss';
 
 export default defineComponent({
   name: 'ScheduleBlock',
+
+  components: {
+    HoverTooltip
+  },
 
   props: {
     // 開始時間 Start time (HH:mm format)
@@ -97,8 +170,8 @@ export default defineComponent({
     },
     // 班級名稱 Class name
     className: {
-      type: String,
-      default: ''
+      type: [String, null],
+      default: null
     },
     // 日期 Date
     date: {
@@ -121,8 +194,23 @@ export default defineComponent({
       type: String,
       default: ''
     },
-    // 位置 Location
-    location: {
+    // 縣市 County
+    county: {
+      type: String,
+      default: ''
+    },
+    // 區域 District
+    district: {
+      type: String,
+      default: ''
+    },
+    // 課程鐘點費 Course hourly rate
+    hourlyRate: {
+      type: [String, Number],
+      default: ''
+    },
+    // 備註 Notes
+    notes: {
       type: String,
       default: ''
     }
@@ -131,6 +219,12 @@ export default defineComponent({
   emits: ['click', 'dragstart', 'dragend'],
 
   setup(props, { emit }) {
+    const blockContent = ref(null);
+    const scrollContainer = ref(null);
+    const tooltipData = ref(null);
+    const isLoading = ref(false);
+    const isHovering = ref(false);
+
     // 課程類型標籤 Course type label
     const courseTypeLabel = computed(() => {
       return props.courseType;
@@ -178,7 +272,9 @@ export default defineComponent({
         courseFee: props.courseFee,
         teacherFee: props.teacherFee,
         assistantFee: props.assistantFee,
-        uuid: props.uuid
+        uuid: props.uuid,
+        county: props.county,
+        district: props.district
       });
     };
 
@@ -198,7 +294,9 @@ export default defineComponent({
         assistantName: props.assistantName,
         courseFee: props.courseFee,
         teacherFee: props.teacherFee,
-        assistantFee: props.assistantFee
+        assistantFee: props.assistantFee,
+        county: props.county,
+        district: props.district
       }));
       
       // 設置拖曳效果 Set drag effect
@@ -222,7 +320,173 @@ export default defineComponent({
       });
     };
 
+    // 截斷文字函數 Truncate text function
+    const truncateText = (text, length) => {
+      if (!text) return '';
+      return text.slice(0, length);
+    };
+
+    // 添加滾動功能 Add scrolling functionality
+    onMounted(() => {
+      if (scrollContainer.value) {
+        let isScrolling = false;
+        let startX = 0;
+        let scrollLeft = 0;
+
+        scrollContainer.value.addEventListener('mousedown', (e) => {
+          isScrolling = true;
+          startX = e.pageX - scrollContainer.value.offsetLeft;
+          scrollLeft = scrollContainer.value.scrollLeft;
+        });
+
+        scrollContainer.value.addEventListener('mouseleave', () => {
+          isScrolling = false;
+        });
+
+        scrollContainer.value.addEventListener('mouseup', () => {
+          isScrolling = false;
+        });
+
+        scrollContainer.value.addEventListener('mousemove', (e) => {
+          if (!isScrolling) return;
+          e.preventDefault();
+          const x = e.pageX - scrollContainer.value.offsetLeft;
+          const walk = (x - startX) * 2;
+          scrollContainer.value.scrollLeft = scrollLeft - walk;
+        });
+
+        // 保留滾輪滾動
+        scrollContainer.value.addEventListener('wheel', (e) => {
+          if (e.deltaY !== 0) {
+            e.preventDefault();
+            scrollContainer.value.scrollLeft += e.deltaY;
+          }
+        }, { passive: false });
+      }
+    });
+
+    // 注入課程數據服務 Inject course data service
+    const courseDataService = inject('courseDataService');
+
+    // 獲取課程系列信息 Get course series info
+    const seriesInfo = computed(() => {
+      if (!props.uuid || !courseDataService) return null;
+      return courseDataService.getCourseSeriesInfoByUuid(props.uuid);
+    });
+
+    // 格式化貨幣 Format currency
+    const formatCurrency = (value) => {
+      if (!value) return '0';
+      return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    };
+
+    // 獲取課程詳情 Get course details
+    const fetchCourseDetails = async () => {
+      if (!props.courseId) return;
+      
+      try {
+        isLoading.value = true;
+        const response = await scheduleAPI.getSchedule(props.courseId);
+        
+        if (response.success) {
+          const courseData = response.data;
+          tooltipData.value = {
+            id: courseData.id,
+            courseType: courseData.course_type || props.courseType,
+            schoolName: courseData.school_name || props.schoolName,
+            className: courseData.class_name || props.className,
+            teacherName: courseData.teacher?.name || props.teacherName,
+            assistantName: courseData.assistants?.[0]?.assistant_id || props.assistantName,
+            startTime: courseData.start_time || props.startTime,
+            endTime: courseData.end_time || props.endTime,
+            date: courseData.date || props.date,
+            courseFee: courseData.course_fee || props.courseFee,
+            teacherFee: courseData.teacher_fee || props.teacherFee,
+            assistantFee: courseData.assistants?.[0]?.fee || props.assistantFee,
+            county: courseData.county || props.county,
+            district: courseData.district || props.district,
+            notes: courseData.notes || props.notes,
+            hourlyRate: courseData.hourly_rate || props.hourlyRate,
+            teacher: courseData.teacher,
+            assistants: courseData.assistants || [],
+            series_id: courseData.series_id
+          };
+        } else {
+          // 如果 API 請求失敗，使用 props 中的數據
+          // If API request fails, use data from props
+          tooltipData.value = {
+            id: props.courseId,
+            courseType: props.courseType,
+            schoolName: props.schoolName,
+            className: props.className,
+            teacherName: props.teacherName,
+            assistantName: props.assistantName,
+            startTime: props.startTime,
+            endTime: props.endTime,
+            date: props.date,
+            courseFee: props.courseFee,
+            teacherFee: props.teacherFee,
+            assistantFee: props.assistantFee,
+            county: props.county,
+            district: props.district,
+            notes: props.notes,
+            hourlyRate: props.hourlyRate,
+            teacher: null,
+            assistants: [],
+            series_id: null
+          };
+        }
+      } catch (error) {
+        console.error('獲取課程詳情失敗:', error);
+        // 發生錯誤時也使用 props 中的數據
+        // Use data from props when error occurs
+        tooltipData.value = {
+          id: props.courseId,
+          courseType: props.courseType,
+          schoolName: props.schoolName,
+          className: props.className,
+          teacherName: props.teacherName,
+          assistantName: props.assistantName,
+          startTime: props.startTime,
+          endTime: props.endTime,
+          date: props.date,
+          courseFee: props.courseFee,
+          teacherFee: props.teacherFee,
+          assistantFee: props.assistantFee,
+          county: props.county,
+          district: props.district,
+          notes: props.notes,
+          hourlyRate: props.hourlyRate,
+          teacher: null,
+          assistants: [],
+          series_id: null
+        };
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    // 監聽懸浮狀態變化 Watch hovering state changes
+    watch(isHovering, (newValue) => {
+      if (newValue) {
+        fetchCourseDetails();
+      } else {
+        tooltipData.value = null;
+      }
+    });
+
     return {
+      blockContent,
+      scrollContainer,
+      tooltipData,
+      isLoading,
+      isHovering,
+      truncateText,
       courseTypeLabel,
       blockStyle,
       formatTime,
@@ -230,122 +494,96 @@ export default defineComponent({
       handleDragStart,
       handleDragEnd,
       // 直接暴露所有需要的 props 給模板使用
-      ...props
+      ...props,
+      seriesInfo,
+      formatCurrency
     };
   }
 });
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .schedule-block-wrapper {
   position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.schedule-block-container {
+  width: 100%;
+  height: 100%;
 }
 
 .schedule-block {
   width: 100%;
-  background-color: var(--bg-secondary);
+  height: 100%;
   border-radius: var(--radius-sm);
-  padding: 0.25rem;
-  height: 20px;
-  cursor: move; // 修改游標樣式為移動游標
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  border-left: 2px solid transparent;
   box-shadow: none;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
   margin: 1px;
-  overflow: hidden;
   text-align: left;
   font-family: inherit;
   position: relative;
 
-  &:hover {
-    transform: scale(1.02);
-    box-shadow: var(--shadow-sm);
+  .block-content {
+    width: 100%;
+    position: relative;
+    
+    .scroll-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      cursor: ew-resize;
+      
+      &::-webkit-scrollbar {
+        display: none;
+      }
+      
+      > * {
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  &.has-teacher {
+    background-color: #5fd3bc;
+    
+    &:hover {
+      background-color: #4fc3ac;
+      transform: scale(1.02);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &.pending-teacher {
+    background-color: #e0e0e0;
+    
+    .teacher {
+      color: #666666;
+    }
+
+    &:hover {
+      background-color: #d8d8d8;
+      transform: scale(1.02);
+      box-shadow: var(--shadow-sm);
+    }
   }
 
   &:focus {
     outline: none;
     box-shadow: 0 0 0 2px var(--color-primary-light);
   }
-
-  // 課程類型顏色定義
-  &.course-type-math {
-    border-left-color: var(--color-primary);
-    background-color: rgba(24, 144, 255, 0.05);
-  }
-
-  &.course-type-english {
-    border-left-color: var(--color-success);
-    background-color: rgba(82, 196, 26, 0.05);
-  }
-
-  &.course-type-chinese {
-    border-left-color: var(--color-warning);
-    background-color: rgba(250, 173, 20, 0.05);
-  }
-
-  &.course-type-science {
-    border-left-color: var(--color-info);
-    background-color: rgba(47, 84, 235, 0.05);
-  }
-
-  &.has-assistant {
-    background-color: var(--bg-tertiary);
-  }
-
-  .block-header {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    font-size: var(--font-size-xs);
-    flex-shrink: 0;
-    min-width: auto;
-    gap: 50px;
-
-    .time {
-      color: var(--text-secondary);
-      font-weight: var(--font-weight-medium);
-      white-space: nowrap;
-    }
-
-    .course-type {
-      color: var(--text-primary);
-      font-weight: var(--font-weight-bold);
-      padding: 0 2px;
-      background: none;
-      margin-left: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 60px;
-    }
-  }
-
-  .block-content {
-    display: flex;
-    align-items: center;
-    margin-left: 4px;
-    flex: 1;
-    overflow: hidden;
-    min-width: 0;
-
-    .school-name {
-      font-size: var(--font-size-xs);
-      color: var(--text-primary);
-      font-weight: var(--font-weight-medium);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-
-    .teacher-info {
-      display: none;
-    }
-  }
 }
+
+// ... 其他樣式保持不變 ...
 </style> 

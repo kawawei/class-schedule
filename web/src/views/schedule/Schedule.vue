@@ -319,6 +319,11 @@ export default defineComponent({
               courseFee: schedule.course_fee || 0,
               teacherFee: schedule.teacher_fee || 0,
               assistantFee: schedule.assistant_fee || 0,
+              district: schedule.district || '', // 添加區域資訊 Add district info
+              county: schedule.county || '', // 添加縣市資訊 Add county info
+              hourlyRate: schedule.hourly_rate || 0, // 添加鐘點費 Add hourly rate
+              notes: schedule.notes || '', // 添加備註 Add notes
+              uuid: schedule.series_id || '', // 添加系列ID Add series ID
               position: { row, column }
             };
           });
@@ -417,6 +422,11 @@ export default defineComponent({
               courseFee: newEvent.course_fee || 0,
               teacherFee: newEvent.teacher_fee || 0,
               assistantFee: newEvent.assistant_fee || 0,
+              district: newEvent.district || '', // 添加區域資訊 Add district info
+              county: newEvent.county || '', // 添加縣市資訊 Add county info
+              hourlyRate: newEvent.hourly_rate || 0, // 添加鐘點費 Add hourly rate
+              notes: newEvent.notes || '', // 添加備註 Add notes
+              uuid: newEvent.series_id || '', // 添加系列ID Add series ID
               position: { row, column }
             });
           });

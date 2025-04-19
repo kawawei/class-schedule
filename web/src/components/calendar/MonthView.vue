@@ -54,6 +54,15 @@
                 :position="event.position"
                 :course-id="event.id"
                 :uuid="event.uuid"
+                :district="event.district"
+                :county="event.county"
+                :class-name="event.className"
+                :course-fee="event.courseFee"
+                :teacher-fee="event.teacherFee"
+                :assistant-fee="event.assistantFee"
+                :hourly-rate="event.hourlyRate"
+                :notes="event.notes"
+                :date="event.date"
                 class="month-schedule-block"
                 @click="handleScheduleBlockClick($event, event)"
                 @dragstart="handleDragStart"
@@ -96,7 +105,7 @@
 </template>
 
 <script>
-import { defineComponent, computed, ref } from 'vue';
+import { defineComponent, computed, ref, watch } from 'vue';
 import { 
   format, 
   startOfMonth, 
@@ -112,6 +121,7 @@ import {
 } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import ScheduleBlock from '@/components/schedule/ScheduleBlock.vue';
+import courseDataService from '@/services/courseDataService';
 
 export default defineComponent({
   name: 'MonthView',
@@ -148,6 +158,14 @@ export default defineComponent({
     
     // 添加拖曳狀態 Add drag state
     const isDragging = ref(false);
+
+    // 監聽 events 變化，更新 courseDataService
+    // Watch for events changes and update courseDataService
+    watch(() => props.events, (newEvents) => {
+      if (newEvents && newEvents.length > 0) {
+        courseDataService.setCourses(newEvents);
+      }
+    }, { immediate: true });
     
     // 計算屬性 Computed properties
     

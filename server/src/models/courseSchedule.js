@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
     },
     class_name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       comment: '班級名稱 Class Name'
     },
     course_type: {

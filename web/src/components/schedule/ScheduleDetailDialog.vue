@@ -41,7 +41,6 @@
           label="班級名稱 / Class Name"
           placeholder="請輸入班級名稱"
           :disabled="!isEditing || isTeacher"
-          required
         />
         <!-- 在非編輯模式下顯示純文本，編輯模式下顯示選擇器 -->
         <template v-if="!isEditing || isTeacher">
