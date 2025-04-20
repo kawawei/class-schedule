@@ -99,8 +99,8 @@
 
         <!-- 自定義列插槽 Custom column slots -->
         <template #quantity="{ row }">
-          <span :class="{ 'low-stock': row.quantity <= row.minQuantity }">
-            {{ row.quantity }}
+          <span :class="{ 'low-stock': getTotalQuantity(row.warehouses) <= row.minQuantity }">
+            {{ getTotalQuantity(row.warehouses) }}
           </span>
         </template>
         
@@ -389,6 +389,61 @@
       <div class="dialog-footer">
         <AppButton @click="closeQRCodeSelect">取消</AppButton>
         <AppButton type="primary" @click="confirmQRCodeSelect" :disabled="!selectedQRCode">確定</AppButton>
+      </div>
+    </template>
+  </AppDialog>
+
+  <!-- 貨物詳情對話框 Inventory details dialog -->
+  <AppDialog
+    v-model="detailsDialogVisible"
+    title="貨物詳情"
+    size="md"
+    @close="closeDetailsDialog"
+  >
+    <template #default>
+      <div class="inventory-details">
+        <div class="details-header">
+          <h3>{{ selectedItem?.name }}</h3>
+          <p class="course-type">課程種類：{{ selectedItem?.courseType }}</p>
+        </div>
+        <div class="warehouse-list">
+          <div 
+            v-for="warehouse in selectedItem?.warehouses" 
+            :key="warehouse.location"
+            class="warehouse-item"
+          >
+            <div class="warehouse-header">
+              <h4>倉庫 {{ warehouse.location }}</h4>
+            </div>
+            <div class="warehouse-info">
+              <div class="info-row">
+                <span class="label">當前數量：</span>
+                <span class="value">{{ warehouse.quantity }} 個</span>
+              </div>
+              <div class="info-row">
+                <span class="label">不良品數量：</span>
+                <span class="value">{{ warehouse.defectiveQuantity }} 個</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="details-footer">
+          <div class="total-info">
+            <div class="info-row">
+              <span class="label">總數量：</span>
+              <span class="value">{{ getTotalQuantity(selectedItem?.warehouses) }} 個</span>
+            </div>
+            <div class="info-row">
+              <span class="label">總不良品數量：</span>
+              <span class="value">{{ getTotalDefectiveQuantity(selectedItem?.warehouses) }} 個</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="dialog-footer">
+        <AppButton @click="closeDetailsDialog">關閉</AppButton>
       </div>
     </template>
   </AppDialog>

@@ -78,7 +78,10 @@ const inventoryColumns = [
     title: '當前數量',
     width: 120,
     align: 'center',
-    slot: true
+    render: (row) => {
+      // 計算所有倉庫的總數量 Calculate total quantity from all warehouses
+      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.quantity || 0), 0) : 0;
+    }
   },
   {
     key: 'minQuantity',
@@ -90,7 +93,11 @@ const inventoryColumns = [
     key: 'defectiveQuantity',
     title: '不良品數量',
     width: 120,
-    align: 'center'
+    align: 'center',
+    render: (row) => {
+      // 計算所有倉庫的不良品總數量 Calculate total defective quantity from all warehouses
+      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.defectiveQuantity || 0), 0) : 0;
+    }
   },
   {
     key: 'unitPrice',
@@ -233,6 +240,10 @@ export default {
     const qrcodeLoading = ref(false);
     const selectedQRCode = ref(null);
     
+    // 詳情對話框狀態 Details dialog state
+    const detailsDialogVisible = ref(false);
+    const selectedItem = ref(null);
+    
     // 篩選後的貨物列表 Filtered inventory list
     const filteredInventory = computed(() => {
       let result = [...inventoryData.value];
@@ -304,10 +315,43 @@ export default {
     };
     
     // 打開編輯貨物對話框 Open edit inventory dialog
-    const editInventory = (item) => {
-      isEditing.value = true;
-      Object.assign(form.value, item);
-      dialogVisible.value = true;
+    const editInventory = async (item) => {
+      try {
+        // 獲取完整的貨物詳情 Get complete inventory details
+        const response = await axios.get(`${API_BASE_URL}/inventory/${item.id}`);
+        if (response.data && response.data.success) {
+          const itemData = response.data.data;
+          isEditing.value = true;
+          
+          // 重置表單並填充數據 Reset form and populate data
+          form.value = {
+            id: itemData.id,
+            name: itemData.name,
+            courseType: itemData.courseType,
+            minQuantity: itemData.minQuantity,
+            unitPrice: itemData.unitPrice,
+            unitPriceCurrency: itemData.unitPriceCurrency,
+            cost: itemData.cost,
+            costCurrency: itemData.costCurrency,
+            notes: itemData.notes,
+            qrcode: itemData.qrcode_url ? {
+              url: itemData.qrcode_url,
+              name: itemData.qrcode_name
+            } : null,
+            // 從第一個倉庫獲取數據 Get data from the first warehouse
+            location: itemData.warehouses?.[0]?.location || '',
+            quantity: itemData.warehouses?.[0]?.quantity || 0,
+            defectiveQuantity: itemData.warehouses?.[0]?.defectiveQuantity || 0
+          };
+          
+          dialogVisible.value = true;
+        } else {
+          throw new Error(response.data?.message || '獲取貨物詳情失敗');
+        }
+      } catch (error) {
+        console.error('編輯貨物失敗:', error);
+        Message.error(error.message || '編輯貨物失敗');
+      }
     };
     
     // 關閉對話框 Close dialog
@@ -316,40 +360,76 @@ export default {
       form.value = resetForm();
     };
     
+    // 獲取貨物列表 Get inventory list
+    const fetchInventoryList = async () => {
+      try {
+        loading.value = true;
+        const response = await axios.get(`${API_BASE_URL}/inventory`);
+        if (response.data && response.data.success) {
+          // 確保數據是數組 Ensure data is an array
+          inventoryData.value = Array.isArray(response.data.data) 
+            ? response.data.data 
+            : [];
+          console.log('成功獲取貨物列表:', inventoryData.value);
+        } else {
+          console.error('獲取貨物列表失敗: 響應格式不正確', response.data);
+          Message.error('獲取貨物列表失敗 Failed to get inventory list');
+          inventoryData.value = []; // 確保設置為空數組 Ensure set to empty array
+        }
+      } catch (error) {
+        console.error('獲取貨物列表失敗:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        Message.error('獲取貨物列表失敗 Failed to get inventory list');
+        inventoryData.value = []; // 確保設置為空數組 Ensure set to empty array
+      } finally {
+        loading.value = false;
+      }
+    };
+
     // 提交表單 Submit form
     const submitForm = async () => {
       try {
         loading.value = true;
         
-        // 模擬創建/更新貨物 Simulate creating/updating inventory
-        const newItem = {
-          id: isEditing.value ? form.value.id : Date.now(), // 使用時間戳作為臨時ID
+        const inventoryData = {
           name: form.value.name,
           courseType: form.value.courseType,
-          quantity: Number(form.value.quantity),
           minQuantity: Number(form.value.minQuantity),
-          defectiveQuantity: Number(form.value.defectiveQuantity),
-          location: form.value.location,
           unitPrice: Number(form.value.unitPrice),
           unitPriceCurrency: form.value.unitPriceCurrency,
           cost: Number(form.value.cost),
           costCurrency: form.value.costCurrency,
           notes: form.value.notes,
-          qrcode_url: form.value.qrcode?.url, // 修正 QR Code URL 的保存
-          qrcode_name: form.value.qrcode?.name // 修正 QR Code 名稱的保存
+          qrcode_url: form.value.qrcode?.url,
+          qrcode_name: form.value.qrcode?.name,
+          warehouses: [{
+            location: form.value.location,
+            quantity: Number(form.value.quantity),
+            defectiveQuantity: Number(form.value.defectiveQuantity)
+          }]
         };
 
         if (isEditing.value) {
           // 更新現有項目 Update existing item
-          const index = inventoryData.value.findIndex(item => item.id === form.value.id);
-          if (index !== -1) {
-            inventoryData.value[index] = { ...inventoryData.value[index], ...newItem };
+          const response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, inventoryData);
+          if (response.data && response.data.success) {
+            Message.success('更新成功 / Update successful');
+            await fetchInventoryList();
+          } else {
+            throw new Error(response.data?.message || '更新失敗');
           }
-          Message.success('更新成功 / Update successful');
         } else {
           // 添加新項目 Add new item
-          inventoryData.value.push(newItem);
-          Message.success('創建成功 / Creation successful');
+          const response = await axios.post(`${API_BASE_URL}/inventory`, inventoryData);
+          if (response.data && response.data.success) {
+            Message.success('創建成功 / Creation successful');
+            await fetchInventoryList();
+          } else {
+            throw new Error(response.data?.message || '創建失敗');
+          }
         }
 
         dialogVisible.value = false;
@@ -396,25 +476,37 @@ export default {
     };
     
     // 查看貨物詳情 View inventory details
-    const viewInventoryDetails = (item) => {
-      // TODO: 實現查看詳情功能 Implement view details function
-    };
-    
-    // 獲取貨物列表 Get inventory list
-    const fetchInventoryList = async () => {
+    const viewInventoryDetails = async (item) => {
       try {
-        loading.value = true;
-        // TODO: 實現與後端的交互 Implement backend interaction
-        // const response = await getInventoryList();
-        // inventoryData.value = response.data;
+        const response = await axios.get(`${API_BASE_URL}/inventory/${item.id}`);
+        if (response.data && response.data.success) {
+          selectedItem.value = response.data.data;
+          detailsDialogVisible.value = true;
+        } else {
+          throw new Error(response.data?.message || '獲取詳情失敗');
+        }
       } catch (error) {
-        console.error('獲取貨物列表失敗:', error);
-        Message.error(error.message || '獲取貨物列表失敗');
-      } finally {
-        loading.value = false;
+        console.error('獲取詳情失敗:', error);
+        Message.error(error.message || '獲取詳情失敗');
       }
     };
-
+    
+    // 刪除貨物 Delete inventory
+    const deleteInventoryItem = async (id) => {
+      try {
+        const response = await axios.delete(`${API_BASE_URL}/inventory/${id}`);
+        if (response.data && response.data.success) {
+          Message.success('刪除成功 / Deletion successful');
+          await fetchInventoryList();
+        } else {
+          throw new Error(response.data?.message || '刪除失敗');
+        }
+      } catch (error) {
+        console.error('刪除失敗:', error);
+        throw error;
+      }
+    };
+    
     // QR Code 相關功能 QR Code related functions
     const openQRCodeSelect = async () => {
       await fetchQRCodes();
@@ -443,11 +535,12 @@ export default {
     const fetchQRCodes = async () => {
       try {
         qrcodeLoading.value = true;
-        const response = await axios.get('/qrcode');
+        const response = await axios.get(`${API_BASE_URL}/qrcode`);
         if (response.data && response.data.success) {
           qrcodeList.value = response.data.data;
         } else {
           console.error('獲取 QR Code 列表失敗: 響應格式不正確', response.data);
+          Message.error('獲取 QR Code 列表失敗');
         }
       } catch (error) {
         console.error('獲取 QR Code 列表失敗:', {
@@ -455,6 +548,7 @@ export default {
           response: error.response?.data,
           status: error.response?.status
         });
+        Message.error(error.response?.data?.message || '獲取 QR Code 列表失敗');
       } finally {
         qrcodeLoading.value = false;
       }
@@ -479,11 +573,39 @@ export default {
       inventoryData.value = [];
     };
     
-    // 組件掛載時初始化列表 Initialize list when component is mounted
+    // 在組件掛載時初始化數據 Initialize data when component is mounted
     onMounted(async () => {
-      await fetchCourseTypes();
-      initInventoryList(); // 初始化列表
+      try {
+        loading.value = true;
+        // 獲取課程種類 Get course types
+        await fetchCourseTypes();
+        // 獲取庫存列表 Get inventory list
+        await fetchInventoryList();
+      } catch (error) {
+        console.error('初始化數據失敗 Failed to initialize data:', error);
+        Message.error('初始化數據失敗 Failed to initialize data');
+      } finally {
+        loading.value = false;
+      }
     });
+
+    // 計算總數量 Calculate total quantity
+    const getTotalQuantity = (warehouses) => {
+      if (!warehouses) return 0;
+      return warehouses.reduce((total, warehouse) => total + (warehouse.quantity || 0), 0);
+    };
+
+    // 計算總不良品數量 Calculate total defective quantity
+    const getTotalDefectiveQuantity = (warehouses) => {
+      if (!warehouses) return 0;
+      return warehouses.reduce((total, warehouse) => total + (warehouse.defectiveQuantity || 0), 0);
+    };
+
+    // 關閉詳情對話框 Close details dialog
+    const closeDetailsDialog = () => {
+      detailsDialogVisible.value = false;
+      selectedItem.value = null;
+    };
 
     return {
       // 狀態 State
@@ -508,6 +630,8 @@ export default {
       qrcodeList,
       qrcodeLoading,
       selectedQRCode,
+      detailsDialogVisible,
+      selectedItem,
       
       // 選項 Options
       courseTypeOptionsRef,
@@ -541,7 +665,10 @@ export default {
       selectQRCode,
       confirmQRCodeSelect,
       closeQRCodeSelect,
-      fetchQRCodes
+      fetchQRCodes,
+      getTotalQuantity,
+      getTotalDefectiveQuantity,
+      closeDetailsDialog
     };
   }
 }; 
