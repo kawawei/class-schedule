@@ -30,22 +30,7 @@
           <div class="tab-content">
             <!-- 教材管理標籤頁 Materials Management Tab -->
             <div v-if="currentTab === 'materials'" class="materials-management">
-              <div class="content-header">
-                <h2>教材管理</h2>
-                <AppButton 
-                  type="primary"
-                  @click="openAddMaterialDialog"
-                >
-                  <template #icon>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </template>
-                  新增教材
-                </AppButton>
-              </div>
-              <!-- 教材列表將在後續開發 Materials list will be developed later -->
+              <InventoryPage />
             </div>
 
             <!-- QRCode管理標籤頁 QRCode Management Tab -->
@@ -355,6 +340,7 @@ import AppButton from '@/components/base/AppButton.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import AppInput from '@/components/base/AppInput.vue';
+import InventoryPage from './inventory.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -364,7 +350,8 @@ export default {
     AppButton,
     DataTable,
     AppDialog,
-    AppInput
+    AppInput,
+    InventoryPage
   },
   setup() {
     return {
@@ -376,4 +363,45 @@ export default {
 
 <style lang="scss" scoped>
 @import './materials.scss';
+
+.materials-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  .container {
+    flex: 1;
+    padding: var(--spacing-sm);
+    width: 90%;
+    margin: 0 auto;
+    
+    .materials-content {
+      height: 100%;
+      width: 100%;
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+  }
+}
+
+.tabs-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .tabs-header {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tab-content {
+    flex: 1;
+    padding: var(--spacing-xs); // 減少內邊距
+    overflow: auto; // 添加滾動條
+  }
+}
 </style> 
