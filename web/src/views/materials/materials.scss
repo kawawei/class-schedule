@@ -1,24 +1,35 @@
 .materials-page {
   min-height: 100vh;
   background-color: var(--bg-secondary);
+  width: 100%;
   
   .container {
     padding: var(--spacing-lg);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
   }
   
   .materials-content {
     background-color: var(--bg-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
+    width: 100%;
+    min-width: 900px;
+    margin: 0 auto;
+    overflow-x: auto;
   }
   
   // 標籤頁樣式 Tab styles
   .tabs-container {
+    width: 100%;
+    
     .tabs-header {
       display: flex;
       gap: var(--spacing-md);
       padding: var(--spacing-lg);
       border-bottom: 1px solid var(--color-gray-200);
+      width: 100%;
       
       .tab-item {
         display: flex;
@@ -71,6 +82,7 @@
   // 內容區域樣式 Content area styles
   .tab-content {
     padding: var(--spacing-lg);
+    width: 100%;
     
     .content-header {
       display: flex;

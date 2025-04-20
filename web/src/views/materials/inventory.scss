@@ -1,9 +1,11 @@
 .inventory-page {
   min-height: 100vh;
   background-color: var(--bg-primary);
+  width: 100%;
   
   .container {
     padding: var(--spacing-lg);
+    max-width: 100%;
   }
   
   .inventory-content {
@@ -13,6 +15,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
+    width: 100%;
+    min-width: 900px;
     
     .content-header {
       display: none;
@@ -27,6 +31,7 @@
       background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
       margin-bottom: var(--spacing-md);
+      width: 100%;
       
       .filter-group {
         flex-shrink: 0;
@@ -35,19 +40,19 @@
         gap: var(--spacing-xs);
         
         &.course-type {
-          width: 140px;
+          width: 120px;
         }
         
         &.search {
-          width: 200px;
+          width: 180px;
         }
         
         &.location {
-          width: 140px;
+          width: 120px;
         }
         
         &.quantity {
-          width: 240px;
+          width: 200px;
         }
         
         &.actions {
@@ -94,9 +99,11 @@
     :deep(.data-table) {
       flex: 1;
       overflow: auto;
+      width: 100%;
       
       table {
         width: 100%;
+        min-width: 900px;
         white-space: nowrap;
         background-color: var(--bg-primary);
       }
@@ -107,6 +114,7 @@
         font-weight: 500;
         text-align: left;
         height: 50px;
+        white-space: nowrap;
       }
       
       td {
@@ -114,6 +122,7 @@
         height: 60px;
         vertical-align: middle;
         background-color: var(--bg-primary);
+        white-space: nowrap;
       }
       
       tr:hover {
@@ -123,18 +132,25 @@
       .qrcode-cell {
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: var(--spacing-md);
+        white-space: nowrap;
         
         .qrcode-preview {
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           object-fit: contain;
-          cursor: pointer;
+          flex-shrink: 0;
           
           &:hover {
             transform: scale(1.1);
             transition: transform 0.2s ease;
           }
+        }
+
+        .qrcode-name {
+          font-size: var(--font-size-sm);
+          color: var(--text-color);
+          margin: 0;
         }
       }
       
@@ -274,5 +290,217 @@
 :deep(.app-dialog) {
   .dialog-content {
     min-width: 800px;
+  }
+}
+
+// QR Code 選擇對話框樣式
+.qrcode-select {
+  padding: var(--spacing-md);
+
+  .qrcode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+
+  .qrcode-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.selected {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-light);
+    }
+
+    .qrcode-image {
+      width: 120px;
+      height: 120px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+
+      img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+    }
+
+    .qrcode-name {
+      font-size: var(--font-size-sm);
+      text-align: center;
+      color: var(--text-color);
+      word-break: break-word;
+    }
+  }
+}
+
+// 對話框底部樣式
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+// 表單行樣式
+.form-row {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  align-items: flex-start;
+
+  &.qrcode-row {
+    .form-label {
+      min-width: 100px;
+      padding-top: var(--spacing-sm);
+    }
+
+    .qrcode-content {
+      flex: 1;
+    }
+
+    .selected-qrcode {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+
+      .qrcode-preview {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+      }
+
+      .qrcode-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+
+        .remove-btn {
+          padding: 0;
+          color: var(--color-danger);
+
+          &:hover {
+            color: var(--color-danger-dark);
+          }
+        }
+      }
+    }
+  }
+}
+
+// 表單組樣式
+.form-group {
+  margin-bottom: var(--spacing-lg);
+
+  label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color);
+  }
+
+  .qrcode-wrapper {
+    width: 100%;
+    
+    .selected-qrcode {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .qrcode-preview-container {
+        width: 100px;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: white;
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        .qrcode-preview {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+      }
+
+      .qrcode-info {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--spacing-sm);
+
+        .qrcode-name {
+          font-size: var(--font-size-md);
+          font-weight: var(--font-weight-medium);
+          color: var(--text-color);
+        }
+
+        .remove-btn {
+          padding: var(--spacing-xs) var(--spacing-sm);
+          color: var(--color-danger);
+          font-size: var(--font-size-sm);
+          border-radius: var(--radius-sm);
+          
+          &:hover {
+            color: var(--color-danger-dark);
+            background-color: var(--color-danger-light);
+          }
+
+          svg {
+            margin-right: var(--spacing-xs);
+          }
+        }
+      }
+    }
+
+    .select-qrcode-btn {
+      width: 100%;
+      padding: var(--spacing-md);
+      border: 2px dashed var(--border-color);
+      background-color: var(--bg-secondary);
+      transition: all 0.3s ease;
+      color: var(--text-color);
+
+      &:hover {
+        border-color: var(--color-primary);
+        background-color: var(--color-primary);
+        color: white;
+      }
+
+      svg {
+        margin-right: var(--spacing-sm);
+      }
+    }
   }
 } 

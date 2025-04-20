@@ -1,6 +1,9 @@
 import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Message from '@/utils/message';
+import { courseAPI } from '@/utils/api';
+import axios from 'axios';
+import { API_BASE_URL } from '@/utils/api';
 
 // 課程種類選項 Course type options
 const courseTypeOptions = [
@@ -16,65 +19,115 @@ const courseTypeOptions = [
 
 // 倉庫位置選項 Warehouse location options
 const locationOptions = [
-  { value: '台北倉', label: '台北倉' },
-  { value: '新北倉', label: '新北倉' },
-  { value: '桃園倉', label: '桃園倉' }
+  { label: '全部位置', value: '' },
+  { label: '倉庫A', value: 'A' },
+  { label: '倉庫B', value: 'B' },
+  { label: '倉庫C', value: 'C' }
 ];
 
 // 表格列定義 Table column definitions
 const inventoryColumns = [
   {
+    key: 'index',
+    title: '序號',
+    width: 80,
+    align: 'center',
+    slot: true
+  },
+  {
     key: 'name',
     title: '貨物名稱',
-    width: 200
+    width: 250,
   },
   {
     key: 'courseType',
     title: '課程種類',
-    width: 120
+    width: 180
   },
   {
     key: 'quantity',
     title: '當前數量',
-    width: 100,
+    width: 120,
     align: 'center',
     slot: true
   },
   {
     key: 'minQuantity',
     title: '最小庫存量',
-    width: 100,
+    width: 120,
+    align: 'center'
+  },
+  {
+    key: 'defectiveQuantity',
+    title: '不良品數量',
+    width: 120,
     align: 'center'
   },
   {
     key: 'location',
     title: '倉庫位置',
-    width: 120
-  },
-  {
-    key: 'defectiveQuantity',
-    title: '不良品數量',
-    width: 100,
+    width: 120,
     align: 'center'
   },
   {
     key: 'unitPrice',
     title: '單價',
-    width: 100,
+    width: 120,
     align: 'right'
+  },
+  {
+    key: 'cost',
+    title: '成本',
+    width: 120,
+    align: 'right'
+  },
+  {
+    key: 'qrcode',
+    title: 'QR Code',
+    width: 250,
+    slot: true
   },
   {
     key: 'status',
     title: '狀態',
-    width: 100,
+    width: 120,
+    align: 'center',
     slot: true
   },
   {
     key: 'actions',
     title: '操作',
-    width: 120,
+    width: 150,
+    align: 'center',
+    slot: true,
+    fixed: 'right'
+  }
+];
+
+// QR Code 表格列定義 QR Code table column definitions
+const qrcodeColumns = [
+  {
+    key: 'qrcode_url',
+    title: 'QR Code',
+    width: 100,
     align: 'center',
     slot: true
+  },
+  {
+    key: 'name',
+    title: '名稱',
+    width: 200
+  },
+  {
+    key: 'scan_count',
+    title: '掃描次數',
+    width: 100,
+    align: 'center'
+  },
+  {
+    key: 'actual_url',
+    title: '目標連結',
+    width: 300
   }
 ];
 
@@ -100,6 +153,15 @@ export default {
       minQuantity: '',
       maxQuantity: ''
     });
+
+    // 篩選相關的響應式變量 Filter related reactive variables
+    const selectedType = ref('');  // 選中的課程類型
+    const selectedLocation = ref(''); // 選中的倉庫位置
+    const minQuantity = ref(''); // 最小數量
+    const maxQuantity = ref(''); // 最大數量
+    
+    // 課程類型選項 Course type options
+    const courseTypeOptionsRef = ref([]);
     
     // 貨物列表數據 Inventory list data
     const inventoryData = ref([]);
@@ -111,18 +173,25 @@ export default {
     const itemToDelete = ref(null);
     
     // 表單數據 Form data
-    const form = reactive({
+    const form = ref({
       id: null,
       name: '',
       courseType: '',
-      quantity: 0,
-      minQuantity: 0,
+      quantity: '',
+      minQuantity: '',
+      defectiveQuantity: '',
       location: '',
-      defectiveQuantity: 0,
-      unitPrice: 0,
-      cost: 0,
-      notes: ''
+      unitPrice: '',
+      cost: '',
+      notes: '',
+      qrcode: null
     });
+
+    // QR Code 選擇相關的狀態 QR Code selection related states
+    const qrcodeSelectVisible = ref(false);
+    const qrcodeList = ref([]);
+    const qrcodeLoading = ref(false);
+    const selectedQRCode = ref(null);
     
     // 篩選後的貨物列表 Filtered inventory list
     const filteredInventory = computed(() => {
@@ -188,11 +257,16 @@ export default {
       resetForm();
       dialogVisible.value = true;
     };
+
+    // 打開新增對話框 Open add dialog
+    const openAddDialog = () => {
+      dialogVisible.value = true;
+    };
     
     // 打開編輯貨物對話框 Open edit inventory dialog
     const editInventory = (item) => {
       isEditing.value = true;
-      Object.assign(form, item);
+      Object.assign(form.value, item);
       dialogVisible.value = true;
     };
     
@@ -204,16 +278,19 @@ export default {
     
     // 重置表單 Reset form
     const resetForm = () => {
-      form.id = null;
-      form.name = '';
-      form.courseType = '';
-      form.quantity = 0;
-      form.minQuantity = 0;
-      form.location = '';
-      form.defectiveQuantity = 0;
-      form.unitPrice = 0;
-      form.cost = 0;
-      form.notes = '';
+      form.value = {
+        id: null,
+        name: '',
+        courseType: '',
+        quantity: '',
+        minQuantity: '',
+        defectiveQuantity: '',
+        location: '',
+        unitPrice: '',
+        cost: '',
+        notes: '',
+        qrcode: null
+      };
     };
     
     // 提交表單 Submit form
@@ -222,8 +299,8 @@ export default {
         loading.value = true;
         // TODO: 實現與後端的交互 Implement backend interaction
         const result = isEditing.value
-          ? await updateInventory(form)
-          : await createInventory(form);
+          ? await updateInventory(form.value)
+          : await createInventory(form.value);
         
         Message.success(isEditing.value ? '更新成功' : '創建成功');
         dialogVisible.value = false;
@@ -288,6 +365,73 @@ export default {
         loading.value = false;
       }
     };
+
+    // 獲取課程類型 Get course types
+    const fetchCourseTypes = async () => {
+      try {
+        const response = await courseAPI.getAllCourses();
+        if (response.data) {
+          const categories = [...new Set(response.data.map(courseData => {
+            return courseData.category;
+          }))];
+          
+          courseTypeOptionsRef.value = [
+            { label: '全部種類', value: '' },
+            ...categories.map(category => ({
+              label: category,
+              value: category
+            }))
+          ];
+        }
+      } catch (error) {
+        console.error('獲取課程種類失敗:', error);
+      }
+    };
+
+    // QR Code 相關功能 QR Code related functions
+    const openQRCodeSelect = async () => {
+      await fetchQRCodes();
+      qrcodeSelectVisible.value = true;
+    };
+
+    const selectQRCode = (qrcode) => {
+      selectedQRCode.value = qrcode;
+    };
+
+    const confirmQRCodeSelect = () => {
+      if (selectedQRCode.value) {
+        form.value.qrcode = {
+          url: selectedQRCode.value.qrcode_url,
+          name: selectedQRCode.value.name
+        };
+      }
+      closeQRCodeSelect();
+    };
+
+    const closeQRCodeSelect = () => {
+      qrcodeSelectVisible.value = false;
+      selectedQRCode.value = null;
+    };
+
+    const fetchQRCodes = async () => {
+      try {
+        qrcodeLoading.value = true;
+        const response = await axios.get('/qrcode');
+        if (response.data && response.data.success) {
+          qrcodeList.value = response.data.data;
+        } else {
+          console.error('獲取 QR Code 列表失敗: 響應格式不正確', response.data);
+        }
+      } catch (error) {
+        console.error('獲取 QR Code 列表失敗:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+      } finally {
+        qrcodeLoading.value = false;
+      }
+    };
     
     // 處理登出 Handle logout
     const handleLogout = async () => {
@@ -310,6 +454,11 @@ export default {
       loading,
       searchQuery,
       filters,
+      selectedType,
+      selectedLocation,
+      minQuantity,
+      maxQuantity,
+      courseTypeOptionsRef,
       inventoryData,
       filteredInventory,
       dialogVisible,
@@ -317,16 +466,23 @@ export default {
       isEditing,
       itemToDelete,
       form,
+      qrcodeSelectVisible,
+      qrcodeList,
+      qrcodeLoading,
+      selectedQRCode,
       
       // 選項 Options
       courseTypeOptions,
       locationOptions,
       inventoryColumns,
+      qrcodeColumns,
+      API_BASE_URL,
       
       // 方法 Methods
       handleSearch,
       applyFilters,
       openAddInventoryDialog,
+      openAddDialog,
       editInventory,
       closeDialog,
       submitForm,
@@ -336,7 +492,13 @@ export default {
       viewInventoryDetails,
       handleLogout,
       getStockStatus,
-      getStockStatusText
+      getStockStatusText,
+      fetchCourseTypes,
+      openQRCodeSelect,
+      selectQRCode,
+      confirmQRCodeSelect,
+      closeQRCodeSelect,
+      fetchQRCodes
     };
   }
 }; 

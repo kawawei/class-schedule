@@ -25,7 +25,7 @@
           <AppSelect
             class="type-filter"
             v-model="selectedType"
-            :options="courseTypeOptions"
+            :options="courseTypeOptionsRef"
             placeholder="全部種類"
           />
         </div>
@@ -92,6 +92,11 @@
         row-key="id"
         @row-click="viewInventoryDetails"
       >
+        <!-- 序號欄位 Index column -->
+        <template #index="{ index }">
+          {{ index + 1 }}
+        </template>
+
         <!-- 自定義列插槽 Custom column slots -->
         <template #quantity="{ row }">
           <span :class="{ 'low-stock': row.quantity <= row.minQuantity }">
@@ -143,6 +148,7 @@
               :alt="row.name"
               class="qrcode-preview"
             />
+            <span v-if="row.qrcode_url" class="qrcode-name">{{ row.name }}</span>
             <AppButton
               v-else
               type="primary"
@@ -196,7 +202,7 @@
           <AppSelect
             v-model="form.courseType"
             label="課程種類"
-            :options="courseTypeOptions"
+            :options="courseTypeOptionsRef"
             placeholder="請選擇課程種類"
             required
           />
@@ -251,26 +257,43 @@
           />
         </div>
 
-        <!-- QRCode 選擇 QRCode Selection -->
+        <!-- QR Code -->
         <div class="form-row qrcode-row">
           <div class="qrcode-label">QR Code</div>
           <div class="qrcode-content">
-            <template v-if="form.qrcode">
-              <div class="selected-qrcode">
-                <img :src="form.qrcode.url" :alt="form.qrcode.name" class="qrcode-preview" />
-                <div class="qrcode-info">
-                  <p>{{ form.qrcode.name }}</p>
-                  <button class="remove-btn" @click="form.qrcode = null">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                    移除
-                  </button>
-                </div>
+            <div v-if="form.qrcode" class="selected-qrcode">
+              <img
+                :src="form.qrcode.url.startsWith('http') ? form.qrcode.url : `${API_BASE_URL}${form.qrcode.url}`"
+                :alt="form.qrcode.name"
+                class="qrcode-preview"
+              />
+              <div class="qrcode-info">
+                <p>{{ form.qrcode.name }}</p>
+                <button class="remove-btn" @click="form.qrcode = null">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  移除
+                </button>
               </div>
-            </template>
-            <AppButton v-else type="primary" @click="openQRCodeSelect">選擇 QR Code</AppButton>
+            </div>
+            <AppButton
+              v-else
+              type="primary"
+              @click="openQRCodeSelect"
+            >
+              <template #icon>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <path d="M7 7h.01"></path>
+                  <path d="M17 7h.01"></path>
+                  <path d="M7 17h.01"></path>
+                  <path d="M17 17h.01"></path>
+                </svg>
+              </template>
+              選擇 QR Code
+            </AppButton>
           </div>
         </div>
 
@@ -303,19 +326,52 @@
       </div>
     </template>
   </AppDialog>
+
+  <!-- QR Code 選擇對話框 QR Code selection dialog -->
+  <AppDialog
+    v-model="qrcodeSelectVisible"
+    title="選擇 QR Code"
+    size="lg"
+    @close="closeQRCodeSelect"
+  >
+    <template #default>
+      <div class="qrcode-select">
+        <div class="qrcode-grid">
+          <div
+            v-for="qrcode in qrcodeList"
+            :key="qrcode.id"
+            class="qrcode-item"
+            :class="{ 'selected': selectedQRCode?.id === qrcode.id }"
+            @click="selectQRCode(qrcode)"
+          >
+            <div class="qrcode-image">
+              <img
+                :src="qrcode.qrcode_url.startsWith('http') ? qrcode.qrcode_url : `${API_BASE_URL}${qrcode.qrcode_url}`"
+                :alt="qrcode.name"
+              />
+            </div>
+            <div class="qrcode-name">{{ qrcode.name }}</div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="dialog-footer">
+        <AppButton @click="closeQRCodeSelect">取消</AppButton>
+        <AppButton type="primary" @click="confirmQRCodeSelect" :disabled="!selectedQRCode">確定</AppButton>
+      </div>
+    </template>
+  </AppDialog>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
 import AppButton from '@/components/base/AppButton.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import StatusBadge from '@/components/base/StatusBadge.vue';
-import { courseAPI } from '@/utils/api';
 import inventoryLogic from './inventory.js';
-import './inventory.scss';
 
 export default {
   name: 'InventoryPage',
@@ -328,53 +384,13 @@ export default {
     StatusBadge
   },
   setup() {
-    const courseTypeOptions = ref([]);
-    const inventoryColumns = [
-      { key: 'name', title: '貨物名稱' },
-      { key: 'courseType', title: '課程種類' },
-      { key: 'quantity', title: '當前數量' },
-      { key: 'minQuantity', title: '最小庫存量' },
-      { key: 'location', title: '倉庫位置' },
-      { key: 'defectiveQuantity', title: '不良品數量' },
-      { key: 'qrcode', title: 'QR Code', slot: true },
-      { key: 'actions', title: '操作', slot: true }
-    ];
-
-    // 獲取課程種類
-    const fetchCourseTypes = async () => {
-      try {
-        const response = await courseAPI.getAllCourses();
-        if (response.success) {
-          const categories = [...new Set(response.data.map(course => {
-            const courseData = course.dataValues || course;
-            return courseData.category;
-          }))];
-          
-          courseTypeOptions.value = categories.map(category => ({
-            label: category,
-            value: category
-          }));
-        }
-      } catch (error) {
-        console.error('獲取課程種類失敗:', error);
-      }
-    };
-
-    onMounted(() => {
-      fetchCourseTypes();
-    });
-
-    const openQRCodeSelect = () => {
-      // TODO: Implement QR Code selection
-      console.log('Open QR Code selection');
-    };
-
     return {
-      ...inventoryLogic.setup(),
-      courseTypeOptions,
-      inventoryColumns,
-      openQRCodeSelect
+      ...inventoryLogic.setup()
     };
   }
 };
-</script> 
+</script>
+
+<style lang="scss" scoped>
+@import './inventory.scss';
+</style> 
