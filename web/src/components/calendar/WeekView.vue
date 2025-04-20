@@ -51,12 +51,22 @@
             v-for="(event, eventIndex) in getEventsForDay(day.date)" 
             :key="`event-${eventIndex}`" 
             class="event-card"
+            :class="{
+              'has-teacher': event.teacherName && event.teacherName !== '待訂',
+              'event-position-1': eventIndex === 0,
+              'event-position-2': eventIndex === 1,
+              'event-position-3': eventIndex === 2
+            }"
             :style="getEventStyle(event)"
             @click.stop="handleEventClick(event)"
+            @mouseenter="handleMouseEnter($event, event)"
+            @mouseleave="handleMouseLeave"
           >
-            <div class="event-title">{{ event.title }}</div>
-            <div class="event-time">{{ formatEventTime(event) }}</div>
-            <div class="event-location" v-if="event.location">{{ event.location }}</div>
+            <div class="event-content">
+              <div class="event-title">{{ event.className }} - {{ event.teacherName || '待訂' }}</div>
+              <div class="event-time">{{ formatEventTime(event) }}</div>
+              <div class="event-location" v-if="event.schoolName">{{ event.schoolName }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -68,11 +78,72 @@
         :style="currentTimeLineStyle"
       ></div>
     </div>
+    
+    <!-- 懸浮窗口 Hover Tooltip -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div 
+          v-if="showTooltip && tooltipData" 
+          class="tooltip"
+          :class="{ 'left-aligned': isLeftAligned }"
+          :style="tooltipStyle"
+        >
+          <div class="tooltip-content">
+            <div class="tooltip-header">
+              <span class="course-type">{{ tooltipData.courseType }}</span>
+              <span class="course-count" v-if="tooltipData.totalClasses > 1">
+                (共 {{ tooltipData.totalClasses }} 堂
+                <span v-if="tooltipData.dateRange">
+                  {{ tooltipData.dateRange }}
+                </span>)
+              </span>
+            </div>
+            <div class="tooltip-info">
+              <p><strong>時間：</strong>{{ formatTime(tooltipData.startTime) }}-{{ formatTime(tooltipData.endTime) }}</p>
+              <p><strong>地點：</strong>{{ tooltipData.county }} {{ tooltipData.district }}</p>
+              <p><strong>補習班：</strong>{{ tooltipData.schoolName }}</p>
+              <p><strong>老師：</strong>{{ !tooltipData.teacherName || tooltipData.teacherName === '待訂' ? '待訂' : tooltipData.teacherName }}</p>
+              <p v-if="tooltipData.assistantName"><strong>助教：</strong>{{ tooltipData.assistantName }}</p>
+              <p><strong>班級：</strong>{{ tooltipData.className || '無' }}</p>
+              
+              <!-- 備註 Notes -->
+              <div class="notes-section" v-if="tooltipData.notes">
+                <strong>備註：</strong>
+                <span class="notes-content">{{ tooltipData.notes }}</span>
+              </div>
+              
+              <!-- 費用信息 Fee Information -->
+              <div class="fees-section">
+                <h4>課程費用：</h4>
+                <p>
+                  <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
+                  <span v-if="tooltipData.totalFees?.courseFee">
+                    / 總計：{{ formatCurrency(tooltipData.totalFees.courseFee) }}
+                  </span>
+                </p>
+                <p>
+                  <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                  <span v-if="tooltipData.totalFees?.teacherFee">
+                    / 總計：{{ formatCurrency(tooltipData.totalFees.teacherFee) }}
+                  </span>
+                </p>
+                <p v-if="tooltipData.assistantFee">
+                  <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
+                  <span v-if="tooltipData.totalFees?.assistantFee">
+                    / 總計：{{ formatCurrency(tooltipData.totalFees.assistantFee) }}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script>
-import { defineComponent, computed, ref, onMounted, onUnmounted } from 'vue';
+import { defineComponent, computed, ref, onMounted, onUnmounted, inject } from 'vue';
 import { 
   format, 
   startOfWeek, 
@@ -88,9 +159,15 @@ import {
   parseISO
 } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import HoverTooltip from '@/components/base/HoverTooltip.vue';
+import { scheduleAPI } from '@/utils/api';
 
 export default defineComponent({
   name: 'WeekView',
+  
+  components: {
+    HoverTooltip
+  },
   
   props: {
     // 當前日期 Current date
@@ -180,11 +257,7 @@ export default defineComponent({
         if (!event.date) return false;
         const eventDate = typeof event.date === 'string' ? parseISO(event.date) : event.date;
         return isSameDay(eventDate, date);
-      }).map(event => ({
-        ...event,
-        title: `${event.className} - ${event.teacherName}`,
-        location: event.schoolName
-      }));
+      });
     };
     
     // 獲取事件樣式 Get event style
@@ -253,6 +326,138 @@ export default defineComponent({
       }, 60000); // 60秒 60 seconds
     };
     
+    // 懸浮窗口相關狀態 Tooltip related states
+    const showTooltip = ref(false);
+    const tooltipData = ref(null);
+    const tooltipStyle = ref({
+      position: 'fixed',
+      left: '0px',
+      top: '0px',
+      zIndex: 999999999
+    });
+    
+    const isLeftAligned = ref(false);
+    
+    // 格式化時間 Format time
+    const formatTime = (time) => {
+      if (!time) return '';
+      const [hours, minutes] = time.split(':').map(Number);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+    
+    // 格式化貨幣 Format currency
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    };
+    
+    // 注入課程數據服務 Inject course data service
+    const courseDataService = inject('courseDataService');
+    
+    // 處理滑鼠懸浮 Handle mouse enter
+    const handleMouseEnter = async (event, courseData) => {
+      const rect = event.target.getBoundingClientRect();
+      const windowWidth = window.innerWidth;
+      const tooltipWidth = 400; // 預設寬度 Default width
+      
+      // 計算最佳位置 Calculate best position
+      let left = rect.right + 8;
+      // 如果右側空間不足，則顯示在左側 If not enough space on right, show on left
+      if (left + tooltipWidth > windowWidth) {
+        left = rect.left - tooltipWidth - 8;
+        isLeftAligned.value = true;
+      } else {
+        isLeftAligned.value = false;
+      }
+      
+      tooltipStyle.value = {
+        position: 'fixed',
+        left: `${left}px`,
+        top: `${rect.top}px`,
+        zIndex: 999999999
+      };
+      
+      try {
+        if (courseData.id) {
+          const response = await scheduleAPI.getSchedule(courseData.id);
+          if (response.success) {
+            const data = response.data;
+            
+            // 獲取課程系列信息 Get course series info
+            let seriesInfo = null;
+            if (courseData.uuid && courseDataService) {
+              seriesInfo = courseDataService.getCourseSeriesInfoByUuid(courseData.uuid);
+              // 格式化日期範圍 Format date range
+              if (seriesInfo?.firstDate && seriesInfo?.lastDate) {
+                const firstDate = format(new Date(seriesInfo.firstDate), 'yyyy/MM/dd', { locale: zhTW });
+                const lastDate = format(new Date(seriesInfo.lastDate), 'yyyy/MM/dd', { locale: zhTW });
+                seriesInfo.dateRange = `${firstDate} ~ ${lastDate}`;
+              }
+            }
+            
+            tooltipData.value = {
+              courseType: data.course_type || courseData.courseType,
+              startTime: data.start_time || courseData.startTime,
+              endTime: data.end_time || courseData.endTime,
+              county: data.county || courseData.county,
+              district: data.district || courseData.district,
+              schoolName: data.school_name || courseData.schoolName,
+              teacherName: data.teacher?.name || courseData.teacherName,
+              assistantName: data.assistants?.[0]?.name || courseData.assistantName,
+              className: data.class_name || courseData.className,
+              notes: data.notes || courseData.notes,
+              courseFee: data.course_fee || courseData.courseFee,
+              teacherFee: data.teacher_fee || courseData.teacherFee,
+              assistantFee: data.assistants?.[0]?.fee || courseData.assistantFee,
+              totalClasses: seriesInfo?.count || 1,
+              dateRange: seriesInfo?.dateRange || null,
+              totalFees: seriesInfo?.totalFees || null,
+              uuid: courseData.uuid
+            };
+          }
+        } else {
+          // 獲取課程系列信息 Get course series info
+          let seriesInfo = null;
+          if (courseData.uuid && courseDataService) {
+            seriesInfo = courseDataService.getCourseSeriesInfoByUuid(courseData.uuid);
+          }
+          
+          tooltipData.value = {
+            courseType: courseData.courseType,
+            startTime: courseData.startTime,
+            endTime: courseData.endTime,
+            county: courseData.county,
+            district: courseData.district,
+            schoolName: courseData.schoolName,
+            teacherName: courseData.teacherName,
+            assistantName: courseData.assistantName,
+            className: courseData.className,
+            notes: courseData.notes,
+            courseFee: courseData.courseFee,
+            teacherFee: courseData.teacherFee,
+            assistantFee: courseData.assistantFee,
+            totalClasses: seriesInfo?.count || 1,
+            dateRange: seriesInfo?.dateRange || null,
+            totalFees: seriesInfo?.totalFees || null,
+            uuid: courseData.uuid
+          };
+        }
+        showTooltip.value = true;
+      } catch (error) {
+        console.error('獲取課程詳情失敗:', error);
+      }
+    };
+    
+    // 處理滑鼠離開 Handle mouse leave
+    const handleMouseLeave = () => {
+      showTooltip.value = false;
+      tooltipData.value = null;
+    };
+    
     // 生命週期鉤子 Lifecycle hooks
     onMounted(() => {
       updateCurrentTimeLine();
@@ -275,7 +480,16 @@ export default defineComponent({
       getEventStyle,
       formatEventTime,
       handleEventClick,
-      handleCellClick
+      handleCellClick,
+      showTooltip,
+      tooltipData,
+      tooltipStyle,
+      formatTime,
+      formatCurrency,
+      isLeftAligned,
+      handleMouseEnter,
+      handleMouseLeave,
+      courseDataService
     };
   }
 });
@@ -409,31 +623,60 @@ export default defineComponent({
       }
       
       .event-card {
-        position: absolute;
-        left: var(--spacing-xs);
-        right: var(--spacing-xs);
-        background-color: rgba(0, 113, 227, 0.1);
-        border-left: 3px solid var(--color-primary);
+        position: absolute !important;
+        background-color: #e0e0e0 !important; // 沒有老師時的背景色
+        border: none !important;
         border-radius: var(--radius-sm);
         padding: var(--spacing-xs);
         overflow: hidden;
         cursor: pointer;
         transition: all 0.2s ease;
         z-index: 1;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        width: calc(33.33% - var(--spacing-sm));
+        
+        &.event-position-1 {
+          left: var(--spacing-xs);
+        }
+        
+        &.event-position-2 {
+          left: calc(33.33% + var(--spacing-xs));
+        }
+        
+        &.event-position-3 {
+          left: calc(66.66% + var(--spacing-xs));
+        }
         
         &:hover {
-          background-color: rgba(0, 113, 227, 0.15);
           transform: translateY(-1px);
           box-shadow: var(--shadow-sm);
+          z-index: 2;
+          background-color: #d8d8d8 !important; // 沒有老師時的 hover 背景色
+        }
+        
+        &.has-teacher {
+          background-color: #5fd3bc !important; // 有老師時的背景色
+          
+          &:hover {
+            background-color: #4fc3ac !important; // 有老師時的 hover 背景色
+          }
+        }
+        
+        .event-content {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
         
         .event-title {
           font-weight: var(--font-weight-medium);
           font-size: var(--font-size-sm);
-          margin-bottom: var(--spacing-xs);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          color: var(--text-primary);
+          line-height: 1.2;
         }
         
         .event-time, .event-location {
@@ -442,6 +685,7 @@ export default defineComponent({
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          line-height: 1.2;
         }
       }
     }
@@ -456,5 +700,124 @@ export default defineComponent({
     z-index: 3;
     pointer-events: none;
   }
+}
+
+.hidden-block {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  
+  :deep(.schedule-block) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 999999999;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  pointer-events: none;
+  max-width: 400px;
+  min-width: 280px;
+  white-space: normal;
+  word-wrap: break-word;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  line-height: 1.5;
+  isolation: isolate;
+  
+  // 確保不會超出視窗範圍 Ensure tooltip stays within viewport
+  &.left-aligned {
+    right: calc(100% + 8px);
+    left: auto;
+  }
+  
+  .tooltip-content {
+    .tooltip-header {
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+      .course-type {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .course-count {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-left: 8px;
+      }
+    }
+
+    .tooltip-info {
+      p {
+        margin: 8px 0;
+        line-height: 1.6;
+        display: flex;
+        align-items: flex-start;
+
+        strong {
+          flex: 0 0 80px;
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+    }
+
+    .notes-section {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      
+      .notes-content {
+        display: block;
+        margin-top: 4px;
+        white-space: pre-wrap;
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px;
+        border-radius: 4px;
+      }
+    }
+
+    .fees-section {
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+
+      h4 {
+        margin: 0 0 8px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      p {
+        margin: 6px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        span:first-child {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+    }
+  }
+}
+
+// 動畫效果 Animation effects
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style> 
