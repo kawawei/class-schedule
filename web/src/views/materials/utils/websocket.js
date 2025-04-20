@@ -1,74 +1,65 @@
-// WebSocket 工具類，用於處理 WebSocket 連接和事件
-// WebSocket utility class for handling WebSocket connections and events
-import { ref } from 'vue';
-import { API_BASE_URL } from '@/utils/api';
+import { ref, onUnmounted } from 'vue';
 
-// WebSocket 連接 URL（將 http/https 替換為 ws/wss）
-// WebSocket connection URL (replace http/https with ws/wss)
-const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/ws';
-
-export function useWebSocket(onMessageCallback) {
-  // WebSocket 相關狀態 WebSocket related state
+// WebSocket 工具函數 WebSocket utility function
+export function useWebSocket(callback) {
+  // WebSocket 連接狀態 WebSocket connection state
   const ws = ref(null);
   const isWsConnected = ref(false);
-  const reconnectAttempts = ref(0);
-  const maxReconnectAttempts = 5;
-  const reconnectDelay = 3000; // 3 秒後重試 Retry after 3 seconds
 
   // 連接 WebSocket Connect WebSocket
   const connectWebSocket = () => {
-    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-      return; // 如果已經連接，直接返回 If already connected, return directly
-    }
+    if (ws.value) return; // 如果已經連接，直接返回 If already connected, return directly
 
     try {
+      // 創建 WebSocket 連接 Create WebSocket connection
       ws.value = new WebSocket(WS_URL);
-
+      
+      // 連接成功時 Connection successful
       ws.value.onopen = () => {
-        console.log('WebSocket connected');
         isWsConnected.value = true;
-        reconnectAttempts.value = 0; // 重置重連次數 Reset reconnect attempts
+        console.log('WebSocket 連接成功 WebSocket connected');
       };
-
+      
+      // 接收消息時 On message received
       ws.value.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (onMessageCallback) {
-            onMessageCallback(data);
-          }
+          callback(data); // 調用回調函數處理消息 Call callback function to handle message
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          console.error('WebSocket 消息解析失敗 WebSocket message parsing failed:', error);
         }
       };
-
+      
+      // 連接關閉時 Connection closed
       ws.value.onclose = () => {
-        console.log('WebSocket disconnected');
         isWsConnected.value = false;
-        
-        // 嘗試重新連接 Try to reconnect
-        if (reconnectAttempts.value < maxReconnectAttempts) {
-          reconnectAttempts.value++;
-          console.log(`Attempting to reconnect (${reconnectAttempts.value}/${maxReconnectAttempts})...`);
-          setTimeout(connectWebSocket, reconnectDelay);
-        }
+        console.log('WebSocket 連接關閉 WebSocket connection closed');
       };
-
+      
+      // 發生錯誤時 On error
       ws.value.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket 錯誤 WebSocket error:', error);
+        isWsConnected.value = false;
       };
-
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
+      console.error('WebSocket 連接失敗 WebSocket connection failed:', error);
+      isWsConnected.value = false;
     }
   };
 
-  // 關閉 WebSocket Close WebSocket
+  // 關閉 WebSocket 連接 Close WebSocket connection
   const closeWebSocket = () => {
     if (ws.value) {
       ws.value.close();
       ws.value = null;
+      isWsConnected.value = false;
     }
   };
+
+  // 組件卸載時自動關閉連接 Automatically close connection when component unmounts
+  onUnmounted(() => {
+    closeWebSocket();
+  });
 
   return {
     ws,
