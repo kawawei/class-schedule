@@ -289,8 +289,30 @@ export default {
     // 編輯 QR Code Edit QR Code
     const editQRCode = async (row) => {
       try {
+        // 記錄編輯操作的詳細信息 Log edit operation details
+        console.log('開始編輯 QR Code Start editing QR Code:', {
+          id: row.id,
+          name: row.name,
+          actual_url: row.actual_url,
+          redirect_url: row.redirect_url,
+          random_string: row.random_string,
+          custom_style: row.custom_style,
+          scan_count: row.scan_count,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        });
+
         setEditMode(row);
         qrcodeDialogVisible.value = true;
+
+        // 記錄設置編輯模式後的表單狀態 Log form state after setting edit mode
+        console.log('QR Code 編輯模式已設置 QR Code edit mode set:', {
+          form_id: qrcodeForm.value.id,
+          form_name: qrcodeForm.value.name,
+          form_target_url: qrcodeForm.value.target_url,
+          form_preview_id: qrcodeForm.value.preview_id,
+          form_custom_style: qrcodeForm.value.custom_style
+        });
       } catch (error) {
         console.error('編輯 QR Code 失敗 Failed to edit QR Code:', error);
         qrcodeForm.value.error = error.response?.data?.message || '編輯 QR Code 失敗 Failed to edit QR Code';

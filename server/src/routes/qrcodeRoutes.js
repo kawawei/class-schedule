@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const qrcodeController = require('../controllers/qrcodeController');
+const redirectController = require('../controllers/qrcode/redirectController');
+const statsController = require('../controllers/qrcode/statsController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // 處理 QR Code 重定向（公開路由）Handle QR Code redirect (public route)
-router.get('/redirect/:id', qrcodeController.handleRedirect);
+router.get('/redirect/:randomString([A-Za-z0-9]{8,12})', redirectController.handleRedirect);
 
 // 所有其他路由都需要認證 All other routes require authentication
 router.use(authMiddleware);
@@ -31,6 +33,6 @@ router.put('/:id', qrcodeController.updateQRCode);
 router.delete('/:id', qrcodeController.deleteQRCode);
 
 // 獲取掃描統計
-router.get('/:id/stats', qrcodeController.getQRCodeStats);
+router.get('/:id/stats', statsController.getQRCodeStats);
 
 module.exports = router; 

@@ -75,7 +75,7 @@
                 <!-- QRCode 圖片顯示 QRCode image display -->
                 <template #qrcode_url="{ row }">
                   <img
-                    :src="`${API_BASE_URL}${row.qrcode_url}?v=${row.id}-${row.updated_at}`"
+                    :src="`${API_BASE_URL}${row.qrcode_url}?t=${Date.now()}&style=${encodeURIComponent(JSON.stringify(row.custom_style))}`"
                     :alt="row.name"
                     style="width: 50px; height: 50px; object-fit: contain;"
                     @error="handleImageError"

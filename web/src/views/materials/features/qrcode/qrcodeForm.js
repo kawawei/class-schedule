@@ -43,8 +43,11 @@ export function useQRCodeForm() {
       target_url: row.actual_url,
       error: '',
       preview_url: row.redirect_url,
-      qrcode_preview: `${API_BASE_URL}${row.qrcode_url}`,
+      qrcode_preview: row.qrcode_url.startsWith('http') 
+        ? row.qrcode_url 
+        : `${API_BASE_URL}${row.qrcode_url}?t=${Date.now()}&style=${encodeURIComponent(JSON.stringify(row.custom_style || {}))}`,
       is_editing: true,
+      preview_id: row.random_string, // 保存現有的 random_string Save existing random_string
       custom_style: {
         foregroundColor: row.custom_style?.foregroundColor || '#000000',
         backgroundColor: row.custom_style?.backgroundColor || '#FFFFFF',
@@ -70,10 +73,10 @@ export function useQRCodeForm() {
             // If logo exists, ensure using H level error correction
             errorCorrectionLevel: form.value.custom_style.logoUrl ? 'H' : form.value.custom_style.errorCorrectionLevel
           },
-          preview_id: form.value.preview_id
+          preview_id: form.value.preview_id // 使用保存的 random_string Use saved random_string
         });
 
-        form.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}?t=${Date.now()}`;
+        form.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}?t=${Date.now()}&style=${encodeURIComponent(JSON.stringify(form.value.custom_style))}`;
         
         if (!form.value.is_editing) {
           form.value.preview_url = response.data.data.redirect_url;
@@ -145,7 +148,8 @@ export function useQRCodeForm() {
       const data = {
         name: form.value.name,
         target_url: form.value.target_url,
-        custom_style: form.value.custom_style
+        custom_style: form.value.custom_style,
+        qrcode_url: form.value.qrcode_preview?.replace(`${API_BASE_URL}`, '').split('?')[0] // 保存預覽圖片路徑 Save preview image path
       };
 
       if (form.value.is_editing) {

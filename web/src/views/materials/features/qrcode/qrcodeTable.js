@@ -73,7 +73,7 @@ export const qrcodeColumns = [
       // 使用完整的後端 URL Use complete backend URL
       const fullUrl = row.qrcode_url.startsWith('http') 
         ? row.qrcode_url 
-        : `${API_BASE_URL}${row.qrcode_url}`;
+        : `${API_BASE_URL}${row.qrcode_url}?t=${Date.now()}&style=${encodeURIComponent(JSON.stringify(row.custom_style || {}))}`;
       return h('img', {
         src: fullUrl,
         alt: row.name || 'QRCode',
