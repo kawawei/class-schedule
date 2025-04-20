@@ -259,9 +259,18 @@
 
         <!-- QR Code -->
         <div class="form-row qrcode-row">
-          <div class="qrcode-label">QR Code</div>
           <div class="qrcode-content">
-            <div v-if="form.qrcode" class="selected-qrcode">
+            <button v-if="!form.qrcode" class="select-qrcode-btn" @click="openQRCodeSelect">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <path d="M7 7h.01"></path>
+                <path d="M17 7h.01"></path>
+                <path d="M7 17h.01"></path>
+                <path d="M17 17h.01"></path>
+              </svg>
+              選擇 QR Code
+            </button>
+            <div v-else class="selected-qrcode">
               <img
                 :src="form.qrcode.url.startsWith('http') ? form.qrcode.url : `${API_BASE_URL}${form.qrcode.url}`"
                 :alt="form.qrcode.name"
@@ -278,22 +287,6 @@
                 </button>
               </div>
             </div>
-            <AppButton
-              v-else
-              type="primary"
-              @click="openQRCodeSelect"
-            >
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <path d="M7 7h.01"></path>
-                  <path d="M17 7h.01"></path>
-                  <path d="M7 17h.01"></path>
-                  <path d="M17 17h.01"></path>
-                </svg>
-              </template>
-              選擇 QR Code
-            </AppButton>
           </div>
         </div>
 
