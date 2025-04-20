@@ -57,10 +57,15 @@ CREATE TABLE IF NOT EXISTS qrcodes (
     actual_url TEXT NOT NULL, -- 實際目標 URL Actual Target URL
     scan_count INTEGER DEFAULT 0, -- 掃描次數 Scan Count
     tenant_id INTEGER NOT NULL, -- 租戶 ID Tenant ID
+    random_string VARCHAR(12) NOT NULL, -- 隨機字符串（8-12位）Random string (8-12 digits)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 創建時間 Created Time
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 更新時間 Updated Time
+    last_scan_at TIMESTAMP, -- 最後掃描時間 Last scan time
     FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
+
+-- 添加唯一索引，確保 random_string 不重複 Add unique index to ensure random_string is unique
+CREATE UNIQUE INDEX IF NOT EXISTS idx_qrcodes_random_string ON qrcodes(random_string);
 
 -- 創建 QR Code 掃描記錄表 Create QR Code scan records table
 CREATE TABLE IF NOT EXISTS qrcode_scans (
