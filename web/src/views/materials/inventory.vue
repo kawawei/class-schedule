@@ -25,7 +25,7 @@
           <AppSelect
             class="type-filter"
             v-model="selectedType"
-            :options="courseTypeOptionsRef"
+            :options="[{ label: '全部種類', value: '' }, ...courseTypeOptionsRef]"
             placeholder="全部種類"
           />
         </div>
@@ -111,11 +111,29 @@
           />
         </template>
         
+        <template #unitPrice="{ row }">
+          {{ getCurrencySymbol(row.unitPriceCurrency) }} {{ row.unitPrice }}
+        </template>
+        
+        <template #cost="{ row }">
+          {{ getCurrencySymbol(row.costCurrency) }} {{ row.cost }}
+        </template>
+        
+        <!-- 操作按鈕 Action buttons -->
         <template #actions="{ row }">
           <div class="action-buttons">
-            <AppButton
-              type="primary"
-              class="edit-btn"
+            <button
+              class="icon-button view-btn"
+              @click.stop="viewInventoryDetails(row)"
+              title="查看"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+            <button
+              class="icon-button edit-btn"
               @click.stop="editInventory(row)"
               title="編輯"
             >
@@ -123,10 +141,9 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
-            </AppButton>
-            <AppButton
-              type="danger"
-              class="delete-btn"
+            </button>
+            <button
+              class="icon-button delete-btn"
               @click.stop="deleteInventory(row)"
               title="刪除"
             >
@@ -135,28 +152,28 @@
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-            </AppButton>
+            </button>
           </div>
         </template>
         
-        <!-- QR Code列 QR Code column -->
+        <!-- QR Code 列 QR Code column -->
         <template #qrcode="{ row }">
           <div class="qrcode-cell">
-            <img
-              v-if="row.qrcode_url"
-              :src="row.qrcode_url"
-              :alt="row.name"
-              class="qrcode-preview"
-            />
-            <span v-if="row.qrcode_url" class="qrcode-name">{{ row.name }}</span>
-            <AppButton
+            <template v-if="row.qrcode_url">
+              <img
+                :src="row.qrcode_url.startsWith('http') ? row.qrcode_url : `${API_BASE_URL}${row.qrcode_url}`"
+                :alt="row.qrcode_name"
+                class="qrcode-preview"
+              />
+              <span class="qrcode-name">{{ row.qrcode_name }}</span>
+            </template>
+            <button
               v-else
-              type="primary"
-              size="sm"
-              @click.stop="generateQRCode(row)"
+              class="select-qrcode-btn"
+              @click.stop="openQRCodeSelect(row)"
             >
-              生成QR Code
-            </AppButton>
+              選擇 QR Code
+            </button>
           </div>
         </template>
         
@@ -232,7 +249,7 @@
           />
         </div>
 
-        <!-- 位置和價格信息 Location and Price Information -->
+        <!-- 倉庫位置 Warehouse Location -->
         <div class="form-row">
           <AppSelect
             v-model="form.location"
@@ -241,20 +258,40 @@
             placeholder="請選擇倉庫位置"
             required
           />
-          <AppInput
-            v-model="form.unitPrice"
-            label="單價"
-            type="number"
-            placeholder="請輸入單價"
-            required
-          />
-          <AppInput
-            v-model="form.cost"
-            label="成本"
-            type="number"
-            placeholder="請輸入成本"
-            required
-          />
+        </div>
+
+        <!-- 價格信息 Price Information -->
+        <div class="form-row">
+          <div class="price-input">
+            <AppInput
+              v-model="form.unitPrice"
+              label="單價"
+              type="number"
+              placeholder="請輸入單價"
+              required
+            />
+            <div class="currency-select">
+              <AppSelect
+                v-model="form.unitPriceCurrency"
+                :options="currencyOptions"
+              />
+            </div>
+          </div>
+          <div class="price-input">
+            <AppInput
+              v-model="form.cost"
+              label="成本"
+              type="number"
+              placeholder="請輸入成本"
+              required
+            />
+            <div class="currency-select">
+              <AppSelect
+                v-model="form.costCurrency"
+                :options="currencyOptions"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- QR Code -->

@@ -1,21 +1,39 @@
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Message from '@/utils/message';
-import { courseAPI } from '@/utils/api';
+import { courseAPI, scheduleAPI } from '@/utils/api';
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/api';
 
 // 課程種類選項 Course type options
-const courseTypeOptions = [
-  { value: '鋼琴', label: '鋼琴' },
-  { value: '小提琴', label: '小提琴' },
-  { value: '吉他', label: '吉他' },
-  { value: '長笛', label: '長笛' },
-  { value: '聲樂', label: '聲樂' },
-  { value: '繪畫', label: '繪畫' },
-  { value: '書法', label: '書法' },
-  { value: '舞蹈', label: '舞蹈' }
-];
+const courseTypeOptionsRef = ref([]);
+
+// 獲取課程種類 Get course types
+const fetchCourseTypes = async () => {
+  try {
+    // 調用課程API獲取課程列表 Call course API to get course list
+    const response = await courseAPI.getAllCourses();
+    
+    if (response.success) {
+      // 從課程列表中提取不重複的類別 Extract unique categories from course list
+      const categories = [...new Set(response.data.map(course => {
+        const courseData = course.dataValues || course;
+        return courseData.category;
+      }))];
+      
+      // 轉換為選項格式 Convert to options format
+      courseTypeOptionsRef.value = categories.map(category => ({
+        label: category,
+        value: category
+      }));
+    } else {
+      Message.error(response.message || '獲取課程種類失敗 Failed to get course types');
+    }
+  } catch (error) {
+    console.error('獲取課程種類失敗 Failed to get course types:', error);
+    Message.error('獲取課程種類失敗 Failed to get course types');
+  }
+};
 
 // 倉庫位置選項 Warehouse location options
 const locationOptions = [
@@ -24,6 +42,17 @@ const locationOptions = [
   { label: '倉庫B', value: 'B' },
   { label: '倉庫C', value: 'C' }
 ];
+
+// 貨幣選項 Currency options
+const currencyOptions = [
+  { label: 'NT$ 新台幣', value: 'NT$' },
+  { label: '¥ 人民幣', value: '¥' }
+];
+
+// 獲取貨幣符號 Get currency symbol
+const getCurrencySymbol = (currency) => {
+  return currency || 'NT$';
+};
 
 // 表格列定義 Table column definitions
 const inventoryColumns = [
@@ -64,34 +93,23 @@ const inventoryColumns = [
     align: 'center'
   },
   {
-    key: 'location',
-    title: '倉庫位置',
-    width: 120,
-    align: 'center'
-  },
-  {
     key: 'unitPrice',
     title: '單價',
     width: 120,
-    align: 'right'
+    align: 'right',
+    render: (row) => `${row.unitPriceCurrency} ${row.unitPrice}`
   },
   {
     key: 'cost',
     title: '成本',
     width: 120,
-    align: 'right'
+    align: 'right',
+    render: (row) => `${row.costCurrency} ${row.cost}`
   },
   {
     key: 'qrcode',
     title: 'QR Code',
     width: 250,
-    slot: true
-  },
-  {
-    key: 'status',
-    title: '狀態',
-    width: 120,
-    align: 'center',
     slot: true
   },
   {
@@ -131,6 +149,43 @@ const qrcodeColumns = [
   }
 ];
 
+// 獲取貨幣顯示文本（下拉選單用）Get currency display text (for dropdown)
+const getCurrencyLabel = (option) => {
+  return option.label;
+};
+
+// 獲取貨幣顯示文本（選中狀態用）Get currency display text (for selected state)
+const getCurrencyDisplayText = (option) => {
+  if (!option) return 'NT$';
+  return option.symbol;
+};
+
+// 貨幣選擇器配置 Currency selector configuration
+const currencySelectProps = {
+  valueKey: 'value',
+  labelKey: 'label',
+  selectedLabelKey: 'symbol'
+};
+
+// 重置表單 Reset form
+const resetForm = () => {
+  return {
+    id: null,
+    name: '',
+    courseType: '',
+    quantity: '',
+    minQuantity: '',
+    defectiveQuantity: '',
+    location: '',
+    unitPrice: '',
+    unitPriceCurrency: 'NT$', // 預設新台幣
+    cost: '',
+    costCurrency: 'NT$', // 預設新台幣
+    notes: '',
+    qrcode: null
+  };
+};
+
 export default {
   name: 'InventoryLogic',
   setup() {
@@ -160,9 +215,6 @@ export default {
     const minQuantity = ref(''); // 最小數量
     const maxQuantity = ref(''); // 最大數量
     
-    // 課程類型選項 Course type options
-    const courseTypeOptionsRef = ref([]);
-    
     // 貨物列表數據 Inventory list data
     const inventoryData = ref([]);
     
@@ -173,19 +225,7 @@ export default {
     const itemToDelete = ref(null);
     
     // 表單數據 Form data
-    const form = ref({
-      id: null,
-      name: '',
-      courseType: '',
-      quantity: '',
-      minQuantity: '',
-      defectiveQuantity: '',
-      location: '',
-      unitPrice: '',
-      cost: '',
-      notes: '',
-      qrcode: null
-    });
+    const form = ref(resetForm());
 
     // QR Code 選擇相關的狀態 QR Code selection related states
     const qrcodeSelectVisible = ref(false);
@@ -229,9 +269,9 @@ export default {
     
     // 獲取庫存狀態 Get stock status
     const getStockStatus = (item) => {
-      if (item.quantity <= 0) return 'danger';
+      if (item.quantity <= 0) return 'error';
       if (item.quantity <= item.minQuantity) return 'warning';
-      return 'success';
+      return 'primary';
     };
     
     // 獲取庫存狀態文字 Get stock status text
@@ -273,38 +313,47 @@ export default {
     // 關閉對話框 Close dialog
     const closeDialog = () => {
       dialogVisible.value = false;
-      resetForm();
-    };
-    
-    // 重置表單 Reset form
-    const resetForm = () => {
-      form.value = {
-        id: null,
-        name: '',
-        courseType: '',
-        quantity: '',
-        minQuantity: '',
-        defectiveQuantity: '',
-        location: '',
-        unitPrice: '',
-        cost: '',
-        notes: '',
-        qrcode: null
-      };
+      form.value = resetForm();
     };
     
     // 提交表單 Submit form
     const submitForm = async () => {
       try {
         loading.value = true;
-        // TODO: 實現與後端的交互 Implement backend interaction
-        const result = isEditing.value
-          ? await updateInventory(form.value)
-          : await createInventory(form.value);
         
-        Message.success(isEditing.value ? '更新成功' : '創建成功');
+        // 模擬創建/更新貨物 Simulate creating/updating inventory
+        const newItem = {
+          id: isEditing.value ? form.value.id : Date.now(), // 使用時間戳作為臨時ID
+          name: form.value.name,
+          courseType: form.value.courseType,
+          quantity: Number(form.value.quantity),
+          minQuantity: Number(form.value.minQuantity),
+          defectiveQuantity: Number(form.value.defectiveQuantity),
+          location: form.value.location,
+          unitPrice: Number(form.value.unitPrice),
+          unitPriceCurrency: form.value.unitPriceCurrency,
+          cost: Number(form.value.cost),
+          costCurrency: form.value.costCurrency,
+          notes: form.value.notes,
+          qrcode_url: form.value.qrcode?.url, // 修正 QR Code URL 的保存
+          qrcode_name: form.value.qrcode?.name // 修正 QR Code 名稱的保存
+        };
+
+        if (isEditing.value) {
+          // 更新現有項目 Update existing item
+          const index = inventoryData.value.findIndex(item => item.id === form.value.id);
+          if (index !== -1) {
+            inventoryData.value[index] = { ...inventoryData.value[index], ...newItem };
+          }
+          Message.success('更新成功 / Update successful');
+        } else {
+          // 添加新項目 Add new item
+          inventoryData.value.push(newItem);
+          Message.success('創建成功 / Creation successful');
+        }
+
         dialogVisible.value = false;
-        await fetchInventoryList();
+        form.value = resetForm();
       } catch (error) {
         console.error('提交表單失敗:', error);
         Message.error(error.message || '操作失敗');
@@ -363,28 +412,6 @@ export default {
         Message.error(error.message || '獲取貨物列表失敗');
       } finally {
         loading.value = false;
-      }
-    };
-
-    // 獲取課程類型 Get course types
-    const fetchCourseTypes = async () => {
-      try {
-        const response = await courseAPI.getAllCourses();
-        if (response.data) {
-          const categories = [...new Set(response.data.map(courseData => {
-            return courseData.category;
-          }))];
-          
-          courseTypeOptionsRef.value = [
-            { label: '全部種類', value: '' },
-            ...categories.map(category => ({
-              label: category,
-              value: category
-            }))
-          ];
-        }
-      } catch (error) {
-        console.error('獲取課程種類失敗:', error);
       }
     };
 
@@ -447,6 +474,17 @@ export default {
       }
     };
     
+    // 初始化空的庫存列表 Initialize empty inventory list
+    const initInventoryList = () => {
+      inventoryData.value = [];
+    };
+    
+    // 組件掛載時初始化列表 Initialize list when component is mounted
+    onMounted(async () => {
+      await fetchCourseTypes();
+      initInventoryList(); // 初始化列表
+    });
+
     return {
       // 狀態 State
       userName,
@@ -472,11 +510,16 @@ export default {
       selectedQRCode,
       
       // 選項 Options
-      courseTypeOptions,
+      courseTypeOptionsRef,
       locationOptions,
       inventoryColumns,
       qrcodeColumns,
       API_BASE_URL,
+      currencyOptions,
+      getCurrencySymbol,
+      getCurrencyLabel,
+      getCurrencyDisplayText,
+      currencySelectProps,
       
       // 方法 Methods
       handleSearch,
@@ -493,7 +536,7 @@ export default {
       handleLogout,
       getStockStatus,
       getStockStatusText,
-      fetchCourseTypes,
+      fetchInventoryList,
       openQRCodeSelect,
       selectQRCode,
       confirmQRCodeSelect,

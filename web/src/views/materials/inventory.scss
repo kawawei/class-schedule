@@ -300,6 +300,38 @@
         }
       }
     }
+
+    .price-input {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 85px;
+      gap: var(--spacing-xs);
+      align-items: flex-end;
+
+      .app-input {
+        width: 100%;
+      }
+
+      .currency-select {
+        width: 85px;
+        
+        :deep(.app-select) {
+          .select-trigger {
+            height: 36px;
+          }
+        }
+      }
+    }
+
+    // 價格行的特殊樣式
+    &:has(.price-input) {
+      gap: var(--spacing-lg); // 增加價格輸入框之間的間距
+      
+      .price-input {
+        flex: 1;
+        min-width: 0; // 防止溢出
+      }
+    }
   }
 }
 
@@ -344,7 +376,8 @@
 
 :deep(.app-dialog) {
   .dialog-content {
-    min-width: 800px;
+    min-width: 1200px;
+    max-width: 90vw;
   }
 }
 
@@ -566,6 +599,96 @@
       svg {
         margin-right: var(--spacing-sm);
       }
+    }
+  }
+}
+
+// Action buttons styles - 操作按鈕樣式
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+
+  .icon-button {
+    padding: 4px 8px;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+    min-width: unset !important;
+    height: unset !important;
+    opacity: 1 !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--color-primary);
+      background: var(--bg-hover) !important;
+    }
+
+    &.view-btn {
+      color: var(--color-info);
+      
+      &:hover {
+        color: var(--color-info-dark);
+      }
+    }
+
+    &.edit-btn {
+      color: var(--color-primary);
+      
+      &:hover {
+        color: var(--color-primary-dark);
+      }
+    }
+
+    &.delete-btn {
+      color: var(--color-danger);
+      
+      &:hover {
+        color: var(--color-danger-dark);
+      }
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// QR Code cell styles - QR Code 單元格樣式
+.qrcode-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .qrcode-preview {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
+  .qrcode-name {
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .select-qrcode-btn {
+    padding: 4px 12px;
+    font-size: var(--font-size-sm);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: var(--color-primary-dark);
     }
   }
 } 
