@@ -12,6 +12,7 @@ const teacherRoutes = require('./routes/teacherRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const teacherReportRoutes = require('./routes/teacherReportRoutes');
 const qrcodeRoutes = require('./routes/qrcodeRoutes');
+const inventoryRoutes = require('./routes/inventory');
 const { initializeWebSocket } = require('./controllers/notificationController');
 const ApiError = require('./utils/apiError');
 
@@ -51,6 +52,7 @@ app.use('/api/teachers', teacherRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/teacher-reports', teacherReportRoutes);
 app.use('/api/qrcode', qrcodeRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // 配置靜態文件服務 Configure static file service
 app.use('/api', express.static(path.join(__dirname, '../public')));
