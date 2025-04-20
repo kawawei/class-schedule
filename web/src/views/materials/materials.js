@@ -296,11 +296,14 @@ export default {
       preview_id: null, // 保存預覽 ID Save preview ID
       is_editing: false, // 標記為編輯模式 Mark as edit mode
       custom_style: { // 自定義樣式設置 Custom style settings
-        foregroundColor: '#000000', // 前景色 Foreground color (改用駝峰命名)
-        backgroundColor: '#FFFFFF', // 背景色 Background color (改用駝峰命名)
+        foregroundColor: '#000000', // 前景色 Foreground color
+        backgroundColor: '#FFFFFF', // 背景色 Background color
         margin: 4, // 邊距 Margin
         width: 200, // 寬度 Width
-        errorCorrectionLevel: 'M' // 容錯級別 Error correction level (改用駝峰命名)
+        errorCorrectionLevel: 'M', // 容錯級別 Error correction level
+        logoUrl: '', // Logo 圖片 URL Logo image URL
+        logoSize: 15, // Logo 大小（佔 QR Code 的百分比）Logo size (percentage of QR Code)
+        logoData: null // Logo 圖片的 base64 數據 Logo image base64 data
       }
     });
     
@@ -310,14 +313,17 @@ export default {
         if (qrcodeForm.value.target_url) {
           const response = await axios.post('/qrcode/preview', {
             target_url: qrcodeForm.value.target_url,
-            custom_style: qrcodeForm.value.custom_style,
-            preview_id: qrcodeForm.value.preview_id  // 如果有預覽 ID，則使用它 Use preview_id if available
+            custom_style: {
+              ...qrcodeForm.value.custom_style,
+              // 如果有 Logo，確保使用 H 級別的容錯率
+              // If logo exists, ensure using H level error correction
+              errorCorrectionLevel: qrcodeForm.value.custom_style.logoUrl ? 'H' : qrcodeForm.value.custom_style.errorCorrectionLevel
+            },
+            preview_id: qrcodeForm.value.preview_id
           });
 
-          // 更新 QR Code 預覽圖片 Update QR Code preview image
           qrcodeForm.value.qrcode_preview = `${API_BASE_URL}${response.data.data.qrcode_url}?t=${Date.now()}`;
           
-          // 只在非編輯模式下更新系統跳轉連結 Only update redirect URL in non-edit mode
           if (!qrcodeForm.value.is_editing) {
             qrcodeForm.value.preview_url = response.data.data.redirect_url;
             qrcodeForm.value.preview_id = response.data.data.id;
@@ -372,7 +378,10 @@ export default {
           backgroundColor: '#FFFFFF',
           margin: 4,
           width: 200,
-          errorCorrectionLevel: 'M'
+          errorCorrectionLevel: 'M',
+          logoUrl: '',
+          logoSize: 15,
+          logoData: null
         }
       };
     };
@@ -393,7 +402,10 @@ export default {
           backgroundColor: '#FFFFFF',
           margin: 4,
           width: 200,
-          errorCorrectionLevel: 'M'
+          errorCorrectionLevel: 'M',
+          logoUrl: '',
+          logoSize: 15,
+          logoData: null
         }
       };
     };
@@ -450,7 +462,10 @@ export default {
             width: row.custom_style?.width || 200,
             // 保持原有的容錯率，不允許修改
             // Keep original error correction level, not modifiable
-            errorCorrectionLevel: row.custom_style?.errorCorrectionLevel || 'M'
+            errorCorrectionLevel: row.custom_style?.errorCorrectionLevel || 'M',
+            logoUrl: row.custom_style?.logoUrl || '',
+            logoSize: row.custom_style?.logoSize || 15,
+            logoData: row.custom_style?.logoData || null
           }
         };
         qrcodeDialogVisible.value = true;
@@ -720,6 +735,91 @@ export default {
       }
     };
 
+    // 觸發 Logo 上傳 Trigger logo upload
+    const triggerLogoUpload = () => {
+      const logoInput = document.querySelector('.logo-input');
+      if (logoInput) {
+        logoInput.click();
+      }
+    };
+
+    // 處理 Logo 上傳 Handle logo upload
+    const handleLogoUpload = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 驗證文件類型 Validate file type
+      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+        qrcodeForm.value.error = '請上傳 JPG、PNG 或 GIF 格式的圖片 Please upload JPG, PNG or GIF image';
+        return;
+      }
+
+      // 驗證文件大小（最大 2MB）Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        qrcodeForm.value.error = '圖片大小不能超過 2MB Image size cannot exceed 2MB';
+        return;
+      }
+
+      try {
+        // 讀取文件為 base64 Read file as base64
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          // 創建圖片對象以獲取尺寸 Create image object to get dimensions
+          const img = new Image();
+          img.onload = async () => {
+            // 驗證圖片尺寸（最小 32x32，最大 2048x2048）
+            // Validate image dimensions (min 32x32, max 2048x2048)
+            if (img.width < 32 || img.height < 32) {
+              qrcodeForm.value.error = '圖片尺寸太小，最小需要 32x32 像素 Image is too small, minimum size is 32x32 pixels';
+              return;
+            }
+            if (img.width > 2048 || img.height > 2048) {
+              qrcodeForm.value.error = '圖片尺寸太大，最大允許 2048x2048 像素 Image is too large, maximum size is 2048x2048 pixels';
+              return;
+            }
+
+            // 更新 Logo 相關設置 Update logo related settings
+            qrcodeForm.value.custom_style.logoUrl = e.target.result;
+            qrcodeForm.value.custom_style.logoData = e.target.result.split(',')[1];
+            qrcodeForm.value.custom_style.logoSize = 15; // 預設大小 15% Default size 15%
+
+            // 如果容錯率低於 H，自動提升到 H
+            // If error correction level is lower than H, automatically increase to H
+            if (qrcodeForm.value.custom_style.errorCorrectionLevel !== 'H') {
+              qrcodeForm.value.custom_style.errorCorrectionLevel = 'H';
+            }
+
+            // 清除錯誤信息 Clear error message
+            qrcodeForm.value.error = '';
+
+            // 更新預覽 Update preview
+            await updatePreview();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('處理 Logo 上傳失敗 Failed to process logo upload:', error);
+        qrcodeForm.value.error = '處理 Logo 上傳失敗 Failed to process logo upload';
+      }
+    };
+
+    // 移除 Logo Remove logo
+    const removeLogo = async () => {
+      qrcodeForm.value.custom_style.logoUrl = '';
+      qrcodeForm.value.custom_style.logoData = null;
+      qrcodeForm.value.custom_style.logoSize = 15;
+      await updatePreview();
+    };
+
+    // 更新 Logo 大小 Update logo size
+    const updateLogoSize = async () => {
+      const size = qrcodeForm.value.custom_style.logoSize;
+      if (size < 5) qrcodeForm.value.custom_style.logoSize = 5;
+      if (size > 30) qrcodeForm.value.custom_style.logoSize = 30;
+      await updatePreview();
+    };
+
     return {
       userName,
       isLoggingOut,
@@ -752,6 +852,10 @@ export default {
       closeDownloadDialog,
       downloadQRCode,
       isWsConnected, // 可選：如果需要在 UI 中顯示連接狀態 Optional: if need to show connection status in UI
+      triggerLogoUpload,
+      handleLogoUpload,
+      removeLogo,
+      updateLogoSize,
     };
   }
 }; 

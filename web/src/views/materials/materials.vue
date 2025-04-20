@@ -191,18 +191,83 @@
                 <input type="number" v-model="qrcodeForm.custom_style.width" min="100" max="1000" />
               </div>
               <!-- 容錯率設置 Error Correction Level -->
-              <div class="form-item">
+              <div class="form-item error-correction-level">
                 <label>容錯率 Error Correction Level</label>
-                <select 
-                  v-model="qrcodeForm.custom_style.errorCorrectionLevel"
-                  :disabled="qrcodeForm.is_editing"
-                  :title="qrcodeForm.is_editing ? '編輯模式下不能修改容錯率 Cannot modify error correction level in edit mode' : ''"
-                >
-                  <option value="L">L - 低 (7%)</option>
-                  <option value="M">M - 中 (15%)</option>
-                  <option value="Q">Q - 較高 (25%)</option>
-                  <option value="H">H - 高 (30%)</option>
-                </select>
+                <div class="error-correction-options">
+                  <label 
+                    v-for="level in ['L', 'M', 'Q', 'H']" 
+                    :key="level"
+                    class="error-correction-option"
+                    :class="{ 
+                      active: qrcodeForm.custom_style.errorCorrectionLevel === level,
+                      disabled: qrcodeForm.is_editing || (qrcodeForm.custom_style.logoUrl && level !== 'H')
+                    }"
+                    @click="!qrcodeForm.is_editing && !(qrcodeForm.custom_style.logoUrl && level !== 'H') && (qrcodeForm.custom_style.errorCorrectionLevel = level)"
+                  >
+                    <input
+                      type="radio"
+                      :value="level"
+                      v-model="qrcodeForm.custom_style.errorCorrectionLevel"
+                      :disabled="qrcodeForm.is_editing || (qrcodeForm.custom_style.logoUrl && level !== 'H')"
+                    />
+                    <span class="level-label">{{ level }}</span>
+                    <span class="level-description">
+                      {{ 
+                        level === 'L' ? '低 (7%)' :
+                        level === 'M' ? '中 (15%)' :
+                        level === 'Q' ? '較高 (25%)' :
+                        '高 (30%)'
+                      }}
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <!-- Logo 設置 Logo Settings -->
+              <div class="style-item logo-settings">
+                <label>Logo 圖片 Logo Image</label>
+                <div class="logo-upload">
+                  <input
+                    type="file"
+                    ref="logoInput"
+                    @change="handleLogoUpload"
+                    accept="image/png,image/jpeg,image/gif"
+                    class="logo-input"
+                  />
+                  <div class="logo-preview" v-if="qrcodeForm.custom_style.logoUrl">
+                    <img :src="qrcodeForm.custom_style.logoUrl" alt="Logo Preview" />
+                    <button class="remove-logo" @click.prevent="removeLogo">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <button v-else class="upload-btn" @click.prevent="triggerLogoUpload">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    上傳 Logo Upload Logo
+                  </button>
+                </div>
+                <!-- Logo 大小設置 Logo Size Settings -->
+                <div class="logo-size-settings" v-if="qrcodeForm.custom_style.logoUrl">
+                  <label>Logo 大小 Logo Size: {{ qrcodeForm.custom_style.logoSize }}%</label>
+                  <input 
+                    type="range" 
+                    v-model.number="qrcodeForm.custom_style.logoSize" 
+                    min="5" 
+                    max="30"
+                    step="1"
+                    @input="updateLogoSize"
+                    class="logo-size-slider"
+                  />
+                  <div class="size-hint">
+                    <span>5%</span>
+                    <span>30%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -311,245 +376,4 @@ export default {
 
 <style lang="scss" scoped>
 @import './materials.scss';
-
-.qrcode-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  max-width: 500px;
-  margin: 0 auto;
-
-  .form-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    label {
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-  }
-
-  .style-settings {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-gray-200);
-
-    .style-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-
-      label {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-      }
-
-      input[type="color"] {
-        width: 100%;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--color-gray-200);
-        border-radius: var(--radius-md);
-        cursor: pointer;
-      }
-
-      input[type="number"] {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid var(--color-gray-200);
-        border-radius: var(--radius-md);
-        font-size: 0.9rem;
-      }
-
-      select {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid var(--color-gray-200);
-        border-radius: var(--radius-md);
-        font-size: 0.9rem;
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
-      }
-    }
-  }
-}
-
-.qrcode-preview {
-  margin-top: 1rem;
-  padding: 1.5rem;
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-gray-200);
-
-  .preview-title {
-    margin: 0 0 1.5rem;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    font-weight: 500;
-    text-align: center;
-  }
-
-  .preview-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-
-    .preview-info {
-      width: 100%;
-
-      .info-item {
-        .preview-label {
-          font-weight: 500;
-          color: var(--text-secondary);
-          margin: 0 0 0.5rem;
-          text-align: center;
-        }
-
-        .preview-url-container {
-          background-color: var(--bg-primary);
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-gray-200);
-          padding: 0.75rem;
-
-          .preview-url {
-            margin: 0;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: var(--text-primary);
-            text-align: center;
-          }
-        }
-      }
-    }
-
-    .preview-qrcode {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-      background-color: white;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--color-gray-200);
-
-      .preview-image {
-        width: 200px;
-        height: 200px;
-        object-fit: contain;
-      }
-    }
-  }
-}
-
-.error-message {
-  color: var(--color-danger);
-  text-align: center;
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-  background-color: var(--color-danger-light);
-}
-
-.delete-confirm-content {
-  padding: 2rem;
-  text-align: center;
-  
-  p {
-    margin: 0.5rem 0;
-    line-height: 1.5;
-    
-    &:first-child {
-      font-weight: 500;
-    }
-  }
-}
-
-img {
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-sm);
-  background-color: white;
-  padding: 2px;
-  
-  &[src="/images/qrcode-placeholder.png"] {
-    opacity: 0.5;
-  }
-}
-
-.download-dialog-content {
-  padding: 20px;
-}
-
-.format-selection {
-  margin-bottom: 20px;
-}
-
-.format-selection label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
-
-.format-selection select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.preview {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.preview img {
-  max-width: 200px;
-  max-height: 200px;
-  object-fit: contain;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-
-  :deep(button) {
-    padding: 4px 8px;
-    background: transparent !important;
-    border: none !important;
-    color: var(--text-primary);
-    transition: color 0.3s ease;
-    min-width: unset !important;
-    height: unset !important;
-    opacity: 1 !important;
-
-    &:hover {
-      color: var(--color-primary);
-      background: var(--bg-hover) !important;
-    }
-
-    &.delete-btn:hover {
-      color: var(--color-danger);
-    }
-
-    &.download-btn {
-      color: var(--color-info);
-      
-      &:hover {
-        color: var(--color-info-dark);
-      }
-    }
-
-    svg {
-      display: block;
-    }
-  }
-}
 </style> 
