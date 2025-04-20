@@ -32,44 +32,28 @@
         @dragover.prevent
         @drop="handleDrop"
       >
-        <!-- 每小時格子 Hourly cells -->
-        <div 
-          v-for="hour in hours" 
-          :key="hour" 
-          class="hour-cell"
-          @click="handleCellClick(hour)"
-          @dragover.prevent
-          @drop="handleHourDrop($event, hour)"
-        >
-          <!-- 半小時分隔線 Half-hour divider -->
-          <div class="half-hour-divider"></div>
-        </div>
-        
         <!-- 課程事件 Course events -->
-        <div 
-          v-for="(event, eventIndex) in dayEvents" 
-          :key="`event-${eventIndex}`" 
-          class="event-container"
-          :style="getEventStyle(event)"
-        >
-          <ScheduleBlock
-            :key="`${event.id}-${currentDate.getTime()}`"
-            :start-time="event.startTime"
-            :end-time="event.endTime"
-            :course-type="event.courseType"
-            :school-name="event.schoolName"
-            :teacher-name="event.teacherName"
-            :assistant-name="event.assistantName"
-            :position="event.position"
-            :course-id="event.id"
-            :uuid="event.uuid"
-            :date="event.date"
-            :title="event.title"
-            :location="event.location"
+        <div class="events-scroll-container">
+          <div 
+            v-for="event in dayEvents" 
+            :key="event.id"
+            class="event-container"
+            :class="{ 'has-teacher': event.teacherName && event.teacherName !== '待訂' }"
+            :style="getEventStyle(event)"
             @click="handleEventClick(event)"
-            @dragstart="handleDragStart"
+            draggable="true"
+            @dragstart="handleDragStart($event, event)"
             @dragend="handleDragEnd"
-          />
+          >
+            <div class="event-content">
+              <span class="time">{{ formatTime(event.startTime) }}-{{ formatTime(event.endTime) }}</span>
+              <span class="area" v-if="event.district">{{ truncateText(event.district, 2) }}</span>
+              <span class="school">{{ truncateText(event.schoolName, 3) }}</span>
+              <span class="teacher" :class="{ 'pending': !event.teacherName || event.teacherName === '待訂' }">
+                {{ event.courseType }}&nbsp;&nbsp;&nbsp;&nbsp;{{ !event.teacherName || event.teacherName === '待訂' ? '待訂' : event.teacherName }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -164,6 +148,22 @@ export default defineComponent({
       }));
     });
     
+    // 將事件按時間分組 Group events by time
+    const groupedEvents = computed(() => {
+      const groups = {};
+      dayEvents.value.forEach(event => {
+        if (!groups[event.startTime]) {
+          groups[event.startTime] = {
+            startTime: event.startTime,
+            endTime: event.endTime,
+            events: []
+          };
+        }
+        groups[event.startTime].events.push(event);
+      });
+      return Object.values(groups);
+    });
+    
     // 當前時間線樣式 Current time line style
     const currentTimeLineStyle = computed(() => {
       const now = new Date();
@@ -190,32 +190,34 @@ export default defineComponent({
       const [startHour, startMinute] = event.startTime.split(':').map(Number);
       const [endHour, endMinute] = event.endTime.split(':').map(Number);
       
-      // 計算事件開始時間的位置 Calculate position of event start time
-      const startTime = startHour + startMinute / 60;
-      const endTime = endHour + endMinute / 60;
+      // 計算開始和結束時間的位置（考慮偏移量）Calculate start and end time positions with offset
+      const hourHeight = 60; // 每小時的高度（像素）Height per hour (pixels)
+      const topOffset = startHour * hourHeight + (startMinute / 60) * hourHeight;
+      const duration = (endHour - startHour) * hourHeight + ((endMinute - startMinute) / 60) * hourHeight;
       
-      // 計算事件持續時間 Calculate event duration
-      const duration = endTime - startTime;
+      // 獲取同一時間段的事件數量和當前事件的索引
+      // Get the number of events in the same time slot and current event index
+      const overlappingEvents = dayEvents.value.filter(e => {
+        const [eStartHour, eStartMinute] = e.startTime.split(':').map(Number);
+        const [eEndHour, eEndMinute] = e.endTime.split(':').map(Number);
+        const eventStart = eStartHour + eStartMinute / 60;
+        const eventEnd = eEndHour + eEndMinute / 60;
+        const thisStart = startHour + startMinute / 60;
+        const thisEnd = endHour + endMinute / 60;
+        
+        return (eventStart < thisEnd && eventEnd > thisStart);
+      });
       
-      // 計算從頂部的偏移量 Calculate offset from top
-      const hourHeight = 60; // 每小時的高度（像素） Height per hour (pixels)
-      const headerHeight = 64; // 頭部高度 Header height
-      const gridPaddingTop = 24; // 網格頂部內邊距 Grid top padding
-      const firstHourOffset = -12; // 第一個小時的偏移量 First hour offset
-      
-      // 計算精確的頂部位置 Calculate precise top position
-      const top = (startTime * hourHeight) + firstHourOffset;
-      
-      // 計算精確的高度 Calculate precise height
-      const height = Math.max(duration * hourHeight, 30); // 最小高度30px Minimum height 30px
+      const eventIndex = overlappingEvents.findIndex(e => e.id === event.id);
+      const totalEvents = Math.min(overlappingEvents.length, 8); // 最多顯示8個 Maximum 8 events
       
       return {
-        top: `${top}px`,
-        height: `${height}px`,
-        left: 'var(--spacing-xs)',
-        right: 'var(--spacing-xs)',
+        top: `${topOffset}px`,
+        height: `${duration}px`,
+        width: `calc((100% - ${(totalEvents - 1) * 8}px) / ${totalEvents})`,
+        left: `${eventIndex * (100 / totalEvents)}%`,
         position: 'absolute',
-        zIndex: 2
+        zIndex: 1
       };
     };
     
@@ -233,11 +235,13 @@ export default defineComponent({
     };
     
     // 處理拖曳開始 Handle drag start
-    const handleDragStart = (event) => {
-      dragState.value.isDragging = true;
-      dragState.value.sourceBlock = event;
-      dragState.value.sourceDate = props.currentDate;
-      emit('dragstart', event);
+    const handleDragStart = (event, courseData) => {
+      event.dataTransfer.setData('text/plain', JSON.stringify({
+        courseId: courseData.id,
+        uuid: courseData.uuid,
+        date: courseData.date
+      }));
+      emit('dragstart', courseData);
     };
     
     // 處理拖曳結束 Handle drag end
@@ -297,6 +301,18 @@ export default defineComponent({
       }
     };
     
+    // 添加格式化和截斷文字的函數
+    const formatTime = (time) => {
+      if (!time) return '';
+      const [hours, minutes] = time.split(':').map(Number);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
+    const truncateText = (text, length) => {
+      if (!text) return '';
+      return text.slice(0, length);
+    };
+    
     // 組件掛載時啟動時間線更新 Start time line update when component is mounted
     onMounted(() => {
       timeUpdateInterval.value = setInterval(() => {
@@ -318,6 +334,7 @@ export default defineComponent({
       dayNumber,
       isCurrentDay,
       dayEvents,
+      groupedEvents,
       currentTimeLineStyle,
       formatHour,
       getEventStyle,
@@ -326,7 +343,9 @@ export default defineComponent({
       handleDragStart,
       handleDragEnd,
       handleDrop,
-      handleHourDrop
+      handleHourDrop,
+      formatTime,
+      truncateText
     };
   }
 });
@@ -484,53 +503,70 @@ export default defineComponent({
         }
       }
       
-      .event-container {
+      .events-scroll-container {
         position: absolute;
-        left: var(--spacing-xs);
-        right: var(--spacing-xs);
-        background-color: rgba(0, 113, 227, 0.1);
-        border-left: 3px solid var(--color-primary);
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-xs);
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        z-index: 1;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        pointer-events: none;
         
-        &:hover {
-          background-color: rgba(0, 113, 227, 0.15);
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-sm);
-        }
-
-        :deep(.schedule-block) {
-          height: 100%;
-          background: none;
-          border: none;
-          box-shadow: none;
-          padding: 0;
+        .event-container {
+          pointer-events: auto;
+          position: absolute;
+          background-color: white;
+          border: 1px solid var(--color-gray-200);
+          border-left: 3px solid #9e9e9e;
+          border-radius: var(--radius-sm);
+          padding: var(--spacing-xs);
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.2s ease;
           
-          .schedule-content {
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+            background-color: #f5f5f5;
+            z-index: 2;
+          }
+          
+          &.has-teacher {
+            background-color: white;
+            border-left: 3px solid #5fd3bc;
+            
+            &:hover {
+              background-color: #f5f5f5;
+            }
+          }
+
+          .event-content {
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            
-            .schedule-title {
-              font-weight: var(--font-weight-medium);
-              font-size: var(--font-size-sm);
-              margin-bottom: var(--spacing-xs);
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            
-            .schedule-time, .schedule-location {
+            gap: var(--spacing-xs);
+            color: var(--text-primary);
+
+            .time {
               font-size: var(--font-size-xs);
               color: var(--text-secondary);
+            }
+
+            .area,
+            .school {
+              font-size: var(--font-size-xs);
+              color: var(--text-secondary);
+            }
+
+            .teacher {
+              font-weight: var(--font-weight-medium);
+              font-size: var(--font-size-sm);
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
+
+              &.pending {
+                color: var(--text-secondary);
+              }
             }
           }
         }
