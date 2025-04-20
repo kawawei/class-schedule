@@ -173,6 +173,134 @@
           font-size: var(--font-size-md);
         }
       }
+
+      .inventory-thumbnail {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        padding: 2px;
+        background-color: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+
+        &:hover {
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          border-color: var(--color-primary);
+        }
+      }
+
+      .no-image {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        border: 1px dashed var(--border-color);
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        margin: 0 auto;
+      }
+    }
+  }
+
+  .image-upload-container {
+    width: 100%;
+    margin-bottom: var(--spacing-md);
+
+    .image-preview {
+      width: 100%;
+      min-height: 200px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+
+      .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: var(--bg-secondary);
+      }
+
+      .image-actions {
+        position: absolute;
+        top: var(--spacing-sm);
+        right: var(--spacing-sm);
+        display: flex;
+        gap: var(--spacing-xs);
+
+        .remove-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--spacing-xs);
+          padding: var(--spacing-xs) var(--spacing-sm);
+          background-color: var(--bg-primary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-sm);
+          color: var(--color-danger);
+          font-size: var(--font-size-sm);
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: var(--color-danger);
+            border-color: var(--color-danger);
+            color: white;
+          }
+
+          svg {
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+
+    .image-upload-placeholder {
+      width: 100%;
+      min-height: 200px;
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--color-primary);
+        background-color: var(--color-primary-light);
+
+        svg {
+          color: var(--color-primary);
+        }
+      }
+
+      svg {
+        width: 48px;
+        height: 48px;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      span {
+        color: var(--text-secondary);
+        font-size: var(--font-size-md);
+      }
+
+      .upload-hint {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        opacity: 0.8;
+      }
     }
   }
 }
@@ -330,6 +458,112 @@
       .price-input {
         flex: 1;
         min-width: 0; // 防止溢出
+      }
+    }
+
+    &.image-row {
+      align-items: flex-start;
+      
+      .form-label {
+        flex: none;
+        width: 100px;
+        padding-top: var(--spacing-sm);
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+      }
+      
+      .image-content {
+        flex: 1;
+        
+        .selected-image {
+          display: flex;
+          gap: var(--spacing-md);
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg);
+          
+          .image-preview {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            background-color: white;
+            padding: var(--spacing-xs);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+          
+          .image-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            
+            .remove-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: var(--spacing-xs);
+              padding: var(--spacing-sm) var(--spacing-md);
+              color: var(--color-danger);
+              font-size: var(--font-size-sm);
+              border-radius: var(--radius-sm);
+              background-color: transparent;
+              border: 1px solid transparent;
+              transition: all 0.2s ease;
+              cursor: pointer;
+              
+              &:hover {
+                color: var(--color-danger);
+                background-color: var(--color-danger-light);
+                border-color: var(--color-danger);
+              }
+              
+              svg {
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+        
+        .upload-image-btn {
+          width: 100%;
+          height: 120px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 2px dashed var(--border-color);
+          border-radius: var(--radius-lg);
+          color: var(--text-secondary);
+          font-size: var(--font-size-md);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          
+          &:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background-color: var(--color-primary-light);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          
+          svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: var(--spacing-xs);
+          }
+          
+          .upload-hint {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+          }
+        }
       }
     }
   }

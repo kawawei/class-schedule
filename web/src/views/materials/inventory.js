@@ -69,6 +69,19 @@ const inventoryColumns = [
     width: 250,
   },
   {
+    key: 'image',
+    title: '圖片',
+    width: 100,
+    align: 'center',
+    slot: true,
+    render: (row) => {
+      if (row.image_url) {
+        return `<img src="${row.image_url}" class="inventory-thumbnail" alt="${row.name}" />`;
+      }
+      return '<div class="no-image">未上傳</div>';
+    }
+  },
+  {
     key: 'courseType',
     title: '課程種類',
     width: 180
@@ -189,7 +202,8 @@ const resetForm = () => {
     cost: '',
     costCurrency: 'NT$', // 預設新台幣
     notes: '',
-    qrcode: null
+    qrcode: null,
+    image: null // 添加圖片欄位 Add image field
   };
 };
 
@@ -243,6 +257,10 @@ export default {
     // 詳情對話框狀態 Details dialog state
     const detailsDialogVisible = ref(false);
     const selectedItem = ref(null);
+    
+    // 圖片預覽相關 Image preview related
+    const imagePreviewVisible = ref(false);
+    const previewImageUrl = ref('');
     
     // 篩選後的貨物列表 Filtered inventory list
     const filteredInventory = computed(() => {
@@ -394,6 +412,9 @@ export default {
       try {
         loading.value = true;
         
+        const formData = new FormData();
+        
+        // 添加基本信息 Add basic information
         const inventoryData = {
           name: form.value.name,
           courseType: form.value.courseType,
@@ -411,10 +432,21 @@ export default {
             defectiveQuantity: Number(form.value.defectiveQuantity)
           }]
         };
+        
+        formData.append('data', JSON.stringify(inventoryData));
+        
+        // 如果有新圖片，添加到 FormData If there's a new image, add it to FormData
+        if (form.value.image?.file) {
+          formData.append('image', form.value.image.file);
+        }
 
         if (isEditing.value) {
           // 更新現有項目 Update existing item
-          const response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, inventoryData);
+          const response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
           if (response.data && response.data.success) {
             Message.success('更新成功 / Update successful');
             await fetchInventoryList();
@@ -423,7 +455,11 @@ export default {
           }
         } else {
           // 添加新項目 Add new item
-          const response = await axios.post(`${API_BASE_URL}/inventory`, inventoryData);
+          const response = await axios.post(`${API_BASE_URL}/inventory`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
           if (response.data && response.data.success) {
             Message.success('創建成功 / Creation successful');
             await fetchInventoryList();
@@ -607,6 +643,79 @@ export default {
       selectedItem.value = null;
     };
 
+    // 預覽圖片 Preview image
+    const previewImage = (imageUrl) => {
+      if (!imageUrl) return;
+      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
+      imagePreviewVisible.value = true;
+    };
+    
+    // 關閉圖片預覽 Close image preview
+    const closeImagePreview = () => {
+      imagePreviewVisible.value = false;
+      previewImageUrl.value = '';
+    };
+    
+    // 打開圖片上傳 Open image upload
+    const openImageUpload = async () => {
+      try {
+        // 創建文件輸入元素 Create file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        // 監聽文件選擇 Listen for file selection
+        input.onchange = (e) => handleImageSelect(e.target.files[0]);
+        
+        // 觸發文件選擇 Trigger file selection
+        input.click();
+      } catch (error) {
+        console.error('打開圖片上傳失敗:', error);
+        Message.error(error.message || '打開圖片上傳失敗');
+      }
+    };
+
+    // 處理圖片拖放 Handle image drop
+    const handleImageDrop = (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleImageSelect(file);
+      }
+    };
+
+    // 處理圖片選擇 Handle image select
+    const handleImageSelect = (file) => {
+      if (!file) return;
+      
+      // 檢查文件類型 Check file type
+      if (!file.type.startsWith('image/')) {
+        Message.error('請選擇圖片文件 / Please select an image file');
+        return;
+      }
+      
+      // 檢查文件大小（最大 5MB）Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        Message.error('圖片大小不能超過 5MB / Image size cannot exceed 5MB');
+        return;
+      }
+      
+      // 創建預覽 Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        form.value.image = {
+          file,
+          url: e.target.result,
+          name: file.name
+        };
+      };
+      reader.readAsDataURL(file);
+    };
+    
+    // 移除圖片 Remove image
+    const removeImage = () => {
+      form.value.image = null;
+    };
+
     return {
       // 狀態 State
       userName,
@@ -632,6 +741,8 @@ export default {
       selectedQRCode,
       detailsDialogVisible,
       selectedItem,
+      imagePreviewVisible,
+      previewImageUrl,
       
       // 選項 Options
       courseTypeOptionsRef,
@@ -668,7 +779,13 @@ export default {
       fetchQRCodes,
       getTotalQuantity,
       getTotalDefectiveQuantity,
-      closeDetailsDialog
+      closeDetailsDialog,
+      previewImage,
+      closeImagePreview,
+      openImageUpload,
+      removeImage,
+      handleImageDrop,
+      handleImageSelect
     };
   }
 }; 

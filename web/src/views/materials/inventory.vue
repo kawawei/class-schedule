@@ -97,6 +97,27 @@
           {{ index + 1 }}
         </template>
 
+        <!-- 圖片欄位 Image column -->
+        <template #image="{ row }">
+          <div class="image-cell">
+            <template v-if="row.image_url">
+              <img
+                :src="row.image_url.startsWith('http') ? row.image_url : `${API_BASE_URL}${row.image_url}`"
+                :alt="row.name"
+                class="inventory-thumbnail"
+                @click="previewImage(row.image_url)"
+              />
+            </template>
+            <div v-else class="no-image" @click="openImageUpload(row)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+          </div>
+        </template>
+
         <!-- 自定義列插槽 Custom column slots -->
         <template #quantity="{ row }">
           <span :class="{ 'low-stock': getTotalQuantity(row.warehouses) <= row.minQuantity }">
@@ -294,6 +315,43 @@
           </div>
         </div>
 
+        <!-- 圖片上傳 Image Upload -->
+        <div class="form-row qrcode-row">
+          <div class="qrcode-content">
+            <div v-if="form.image" class="selected-qrcode">
+              <img
+                :src="form.image.url"
+                class="qrcode-preview"
+                alt="商品圖片"
+              />
+              <div class="qrcode-info">
+                <p>{{ form.image.name }}</p>
+                <button class="remove-btn" @click="removeImage">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  移除
+                </button>
+              </div>
+            </div>
+            <button
+              v-else
+              class="select-qrcode-btn"
+              @click="openImageUpload"
+              @dragover.prevent
+              @drop.prevent="handleImageDrop"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              點擊或拖曳圖片至此處上傳
+            </button>
+          </div>
+        </div>
+
         <!-- QR Code -->
         <div class="form-row qrcode-row">
           <div class="qrcode-content">
@@ -444,6 +502,24 @@
     <template #footer>
       <div class="dialog-footer">
         <AppButton @click="closeDetailsDialog">關閉</AppButton>
+      </div>
+    </template>
+  </AppDialog>
+
+  <!-- 圖片預覽對話框 Image preview dialog -->
+  <AppDialog
+    v-model="imagePreviewVisible"
+    title="圖片預覽"
+    size="lg"
+    @close="closeImagePreview"
+  >
+    <template #default>
+      <div class="image-preview-dialog">
+        <img
+          :src="previewImageUrl"
+          class="preview-image"
+          alt="圖片預覽"
+        />
       </div>
     </template>
   </AppDialog>
