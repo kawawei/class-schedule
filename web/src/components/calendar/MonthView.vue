@@ -548,6 +548,7 @@ export default defineComponent({
         flex: 1;
         overflow: hidden;
         position: relative;
+        height: calc(100% - 28px);
 
         .day-events {
           position: absolute;
@@ -556,7 +557,9 @@ export default defineComponent({
           right: 0;
           bottom: 0;
           overflow-y: auto;
-          padding-right: var(--spacing-xs); // 為滾動條預留空間
+          padding: 2px;
+          display: flex;
+          flex-direction: column;
           
           /* 自定義滾動條樣式 Custom scrollbar styles */
           &::-webkit-scrollbar {
@@ -573,10 +576,21 @@ export default defineComponent({
           }
 
           .month-schedule-block {
-            margin-bottom: 2px; // 方塊之間的間距
+            margin-bottom: 3px; // 設定固定間距
+            height: 20px !important; // 調整為20px高度
+            min-height: 20px !important;
+            max-height: 20px !important;
+            line-height: 20px !important;
             
             &:last-child {
-              margin-bottom: 0;
+              margin-bottom: 3px;
+            }
+
+            :deep(.schedule-block) {
+              height: 20px !important;
+              min-height: 20px !important;
+              max-height: 20px !important;
+              padding: 0 0.5rem !important;
             }
           }
         }

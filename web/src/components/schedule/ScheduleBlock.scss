@@ -7,6 +7,7 @@
 .schedule-block-container {
   width: fit-content;
   height: fit-content;
+  margin-bottom: 2px;
 }
 
 .schedule-block {
@@ -14,21 +15,21 @@
   background-color: var(--color-primary-light);
   border-radius: var(--radius-sm);
   padding: 0.25rem 0.5rem;
-  height: 24px;
+  height: 20px;
   cursor: move;
   transition: all 0.3s ease;
   border: none;
   box-shadow: none;
   display: flex;
   align-items: center;
-  margin: 1px;
   overflow: hidden;
   text-align: left;
   font-family: inherit;
   position: relative;
+  margin: 0;
 
   &:hover {
-    transform: scale(1.02);
+    transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
   }
 
@@ -46,6 +47,14 @@
 
     &:hover {
       background-color: #d8d8d8;
+    }
+  }
+
+  &.has-teacher {
+    background-color: #5fd3bc;
+    
+    &:hover {
+      background-color: #4fc3ac;
     }
   }
 
