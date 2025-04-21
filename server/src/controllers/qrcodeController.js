@@ -79,7 +79,7 @@ const createQRCode = async (req, res, next) => {
         
         // 生成重定向 URL Generate redirect URL
         const baseUrl = process.env.NODE_ENV === 'production' 
-            ? 'https://class-schedule.lihengtech.com.tw:9443/schedule-api'
+            ? 'https://class-schedule.lihengtech.com.tw:9443/api'
             : process.env.API_BASE_URL || 'http://localhost:3006';
         const redirectUrl = `${baseUrl}/qrcode/redirect/${randomString}`;
         console.log('生成的重定向 URL Generated redirect URL:', redirectUrl);
@@ -438,7 +438,7 @@ const generatePreviewQRCode = async (req, res, next) => {
         
         // 生成重定向 URL Generate redirect URL
         const baseUrl = process.env.NODE_ENV === 'production' 
-            ? 'https://class-schedule.lihengtech.com.tw:9443/schedule-api'
+            ? 'https://class-schedule.lihengtech.com.tw:9443/api'
             : process.env.API_BASE_URL || 'http://localhost:3006';
         const redirect_url = `${baseUrl}/qrcode/redirect/${id}`;
         
