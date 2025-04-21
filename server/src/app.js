@@ -33,6 +33,8 @@ app.use(morgan('dev'));
 
 // 配置 JSON 解析
 app.use(express.json());
+// 配置 URL 編碼解析 Configure URL-encoded parser
+app.use(express.urlencoded({ extended: true }));
 
 // 健康檢查端點
 app.get('/health', (req, res) => {
@@ -56,6 +58,7 @@ app.use('/api/inventory', inventoryRoutes);
 
 // 配置靜態文件服務 Configure static file service
 app.use('/api', express.static(path.join(__dirname, '../public')));
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads'))); // 將 uploads 目錄掛載到 /api/uploads 下 Mount uploads directory under /api/uploads
 
 // 處理未找到的路由 Handle 404 routes
 app.use((req, res, next) => {

@@ -1,6 +1,8 @@
 const { Op } = require('sequelize');
 const Inventory = require('../models/inventory');
 const WarehouseInventory = require('../models/warehouseInventory');
+const path = require('path');
+const fs = require('fs');
 
 // 獲取庫存列表 Get inventory list
 exports.getInventoryList = async (req, res) => {
@@ -75,6 +77,40 @@ exports.getInventoryDetails = async (req, res) => {
 // 創建庫存 Create inventory
 exports.createInventory = async (req, res) => {
   try {
+    let inventoryData;
+    let imageFile;
+
+    // 檢查請求格式 Check request format
+    if (req.is('multipart/form-data')) {
+      // 如果是 FormData 格式 If it's FormData format
+      if (!req.body.data) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少必要的數據 / Missing required data'
+        });
+      }
+
+      try {
+        inventoryData = typeof req.body.data === 'string' 
+          ? JSON.parse(req.body.data)
+          : req.body.data;
+      } catch (parseError) {
+        console.error('解析數據失敗:', parseError);
+        return res.status(400).json({
+          success: false,
+          message: '數據格式不正確 / Invalid data format'
+        });
+      }
+
+      // 保存圖片文件引用 Save image file reference
+      if (req.file) {
+        imageFile = req.file;
+      }
+    } else {
+      // 如果是 JSON 格式 If it's JSON format
+      inventoryData = req.body;
+    }
+
     const {
       name,
       courseType,
@@ -87,29 +123,47 @@ exports.createInventory = async (req, res) => {
       qrcode_url,
       qrcode_name,
       warehouses
-    } = req.body;
+    } = inventoryData;
+
+    // 驗證必要字段 Validate required fields
+    if (!name || !courseType) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必要字段 / Missing required fields'
+      });
+    }
 
     // 創建庫存記錄 Create inventory record
     const inventory = await Inventory.create({
       name,
       courseType,
-      minQuantity,
-      unitPrice,
-      unitPriceCurrency,
-      cost,
-      costCurrency,
+      minQuantity: Number(minQuantity) || 0,
+      unitPrice: Number(unitPrice) || 0,
+      unitPriceCurrency: unitPriceCurrency || 'NT$',
+      cost: Number(cost) || 0,
+      costCurrency: costCurrency || 'NT$',
       notes,
       qrcode_url,
       qrcode_name
     });
+
+    // 如果有圖片，在創建記錄後設置圖片路徑 If there's an image, set the image path after creating the record
+    if (imageFile) {
+      const companyCode = req.user?.company?.company_code || 'default';
+      const filename = path.basename(imageFile.path);
+      const imageUrl = `/uploads/${companyCode}/materials/${filename}`;
+      
+      // 更新庫存記錄的圖片URL Update inventory record with image URL
+      await inventory.update({ image_url: imageUrl });
+    }
 
     // 創建倉庫庫存記錄 Create warehouse inventory records
     if (warehouses && warehouses.length > 0) {
       const warehouseRecords = warehouses.map(warehouse => ({
         inventoryId: inventory.id,
         location: warehouse.location,
-        quantity: warehouse.quantity,
-        defectiveQuantity: warehouse.defectiveQuantity
+        quantity: Number(warehouse.quantity) || 0,
+        defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
       }));
 
       await WarehouseInventory.bulkCreate(warehouseRecords);
@@ -133,7 +187,8 @@ exports.createInventory = async (req, res) => {
     console.error('創建庫存失敗:', error);
     res.status(500).json({
       success: false,
-      message: '創建庫存失敗 / Failed to create inventory'
+      message: '創建庫存失敗 / Failed to create inventory',
+      error: error.message
     });
   }
 };
@@ -142,6 +197,43 @@ exports.createInventory = async (req, res) => {
 exports.updateInventory = async (req, res) => {
   try {
     const { id } = req.params;
+    let inventoryData;
+
+    // 檢查請求格式 Check request format
+    if (req.is('multipart/form-data')) {
+      // 如果是 FormData 格式 If it's FormData format
+      if (!req.body.data) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少必要的數據 / Missing required data'
+        });
+      }
+
+      try {
+        inventoryData = typeof req.body.data === 'string' 
+          ? JSON.parse(req.body.data)
+          : req.body.data;
+      } catch (parseError) {
+        console.error('解析數據失敗:', parseError);
+        return res.status(400).json({
+          success: false,
+          message: '數據格式不正確 / Invalid data format'
+        });
+      }
+
+      // 如果有上傳圖片，添加圖片路徑 If image is uploaded, add image path
+      if (req.file) {
+        // 構建相對路徑 Build relative path
+        const companyCode = req.user?.companyCode || 'default';
+        const materialId = id;
+        const filename = path.basename(req.file.path);
+        inventoryData.image_url = `/uploads/${companyCode}/materials/${materialId}/${filename}`;
+      }
+    } else {
+      // 如果是 JSON 格式 If it's JSON format
+      inventoryData = req.body;
+    }
+
     const {
       name,
       courseType,
@@ -153,8 +245,9 @@ exports.updateInventory = async (req, res) => {
       notes,
       qrcode_url,
       qrcode_name,
-      warehouses
-    } = req.body;
+      warehouses,
+      image_url
+    } = inventoryData;
 
     // 檢查庫存是否存在 Check if inventory exists
     const inventory = await Inventory.findByPk(id);
@@ -169,14 +262,15 @@ exports.updateInventory = async (req, res) => {
     await inventory.update({
       name,
       courseType,
-      minQuantity,
-      unitPrice,
-      unitPriceCurrency,
-      cost,
-      costCurrency,
+      minQuantity: Number(minQuantity) || 0,
+      unitPrice: Number(unitPrice) || 0,
+      unitPriceCurrency: unitPriceCurrency || 'NT$',
+      cost: Number(cost) || 0,
+      costCurrency: costCurrency || 'NT$',
       notes,
       qrcode_url,
-      qrcode_name
+      qrcode_name,
+      ...(image_url && { image_url })
     });
 
     // 更新倉庫庫存信息 Update warehouse inventory information
@@ -190,8 +284,8 @@ exports.updateInventory = async (req, res) => {
       const warehouseRecords = warehouses.map(warehouse => ({
         inventoryId: id,
         location: warehouse.location,
-        quantity: warehouse.quantity,
-        defectiveQuantity: warehouse.defectiveQuantity
+        quantity: Number(warehouse.quantity) || 0,
+        defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
       }));
 
       await WarehouseInventory.bulkCreate(warehouseRecords);
@@ -215,7 +309,8 @@ exports.updateInventory = async (req, res) => {
     console.error('更新庫存失敗:', error);
     res.status(500).json({
       success: false,
-      message: '更新庫存失敗 / Failed to update inventory'
+      message: '更新庫存失敗 / Failed to update inventory',
+      error: error.message
     });
   }
 };
@@ -225,7 +320,7 @@ exports.deleteInventory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 檢查庫存是否存在 Check if inventory exists
+    // 查找要刪除的庫存 Find inventory to delete
     const inventory = await Inventory.findByPk(id);
     if (!inventory) {
       return res.status(404).json({
@@ -234,7 +329,19 @@ exports.deleteInventory = async (req, res) => {
       });
     }
 
-    // 刪除相關的倉庫記錄 Delete related warehouse records
+    // 如果有圖片，刪除圖片文件 If there's an image, delete the image file
+    if (inventory.image_url) {
+      const imagePath = path.join(__dirname, '..', '..', inventory.image_url);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      } catch (error) {
+        console.error('刪除圖片文件失敗:', error);
+      }
+    }
+
+    // 刪除相關的倉庫庫存記錄 Delete related warehouse inventory records
     await WarehouseInventory.destroy({
       where: { inventoryId: id }
     });
@@ -250,7 +357,8 @@ exports.deleteInventory = async (req, res) => {
     console.error('刪除庫存失敗:', error);
     res.status(500).json({
       success: false,
-      message: '刪除庫存失敗 / Failed to delete inventory'
+      message: '刪除庫存失敗 / Failed to delete inventory',
+      error: error.message
     });
   }
 };

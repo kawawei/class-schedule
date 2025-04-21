@@ -63,6 +63,10 @@ Inventory.init({
     type: DataTypes.STRING,
     comment: 'QR Code 名稱 / QR Code name'
   },
+  image_url: {
+    type: DataTypes.STRING,
+    comment: '圖片 URL / Image URL'
+  },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,

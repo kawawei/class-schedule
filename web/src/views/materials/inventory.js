@@ -412,9 +412,7 @@ export default {
       try {
         loading.value = true;
         
-        const formData = new FormData();
-        
-        // 添加基本信息 Add basic information
+        // 準備基本數據 Prepare basic data
         const inventoryData = {
           name: form.value.name,
           courseType: form.value.courseType,
@@ -432,44 +430,45 @@ export default {
             defectiveQuantity: Number(form.value.defectiveQuantity)
           }]
         };
-        
-        formData.append('data', JSON.stringify(inventoryData));
-        
-        // 如果有新圖片，添加到 FormData If there's a new image, add it to FormData
-        if (form.value.image?.file) {
-          formData.append('image', form.value.image.file);
-        }
 
-        if (isEditing.value) {
-          // 更新現有項目 Update existing item
-          const response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          if (response.data && response.data.success) {
-            Message.success('更新成功 / Update successful');
-            await fetchInventoryList();
+        let response;
+        
+        // 如果有圖片，使用 FormData If there's an image, use FormData
+        if (form.value.image?.file) {
+          const formData = new FormData();
+          formData.append('data', JSON.stringify(inventoryData));
+          formData.append('image', form.value.image.file);
+          
+          if (isEditing.value) {
+            response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
           } else {
-            throw new Error(response.data?.message || '更新失敗');
+            response = await axios.post(`${API_BASE_URL}/inventory`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
           }
         } else {
-          // 添加新項目 Add new item
-          const response = await axios.post(`${API_BASE_URL}/inventory`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          if (response.data && response.data.success) {
-            Message.success('創建成功 / Creation successful');
-            await fetchInventoryList();
+          // 如果沒有圖片，直接使用 JSON If no image, use JSON directly
+          if (isEditing.value) {
+            response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, inventoryData);
           } else {
-            throw new Error(response.data?.message || '創建失敗');
+            response = await axios.post(`${API_BASE_URL}/inventory`, inventoryData);
           }
         }
 
-        dialogVisible.value = false;
-        form.value = resetForm();
+        if (response.data && response.data.success) {
+          Message.success(isEditing.value ? '更新成功 / Update successful' : '創建成功 / Creation successful');
+          await fetchInventoryList();
+          dialogVisible.value = false;
+          form.value = resetForm();
+        } else {
+          throw new Error(response.data?.message || (isEditing.value ? '更新失敗' : '創建失敗'));
+        }
       } catch (error) {
         console.error('提交表單失敗:', error);
         Message.error(error.message || '操作失敗');
@@ -646,8 +645,8 @@ export default {
     // 預覽圖片 Preview image
     const previewImage = (imageUrl) => {
       if (!imageUrl) return;
-      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
-      imagePreviewVisible.value = true;
+      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}/uploads/${row.company_code}/materials/${imageUrl}`;
+      showPreview.value = true;
     };
     
     // 關閉圖片預覽 Close image preview

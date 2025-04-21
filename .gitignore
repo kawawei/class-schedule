@@ -44,5 +44,15 @@ Thumbs.db
 # 測試覆蓋率 Test coverage
 coverage/
 
+# QR Code 和上傳的圖片 QR Code and uploaded images
+/server/public/qrcodes/
+/server/uploads/
+**/uploads/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
 # QR Code 圖片 QR Code images
-/server/public/qrcodes/ 
+**/qrcodes/ 
