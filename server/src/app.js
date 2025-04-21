@@ -57,8 +57,8 @@ app.use('/api/qrcode', qrcodeRoutes);
 app.use('/api/inventory', inventoryRoutes);
 
 // 配置靜態文件服務 Configure static file service
-app.use('/api', express.static(path.join(__dirname, '../public')));
-app.use('/api/uploads', express.static(path.join(__dirname, '../uploads'))); // 將 uploads 目錄掛載到 /api/uploads 下 Mount uploads directory under /api/uploads
+app.use('/api/qrcodes', express.static(path.join(__dirname, '../public/qrcodes')));
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // 處理未找到的路由 Handle 404 routes
 app.use((req, res, next) => {
