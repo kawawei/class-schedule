@@ -336,7 +336,7 @@ export default {
     const editInventory = async (item) => {
       try {
         // 獲取完整的貨物詳情 Get complete inventory details
-        const response = await axios.get(`${API_BASE_URL}/inventory/${item.id}`);
+        const response = await axios.get(`/inventory/${item.id}`);
         if (response.data && response.data.success) {
           const itemData = response.data.data;
           isEditing.value = true;
@@ -382,7 +382,7 @@ export default {
     const fetchInventoryList = async () => {
       try {
         loading.value = true;
-        const response = await axios.get(`${API_BASE_URL}/inventory`);
+        const response = await axios.get(`/inventory`);
         if (response.data && response.data.success) {
           // 確保數據是數組 Ensure data is an array
           inventoryData.value = Array.isArray(response.data.data) 
@@ -440,13 +440,13 @@ export default {
           formData.append('image', form.value.image.file);
           
           if (isEditing.value) {
-            response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, formData, {
+            response = await axios.put(`/inventory/${form.value.id}`, formData, {
               headers: {
                 'Content-Type': 'multipart/form-data'
               }
             });
           } else {
-            response = await axios.post(`${API_BASE_URL}/inventory`, formData, {
+            response = await axios.post(`/inventory`, formData, {
               headers: {
                 'Content-Type': 'multipart/form-data'
               }
@@ -455,9 +455,9 @@ export default {
         } else {
           // 如果沒有圖片，直接使用 JSON If no image, use JSON directly
           if (isEditing.value) {
-            response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, inventoryData);
+            response = await axios.put(`/inventory/${form.value.id}`, inventoryData);
           } else {
-            response = await axios.post(`${API_BASE_URL}/inventory`, inventoryData);
+            response = await axios.post(`/inventory`, inventoryData);
           }
         }
 
@@ -513,7 +513,7 @@ export default {
     // 查看貨物詳情 View inventory details
     const viewInventoryDetails = async (item) => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/inventory/${item.id}`);
+        const response = await axios.get(`/inventory/${item.id}`);
         if (response.data && response.data.success) {
           selectedItem.value = response.data.data;
           detailsDialogVisible.value = true;
@@ -529,7 +529,7 @@ export default {
     // 刪除貨物 Delete inventory
     const deleteInventoryItem = async (id) => {
       try {
-        const response = await axios.delete(`${API_BASE_URL}/inventory/${id}`);
+        const response = await axios.delete(`/inventory/${id}`);
         if (response.data && response.data.success) {
           Message.success('刪除成功 / Deletion successful');
           await fetchInventoryList();
@@ -570,7 +570,7 @@ export default {
     const fetchQRCodes = async () => {
       try {
         qrcodeLoading.value = true;
-        const response = await axios.get(`${API_BASE_URL}/qrcode`);
+        const response = await axios.get(`/qrcode`);
         if (response.data && response.data.success) {
           qrcodeList.value = response.data.data;
         } else {
