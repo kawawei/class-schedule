@@ -4,6 +4,7 @@ const CourseSchedule = require('./courseSchedule')(sequelize);
 const CourseAssistant = require('./courseAssistant')(sequelize);
 const Course = require('./course');
 const TeacherReport = require('./teacherReport');
+const Warehouse = require('./warehouse');
 
 // 定義模型關聯 Define model associations
 Object.values({ Teacher, CourseSchedule, CourseAssistant }).forEach((model) => {
@@ -39,5 +40,6 @@ module.exports = {
     CourseSchedule,
     CourseAssistant,
     Course,
-    TeacherReport
+    TeacherReport,
+    Warehouse
 }; 

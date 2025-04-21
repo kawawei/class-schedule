@@ -134,6 +134,16 @@ const routes = [
     }
   },
   {
+    path: '/warehouse',
+    name: 'Warehouse',
+    component: () => import('../views/materials/warehouse.vue'),
+    meta: {
+      title: '倉庫管理', // 頁面標題 Page title
+      requiresAuth: true, // 需要身份驗證 Authentication required
+      requiresRole: ['tenant', 'admin', 'staff'] // 需要租戶、管理員或職員角色
+    }
+  },
+  {
     path: '/teacher/materials',
     name: 'TeacherMaterials',
     component: () => import('../views/materials/materials.vue'),

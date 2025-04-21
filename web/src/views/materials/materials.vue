@@ -127,6 +127,11 @@
                 </template>
               </DataTable>
             </div>
+
+            <!-- 倉庫管理標籤頁 Warehouse Management Tab -->
+            <div v-if="currentTab === 'warehouse'" class="warehouse-management">
+              <WarehousePage />
+            </div>
           </div>
         </div>
       </div>
@@ -341,6 +346,7 @@ import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import InventoryPage from './inventory.vue';
+import WarehousePage from './warehouse.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -351,7 +357,8 @@ export default {
     DataTable,
     AppDialog,
     AppInput,
-    InventoryPage
+    InventoryPage,
+    WarehousePage
   },
   setup() {
     return {

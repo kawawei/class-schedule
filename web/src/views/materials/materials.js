@@ -63,6 +63,25 @@ const QRCodeIcon = {
   }
 };
 
+const WarehouseIcon = {
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }),
+      h('polyline', { points: '9 22 9 12 15 12 15 22' })
+    ]);
+  }
+};
+
 // 定義標籤頁配置 Define tab configurations
 const tabs = [
   {
@@ -76,6 +95,12 @@ const tabs = [
     label: 'QRCode管理',
     icon: QRCodeIcon,
     iconBg: 'rgba(88, 86, 214, 0.1)'
+  },
+  {
+    key: 'warehouse',
+    label: '倉庫管理',
+    icon: WarehouseIcon,
+    iconBg: 'rgba(255, 149, 0, 0.1)'
   }
 ];
 
@@ -88,7 +113,8 @@ export default {
     AppDialog,
     AppInput,
     MaterialIcon,
-    QRCodeIcon
+    QRCodeIcon,
+    WarehouseIcon
   },
   setup() {
     // 用戶信息 User information
