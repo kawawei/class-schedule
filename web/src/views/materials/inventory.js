@@ -207,6 +207,12 @@ const currencySelectProps = {
   selectedLabelKey: 'symbol'
 };
 
+// 獲取倉庫名稱 Get warehouse name
+const getWarehouseName = (locationId) => {
+  const warehouse = locationOptions.value.find(option => option.value === locationId);
+  return warehouse ? warehouse.label : `倉庫 ${locationId}`;
+};
+
 export default {
   name: 'InventoryLogic',
   setup() {
@@ -608,7 +614,8 @@ export default {
       getTotalDefectiveQuantity,
       closeDetailsDialog,
       previewImage,
-      closeImagePreview
+      closeImagePreview,
+      getWarehouseName
     };
   }
 };

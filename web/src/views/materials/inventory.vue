@@ -310,7 +310,7 @@
             class="warehouse-item"
           >
             <div class="warehouse-header">
-              <h4>倉庫 {{ warehouse.location }}</h4>
+              <h4>{{ getWarehouseName(warehouse.location) }}</h4>
             </div>
             <div class="warehouse-info">
               <div class="info-row">
