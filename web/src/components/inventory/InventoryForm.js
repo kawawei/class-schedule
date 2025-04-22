@@ -28,6 +28,24 @@ const resetForm = () => {
   };
 };
 
+// 將後端數據轉換為前端格式 Convert backend data to frontend format
+const convertBackendToFrontend = (backendSpecs) => {
+  console.log('=== 後端返回的原始規格數據 (Backend Original Specs) ===');
+  console.log(JSON.stringify(backendSpecs, null, 2));
+  
+  if (!backendSpecs || !backendSpecs.types) return [];
+  
+  const convertedSpecs = backendSpecs.types.map(type => ({
+    typeName: type.name,
+    values: type.values.map(value => ({ name: value }))
+  }));
+  
+  console.log('=== 轉換後的前端規格數據 (Frontend Converted Specs) ===');
+  console.log(JSON.stringify(convertedSpecs, null, 2));
+  
+  return convertedSpecs;
+};
+
 // 創建表單邏輯 Create form logic
 const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   // 表單數據 Form data
@@ -351,6 +369,42 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   }, { 
     deep: true
   });
+  
+  // 監聽 modelValue 變化，處理規格數據 Watch modelValue changes, handle specifications data
+  watch(() => props.modelValue, (newValue) => {
+    if (newValue) {
+      console.log('=== 編輯對話框打開，接收到的完整數據 (Complete Data Received) ===');
+      console.log('newValue:', JSON.stringify(newValue, null, 2));
+      console.log('newValue.specifications:', newValue.specifications);
+      console.log('newValue.specifications?.types:', newValue.specifications?.types);
+      
+      // 先處理規格數據 Handle specifications data first
+      if (newValue.specifications) {
+        console.log('=== 開始處理規格數據 (Start Processing Specifications) ===');
+        const convertedSpecs = convertBackendToFrontend(newValue.specifications);
+        console.log('轉換後的規格數據:', JSON.stringify(convertedSpecs, null, 2));
+        specifications.splice(0, specifications.length, ...convertedSpecs);
+        console.log('更新後的 specifications 數組:', JSON.stringify(specifications, null, 2));
+      } else {
+        console.log('=== 警告：沒有找到規格數據 (Warning: No Specifications Found) ===');
+        console.log('newValue:', newValue);
+        // 清空現有規格 Clear existing specifications
+        specifications.splice(0, specifications.length);
+      }
+      
+      // 然後更新其他表單數據，但保留 specifications Handle other form data while preserving specifications
+      const { specifications: _, ...restData } = newValue;
+      form.value = {
+        ...restData,
+        specifications: form.value.specifications
+      };
+      
+      console.log('=== 更新後的表單數據 (Updated Form Data) ===');
+      console.log('form.value:', JSON.stringify(form.value, null, 2));
+      console.log('=== 當前規格數據 (Current Specifications) ===');
+      console.log('specifications:', JSON.stringify(specifications, null, 2));
+    }
+  }, { immediate: true });
   
   // 提交表單 Submit form
   const submitForm = async () => {

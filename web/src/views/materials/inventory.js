@@ -474,7 +474,8 @@ export default {
               quantity: 0,
               minQuantity: 0,
               defectiveQuantity: 0
-            }]
+            }],
+            specifications: itemData.specifications
           };
           
           dialogVisible.value = true;

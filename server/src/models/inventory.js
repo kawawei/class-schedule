@@ -51,6 +51,11 @@ Inventory.init({
     defaultValue: 'NT$',
     comment: '成本貨幣 / Cost currency'
   },
+  specifications: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    comment: '規格信息（可選）/ Specifications information (optional)'
+  },
   notes: {
     type: DataTypes.TEXT,
     comment: '備註 / Notes'

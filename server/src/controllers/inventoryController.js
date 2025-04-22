@@ -51,7 +51,12 @@ exports.getInventoryDetails = async (req, res) => {
         model: WarehouseInventory,
         as: 'warehouses',
         attributes: ['location', 'location_id', 'quantity', 'defectiveQuantity']
-      }]
+      }],
+      attributes: {
+        include: ['id', 'name', 'courseType', 'minQuantity', 'unitPrice', 'unitPriceCurrency',
+                 'cost', 'costCurrency', 'notes', 'qrcode_url', 'qrcode_name', 'image_url',
+                 'specifications'] // 確保包含 specifications 字段
+      }
     });
 
     if (!inventory) {
@@ -60,6 +65,10 @@ exports.getInventoryDetails = async (req, res) => {
         message: '找不到該庫存 / Inventory not found'
       });
     }
+
+    // 添加日誌輸出 Add log output
+    console.log('=== 返回的庫存詳情數據 (Returned Inventory Details) ===');
+    console.log(JSON.stringify(inventory, null, 2));
 
     res.json({
       success: true,
@@ -122,7 +131,8 @@ exports.createInventory = async (req, res) => {
       notes,
       qrcode_url,
       qrcode_name,
-      warehouses
+      warehouses,
+      specifications
     } = inventoryData;
 
     // 驗證必要字段 Validate required fields
@@ -144,7 +154,8 @@ exports.createInventory = async (req, res) => {
       costCurrency: costCurrency || 'NT$',
       notes,
       qrcode_url,
-      qrcode_name
+      qrcode_name,
+      specifications
     });
 
     // 如果有圖片，在創建記錄後設置圖片路徑 If there's an image, set the image path after creating the record
@@ -261,6 +272,7 @@ exports.updateInventory = async (req, res) => {
       qrcode_url,
       qrcode_name,
       warehouses,
+      specifications,
       image_url
     } = inventoryData;
 
@@ -285,6 +297,7 @@ exports.updateInventory = async (req, res) => {
       notes,
       qrcode_url,
       qrcode_name,
+      specifications,
       ...(image_url && { image_url })
     });
 
