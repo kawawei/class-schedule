@@ -157,16 +157,21 @@ exports.createInventory = async (req, res) => {
       await inventory.update({ image_url: imageUrl });
     }
 
-    // 創建倉庫庫存記錄 Create warehouse inventory records
+    // 創建倉庫庫存記錄（如果提供了倉庫數據）Create warehouse inventory records (if warehouse data is provided)
     if (warehouses && warehouses.length > 0) {
-      const warehouseRecords = warehouses.map(warehouse => ({
-        inventoryId: inventory.id,
-        location: warehouse.location,
-        quantity: Number(warehouse.quantity) || 0,
-        defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
-      }));
+      // 過濾掉沒有選擇倉庫位置的記錄 Filter out records without warehouse location
+      const validWarehouses = warehouses.filter(warehouse => warehouse.location);
+      
+      if (validWarehouses.length > 0) {
+        const warehouseRecords = validWarehouses.map(warehouse => ({
+          inventoryId: inventory.id,
+          location: warehouse.location,
+          quantity: Number(warehouse.quantity) || 0,
+          defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
+        }));
 
-      await WarehouseInventory.bulkCreate(warehouseRecords);
+        await WarehouseInventory.bulkCreate(warehouseRecords);
+      }
     }
 
     // 獲取完整的庫存信息 Get complete inventory information
@@ -284,20 +289,25 @@ exports.updateInventory = async (req, res) => {
 
     // 更新倉庫庫存信息 Update warehouse inventory information
     if (warehouses && warehouses.length > 0) {
+      // 過濾掉沒有選擇倉庫位置的記錄 Filter out records without warehouse location
+      const validWarehouses = warehouses.filter(warehouse => warehouse.location);
+      
       // 刪除現有的倉庫記錄 Delete existing warehouse records
       await WarehouseInventory.destroy({
         where: { inventoryId: id }
       });
 
-      // 創建新的倉庫記錄 Create new warehouse records
-      const warehouseRecords = warehouses.map(warehouse => ({
-        inventoryId: id,
-        location: warehouse.location,
-        quantity: Number(warehouse.quantity) || 0,
-        defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
-      }));
+      if (validWarehouses.length > 0) {
+        // 創建新的倉庫記錄 Create new warehouse records
+        const warehouseRecords = validWarehouses.map(warehouse => ({
+          inventoryId: id,
+          location: warehouse.location,
+          quantity: Number(warehouse.quantity) || 0,
+          defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
+        }));
 
-      await WarehouseInventory.bulkCreate(warehouseRecords);
+        await WarehouseInventory.bulkCreate(warehouseRecords);
+      }
     }
 
     // 獲取更新後的完整信息 Get updated complete information
