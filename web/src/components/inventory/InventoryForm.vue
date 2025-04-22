@@ -75,7 +75,11 @@
         <div class="image-content">
           <template v-if="form.image">
             <div class="selected-image">
-              <img :src="form.image.url" :alt="form.image.name" class="image-preview" />
+              <img 
+                :src="form.image.url.startsWith('http') ? form.image.url : `${API_BASE_URL}${form.image.url}`" 
+                :alt="form.image.name" 
+                class="image-preview" 
+              />
               <div class="image-info">
                 <button class="remove-btn" @click="removeImage">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
