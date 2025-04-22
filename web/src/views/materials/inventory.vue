@@ -188,7 +188,7 @@
           <div class="qrcode-cell">
             <template v-if="row.qrcode_url">
               <img
-                :src="row.qrcode_url.startsWith('http') ? row.qrcode_url : `${API_BASE_URL}${row.qrcode_url}`"
+                :src="row.qrcode_url.startsWith('http') ? row.qrcode_url : row.qrcode_url"
                 :alt="row.qrcode_name"
                 class="qrcode-preview"
               />
@@ -279,7 +279,7 @@
           >
             <div class="qrcode-image">
               <img
-                :src="qrcode.qrcode_url.startsWith('http') ? qrcode.qrcode_url : `${API_BASE_URL}${qrcode.qrcode_url}`"
+                :src="qrcode.qrcode_url.startsWith('http') ? qrcode.qrcode_url : qrcode.qrcode_url"
                 :alt="qrcode.name"
               />
             </div>
