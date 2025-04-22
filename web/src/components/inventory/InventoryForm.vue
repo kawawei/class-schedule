@@ -224,7 +224,7 @@
             >
               <div class="qrcode-image">
                 <img
-                  :src="qrcode.qrcode_url"
+                  :src="qrcode.qrcode_url.startsWith('http') ? qrcode.qrcode_url : `${API_BASE_URL}${qrcode.qrcode_url}`"
                   :alt="qrcode.name"
                 />
               </div>
