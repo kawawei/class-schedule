@@ -105,7 +105,7 @@
                 :src="row.image_url.startsWith('http') ? row.image_url : `${API_BASE_URL}${row.image_url}`"
                 :alt="row.name"
                 class="inventory-thumbnail"
-                @click="previewImage(row.image_url)"
+                @click.stop="previewImage(row.image_url)"
               />
             </template>
             <div v-else class="no-image" @click="openImageUpload(row)">
@@ -303,6 +303,14 @@
           <h3>{{ selectedItem?.name }}</h3>
           <p class="course-type">課程種類：{{ selectedItem?.courseType }}</p>
         </div>
+        <div class="details-image" v-if="selectedItem?.image_url">
+          <img
+            :src="selectedItem.image_url.startsWith('http') ? selectedItem.image_url : `${API_BASE_URL}${selectedItem.image_url}`"
+            :alt="selectedItem.name"
+            class="item-image"
+            @click="previewImage(selectedItem.image_url)"
+          />
+        </div>
         <div class="warehouse-list">
           <div 
             v-for="warehouse in selectedItem?.warehouses" 
@@ -353,7 +361,7 @@
     @close="closeImagePreview"
   >
     <template #default>
-      <div class="image-preview-dialog">
+      <div class="image-preview-container">
         <img
           :src="previewImageUrl"
           class="preview-image"
