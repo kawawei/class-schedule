@@ -38,69 +38,6 @@
         />
       </div>
 
-      <!-- 規格管理 Specifications Management -->
-      <div class="specifications-section">
-        <div class="specifications-header">
-          <h3>規格設定</h3>
-          <button class="add-spec-btn" @click="addSpecification">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            新增規格
-          </button>
-        </div>
-
-        <div class="specifications-list">
-          <div v-for="(spec, specIndex) in form.specifications" :key="specIndex" class="specification-item">
-            <div class="specification-header">
-              <h4>規格 #{{ specIndex + 1 }}</h4>
-              <button class="remove-spec-btn" @click="removeSpecification(specIndex)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            <div class="specification-content">
-              <AppInput
-                v-model="spec.name"
-                label="規格名稱"
-                placeholder="請輸入規格名稱（如：顏色、尺寸）"
-              />
-              
-              <div class="specification-values">
-                <div v-for="(value, valueIndex) in spec.values" :key="valueIndex" class="value-item">
-                  <AppInput
-                    v-model="spec.values[valueIndex]"
-                    :label="valueIndex === 0 ? '規格值' : ''"
-                    placeholder="請輸入規格值"
-                  />
-                  <button 
-                    v-if="valueIndex > 0"
-                    class="remove-value-btn"
-                    @click="removeSpecificationValue(specIndex, valueIndex)"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-                <button class="add-value-btn" @click="addSpecificationValue(specIndex)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  新增規格值
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 價格信息 Price Information -->
       <div class="form-row">
         <div class="price-input">
@@ -176,7 +113,7 @@
               <img :src="form.qrcode.url" class="qrcode-preview" :alt="form.qrcode.name" />
               <div class="qrcode-info">
                 <p>{{ form.qrcode.name }}</p>
-                <button class="remove-btn" @click="handleRemoveQRCode">
+                <button class="remove-btn" @click="removeQRCode">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -237,88 +174,30 @@
               </button>
             </div>
 
-            <div class="warehouse-content">
-              <!-- 倉庫位置 Warehouse Location -->
+            <div class="warehouse-row">
               <AppInput
                 v-model="warehouse.location"
                 label="倉庫位置"
                 placeholder="請輸入倉庫位置"
-                class="location-input"
               />
-
-              <!-- 規格庫存表格 Specification Inventory Table -->
-              <div class="inventory-table" v-if="hasValidSpecifications">
-                <table>
-                  <thead>
-                    <tr>
-                      <th v-for="spec in form.specifications" :key="spec.name">
-                        {{ spec.name }}
-                      </th>
-                      <th>當前數量</th>
-                      <th>最小庫存量</th>
-                      <th>不良品數量</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="combination in generateSpecCombinations()" :key="getSpecKey(combination)">
-                      <td v-for="spec in combination" :key="spec.name">
-                        {{ spec.value }}
-                      </td>
-                      <td>
-                        <AppInput
-                          :model-value="getInventoryValue(warehouse, combination, 'quantity')"
-                          @update:model-value="updateInventoryValue(warehouse, combination, 'quantity', $event)"
-                          type="number"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td>
-                        <AppInput
-                          :model-value="getInventoryValue(warehouse, combination, 'minQuantity')"
-                          @update:model-value="updateInventoryValue(warehouse, combination, 'minQuantity', $event)"
-                          type="number"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td>
-                        <AppInput
-                          :model-value="getInventoryValue(warehouse, combination, 'defectiveQuantity')"
-                          @update:model-value="updateInventoryValue(warehouse, combination, 'defectiveQuantity', $event)"
-                          type="number"
-                          placeholder="0"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              
-              <!-- 無規格時的庫存輸入 Inventory Input without Specifications -->
-              <div v-else class="no-spec-inventory">
-                <div class="inventory-inputs">
-                  <AppInput
-                    :model-value="getDefaultInventoryValue(warehouse, 'quantity')"
-                    @update:model-value="updateDefaultInventoryValue(warehouse, 'quantity', $event)"
-                    label="當前數量"
-                    type="number"
-                    placeholder="請輸入當前數量"
-                  />
-                  <AppInput
-                    :model-value="getDefaultInventoryValue(warehouse, 'minQuantity')"
-                    @update:model-value="updateDefaultInventoryValue(warehouse, 'minQuantity', $event)"
-                    label="最小庫存量"
-                    type="number"
-                    placeholder="請輸入最小庫存量"
-                  />
-                  <AppInput
-                    :model-value="getDefaultInventoryValue(warehouse, 'defectiveQuantity')"
-                    @update:model-value="updateDefaultInventoryValue(warehouse, 'defectiveQuantity', $event)"
-                    label="不良品數量"
-                    type="number"
-                    placeholder="請輸入不良品數量"
-                  />
-                </div>
-              </div>
+              <AppInput
+                v-model="warehouse.quantity"
+                label="當前數量"
+                type="number"
+                placeholder="請輸入當前數量"
+              />
+              <AppInput
+                v-model="warehouse.minQuantity"
+                label="最小庫存量"
+                type="number"
+                placeholder="請輸入最小庫存量"
+              />
+              <AppInput
+                v-model="warehouse.defectiveQuantity"
+                label="不良品數量"
+                type="number"
+                placeholder="請輸入不良品數量"
+              />
             </div>
           </div>
         </div>
