@@ -655,8 +655,8 @@ export default {
     // 預覽圖片 Preview image
     const previewImage = (imageUrl) => {
       if (!imageUrl) return;
-      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}/uploads/${row.company_code}/materials/${imageUrl}`;
-      showPreview.value = true;
+      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
+      imagePreviewVisible.value = true;
     };
     
     // 關閉圖片預覽 Close image preview
