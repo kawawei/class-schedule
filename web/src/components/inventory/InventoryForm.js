@@ -164,7 +164,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   const fetchQRCodes = async () => {
     try {
       qrcodeLoading.value = true;
-      const response = await axios.get('qrcode');
+      const response = await axios.get('/schedule-api/qrcode');
       
       if (response.data && response.data.success) {
         qrcodeList.value = response.data.data;
