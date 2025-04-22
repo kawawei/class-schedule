@@ -15,7 +15,7 @@ const qrcodeRoutes = require('./routes/qrcodeRoutes');
 const inventoryRoutes = require('./routes/inventory');
 const warehouseRoutes = require('./routes/warehouse');
 const { initializeWebSocket } = require('./controllers/notificationController');
-const ApiError = require('./utils/ApiError');
+const ApiError = require('./utils/apiError');
 
 // 創建 Express 應用
 const app = express();
