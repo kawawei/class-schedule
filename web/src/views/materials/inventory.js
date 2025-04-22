@@ -37,7 +37,9 @@ const fetchCourseTypes = async () => {
 };
 
 // 倉庫位置選項 Warehouse location options
-const locationOptions = ref([]);
+const locationOptions = ref([
+  { label: '全部位置', value: '' }
+]);
 
 // 獲取倉庫列表 Get warehouse list
 const fetchWarehouseList = async () => {
@@ -53,13 +55,18 @@ const fetchWarehouseList = async () => {
     }
 
     const warehouses = await response.json();
-    locationOptions.value = warehouses.map(warehouse => ({
-      label: warehouse.name,
-      value: warehouse.id.toString()
-    }));
+    // 直接添加倉庫選項，不再添加"全部位置"選項 Add warehouse options directly without adding "All Locations" again
+    locationOptions.value = [
+      { label: '全部位置', value: '' },
+      ...warehouses.map(warehouse => ({
+        label: warehouse.name,
+        value: warehouse.id.toString()
+      }))
+    ];
   } catch (error) {
     console.error('獲取倉庫列表失敗 Failed to fetch warehouse list:', error);
-    locationOptions.value = [];
+    // 如果獲取失敗，保持原有的"全部位置"選項 Keep the original "All Locations" option if fetch fails
+    locationOptions.value = [{ label: '全部位置', value: '' }];
   }
 };
 
@@ -111,7 +118,15 @@ const inventoryColumns = [
     title: '當前數量',
     width: 120,
     align: 'center',
-    slot: true
+    render: (row) => {
+      // 根據選擇的倉庫顯示數量
+      if (selectedLocation.value) {
+        const warehouse = row.warehouses?.find(w => w.location === selectedLocation.value);
+        return warehouse?.quantity || 0;
+      }
+      // 顯示所有倉庫的總數量
+      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.quantity || 0), 0) : 0;
+    }
   },
   {
     key: 'minQuantity',
@@ -124,7 +139,15 @@ const inventoryColumns = [
     title: '不良品數量',
     width: 120,
     align: 'center',
-    slot: true
+    render: (row) => {
+      // 根據選擇的倉庫顯示不良品數量
+      if (selectedLocation.value) {
+        const warehouse = row.warehouses?.find(w => w.location === selectedLocation.value);
+        return warehouse?.defectiveQuantity || 0;
+      }
+      // 顯示所有倉庫的總不良品數量
+      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.defectiveQuantity || 0), 0) : 0;
+    }
   },
   {
     key: 'unitPrice',
@@ -272,22 +295,24 @@ export default {
       // 倉庫位置過濾 Location filter
       if (selectedLocation.value) {
         console.log('正在按倉庫位置篩選:', selectedLocation.value);
-        result = result.map(item => {
-          // 創建新的物件，只包含選定倉庫的數據
-          const filteredWarehouses = item.warehouses?.filter(w => 
+        result = result.filter(item => {
+          // 檢查是否有選定倉庫的庫存
+          const hasWarehouse = item.warehouses?.some(w => 
             w.location === selectedLocation.value && w.quantity > 0
           );
-          
-          if (filteredWarehouses?.length > 0) {
-            return {
-              ...item,
-              warehouses: filteredWarehouses
-            };
+          console.log('檢查貨物在選定倉庫的狀態:', {
+            itemName: item.name,
+            warehouseId: selectedLocation.value,
+            hasStock: hasWarehouse
+          });
+
+          if (hasWarehouse) {
+            // 只保留選定倉庫的數據
+            item.warehouses = item.warehouses.filter(w => w.location === selectedLocation.value);
           }
-          return null;
-        }).filter(Boolean); // 移除空值
-        
-        console.log('倉庫篩選後的結果:', result);
+          
+          return hasWarehouse;
+        });
       }
       
       // 搜索過濾 Search filter
@@ -309,7 +334,7 @@ export default {
         const min = Number(minQuantity.value);
         result = result.filter(item => {
           const quantity = selectedLocation.value
-            ? item.warehouses[0].quantity
+            ? item.warehouses[0]?.quantity || 0
             : getTotalQuantity(item.warehouses);
           return quantity >= min;
         });
@@ -319,7 +344,7 @@ export default {
         const max = Number(maxQuantity.value);
         result = result.filter(item => {
           const quantity = selectedLocation.value
-            ? item.warehouses[0].quantity
+            ? item.warehouses[0]?.quantity || 0
             : getTotalQuantity(item.warehouses);
           return quantity <= max;
         });
@@ -332,21 +357,6 @@ export default {
       
       return result;
     });
-    
-    // 獲取指定倉庫的數量 Get quantity for specific warehouse
-    const getWarehouseQuantity = (locationId, type = 'normal', warehouses) => {
-      if (!warehouses) return 0;
-      if (!locationId) {
-        return type === 'normal' 
-          ? getTotalQuantity(warehouses)
-          : getTotalDefectiveQuantity(warehouses);
-      }
-      
-      const warehouse = warehouses?.find(w => w.location === locationId);
-      return type === 'normal' 
-        ? (warehouse?.quantity || 0)
-        : (warehouse?.defectiveQuantity || 0);
-    };
     
     // 獲取庫存狀態 Get stock status
     const getStockStatus = (item) => {
@@ -588,6 +598,21 @@ export default {
     const getTotalDefectiveQuantity = (warehouses) => {
       if (!warehouses) return 0;
       return warehouses.reduce((total, warehouse) => total + (warehouse.defectiveQuantity || 0), 0);
+    };
+
+    // 獲取指定倉庫的數量 Get quantity for specific warehouse
+    const getWarehouseQuantity = (locationId, type = 'normal', warehouses) => {
+      if (!warehouses) return 0;
+      if (!locationId) {
+        return type === 'normal' 
+          ? getTotalQuantity(warehouses)
+          : getTotalDefectiveQuantity(warehouses);
+      }
+      
+      const warehouse = warehouses?.find(w => w.location === locationId);
+      return type === 'normal' 
+        ? (warehouse?.quantity || 0)
+        : (warehouse?.defectiveQuantity || 0);
     };
 
     // 關閉詳情對話框 Close details dialog

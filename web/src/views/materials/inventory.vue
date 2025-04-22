@@ -47,7 +47,7 @@
             class="location-filter"
             v-model="selectedLocation"
             :options="locationOptions"
-            placeholder="全部位置"
+            placeholder="選擇倉庫"
           />
         </div>
 
