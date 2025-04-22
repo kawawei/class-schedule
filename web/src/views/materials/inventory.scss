@@ -1029,4 +1029,168 @@
       }
     }
   }
+}
+
+// 對話框分頁樣式 Dialog tabs styles
+.dialog-tabs {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-md) 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--spacing-md);
+
+  .tab-button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: var(--color-primary);
+    }
+
+    &.active {
+      color: var(--color-primary);
+      font-weight: 500;
+
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--color-primary);
+      }
+    }
+  }
+}
+
+// 空白庫存頁面樣式 Empty inventory page styles
+.empty-inventory {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  
+  p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+  }
+}
+
+.warehouse-section {
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+
+  .warehouse-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+
+    h3 {
+      margin: 0;
+      font-size: var(--font-size-md);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .add-warehouse-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-xs) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background-color: white;
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        background-color: var(--color-primary-light);
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .warehouse-item {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .warehouse-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+
+      h4 {
+        margin: 0;
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .remove-warehouse-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: none;
+        border-radius: var(--radius-md);
+        background-color: transparent;
+        color: var(--color-danger);
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: var(--color-danger-light);
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+
+    .warehouse-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+
+      :deep(.app-input),
+      :deep(.app-select) {
+        width: 100%;
+      }
+    }
+  }
 } 

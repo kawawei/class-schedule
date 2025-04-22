@@ -75,13 +75,6 @@
             />
           </div>
           <div class="form-item">
-            <label>聯絡人 Contact Person</label>
-            <AppInput
-              v-model="warehouseForm.contact_person"
-              placeholder="請輸入聯絡人 Please enter contact person"
-            />
-          </div>
-          <div class="form-item">
             <label>聯絡電話 Contact Phone</label>
             <AppInput
               v-model="warehouseForm.contact_phone"
@@ -148,7 +141,6 @@ export default {
       id: null,
       name: '',
       address: '',
-      contact_person: '',
       contact_phone: '',
       notes: '',
       is_editing: false
@@ -220,7 +212,6 @@ export default {
         id: null,
         name: '',
         address: '',
-        contact_person: '',
         contact_phone: '',
         notes: '',
         is_editing: false
@@ -234,7 +225,6 @@ export default {
         id: null,
         name: '',
         address: '',
-        contact_person: '',
         contact_phone: '',
         notes: '',
         is_editing: false
@@ -260,10 +250,6 @@ export default {
           alert('請輸入倉庫地址 Please enter warehouse address');
           return;
         }
-        if (!warehouseForm.value.contact_person) {
-          alert('請輸入聯絡人 Please enter contact person');
-          return;
-        }
         if (!warehouseForm.value.contact_phone) {
           alert('請輸入聯絡電話 Please enter contact phone');
           return;
@@ -286,7 +272,6 @@ export default {
         const requestData = {
           name: warehouseForm.value.name,
           address: warehouseForm.value.address,
-          contact_person: warehouseForm.value.contact_person,
           contact_phone: warehouseForm.value.contact_phone,
           notes: warehouseForm.value.notes || '',
           company_code: companyData.company_code

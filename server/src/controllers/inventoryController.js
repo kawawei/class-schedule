@@ -197,6 +197,15 @@ exports.createInventory = async (req, res) => {
 exports.updateInventory = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // 驗證ID是否為有效數字 Validate if ID is a valid number
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({
+        success: false,
+        message: '無效的庫存ID / Invalid inventory ID'
+      });
+    }
+
     let inventoryData;
 
     // 檢查請求格式 Check request format

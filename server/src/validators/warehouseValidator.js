@@ -26,18 +26,6 @@ const warehouseSchema = Joi.object({
       'any.required': '倉庫地址為必填項 Warehouse address is required'
     }),
 
-  // 聯繫人 Contact person
-  contact_person: Joi.string()
-    .required()
-    .min(1)
-    .max(50)
-    .messages({
-      'string.empty': '聯繫人不能為空 Contact person cannot be empty',
-      'string.min': '聯繫人最少需要 {#limit} 個字符 Contact person must be at least {#limit} characters',
-      'string.max': '聯繫人不能超過 {#limit} 個字符 Contact person cannot exceed {#limit} characters',
-      'any.required': '聯繫人為必填項 Contact person is required'
-    }),
-
   // 聯繫電話 Contact phone
   contact_phone: Joi.string()
     .required()

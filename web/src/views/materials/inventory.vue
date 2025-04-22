@@ -228,174 +228,16 @@
     size="lg"
   >
     <template #default>
-      <div class="inventory-form">
-        <!-- 基本信息 Basic Information -->
-        <div class="form-row">
-          <AppInput
-            v-model="form.name"
-            label="貨物名稱"
-            placeholder="請輸入貨物名稱"
-            required
-          />
-          <AppSelect
-            v-model="form.courseType"
-            label="課程種類"
-            :options="courseTypeOptionsRef"
-            placeholder="請選擇課程種類"
-            required
-          />
-        </div>
-
-        <!-- 數量信息 Quantity Information -->
-        <div class="form-row">
-          <AppInput
-            v-model="form.quantity"
-            label="當前數量"
-            type="number"
-            placeholder="請輸入數量"
-            required
-          />
-          <AppInput
-            v-model="form.minQuantity"
-            label="最小庫存量"
-            type="number"
-            placeholder="請輸入最小庫存量"
-            required
-          />
-          <AppInput
-            v-model="form.defectiveQuantity"
-            label="不良品數量"
-            type="number"
-            placeholder="請輸入不良品數量"
-          />
-        </div>
-
-        <!-- 倉庫位置 Warehouse Location -->
-        <div class="form-row">
-          <AppSelect
-            v-model="form.location"
-            label="倉庫位置"
-            :options="locationOptions"
-            placeholder="請選擇倉庫位置"
-            required
-          />
-        </div>
-
-        <!-- 價格信息 Price Information -->
-        <div class="form-row">
-          <div class="price-input">
-            <AppInput
-              v-model="form.unitPrice"
-              label="單價"
-              type="number"
-              placeholder="請輸入單價"
-              required
-            />
-            <div class="currency-select">
-              <AppSelect
-                v-model="form.unitPriceCurrency"
-                :options="currencyOptions"
-              />
-            </div>
-          </div>
-          <div class="price-input">
-            <AppInput
-              v-model="form.cost"
-              label="成本"
-              type="number"
-              placeholder="請輸入成本"
-              required
-            />
-            <div class="currency-select">
-              <AppSelect
-                v-model="form.costCurrency"
-                :options="currencyOptions"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- 圖片上傳 Image Upload -->
-        <div class="form-row qrcode-row">
-          <div class="qrcode-content">
-            <div v-if="form.image" class="selected-qrcode">
-              <img
-                :src="form.image.url"
-                class="qrcode-preview"
-                alt="商品圖片"
-              />
-              <div class="qrcode-info">
-                <p>{{ form.image.name }}</p>
-                <button class="remove-btn" @click="removeImage">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                  移除
-                </button>
-              </div>
-            </div>
-            <button
-              v-else
-              class="select-qrcode-btn"
-              @click="openImageUpload"
-              @dragover.prevent
-              @drop.prevent="handleImageDrop"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-              點擊或拖曳圖片至此處上傳
-            </button>
-          </div>
-        </div>
-
-        <!-- QR Code -->
-        <div class="form-row qrcode-row">
-          <div class="qrcode-content">
-            <button v-if="!form.qrcode" class="select-qrcode-btn" @click="openQRCodeSelect">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <path d="M7 7h.01"></path>
-                <path d="M17 7h.01"></path>
-                <path d="M7 17h.01"></path>
-                <path d="M17 17h.01"></path>
-              </svg>
-              選擇 QR Code
-            </button>
-            <div v-else class="selected-qrcode">
-              <img
-                :src="form.qrcode.url.startsWith('http') ? form.qrcode.url : `${API_BASE_URL}${form.qrcode.url}`"
-                :alt="form.qrcode.name"
-                class="qrcode-preview"
-              />
-              <div class="qrcode-info">
-                <p>{{ form.qrcode.name }}</p>
-                <button class="remove-btn" @click="form.qrcode = null">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                  移除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 備註 Notes -->
-        <div class="form-row">
-          <AppInput
-            v-model="form.notes"
-            label="備註"
-            type="textarea"
-            placeholder="請輸入備註"
-            :rows="3"
-          />
-        </div>
-      </div>
+      <InventoryForm
+        v-model="form"
+        :course-type-options="courseTypeOptionsRef"
+        :currency-options="currencyOptions"
+        :is-editing="isEditing"
+        @add-warehouse="addWarehouse"
+        @remove-warehouse="removeWarehouse"
+        @open-qrcode-select="openQRCodeSelect"
+        @remove-qrcode="removeQRCode"
+      />
     </template>
   </AppDialog>
 
@@ -526,12 +368,14 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
 import AppButton from '@/components/base/AppButton.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import AppDialog from '@/components/base/AppDialog.vue';
 import StatusBadge from '@/components/base/StatusBadge.vue';
+import InventoryForm from '@/components/inventory/InventoryForm.vue';
 import inventoryLogic from './inventory.js';
 
 export default {
@@ -542,7 +386,8 @@ export default {
     AppSelect,
     DataTable,
     AppDialog,
-    StatusBadge
+    StatusBadge,
+    InventoryForm
   },
   setup() {
     return {

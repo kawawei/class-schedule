@@ -36,12 +36,36 @@ const fetchCourseTypes = async () => {
 };
 
 // 倉庫位置選項 Warehouse location options
-const locationOptions = [
-  { label: '全部位置', value: '' },
-  { label: '倉庫A', value: 'A' },
-  { label: '倉庫B', value: 'B' },
-  { label: '倉庫C', value: 'C' }
-];
+const locationOptions = ref([]);
+
+// 獲取倉庫列表 Get warehouse list
+const fetchWarehouseList = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/warehouse`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const warehouses = await response.json();
+    locationOptions.value = [
+      { label: '全部位置', value: '' },
+      ...warehouses.map(warehouse => ({
+        label: warehouse.name,
+        value: warehouse.id.toString()
+      }))
+    ];
+  } catch (error) {
+    console.error('獲取倉庫列表失敗 Failed to fetch warehouse list:', error);
+    locationOptions.value = [
+      { label: '全部位置', value: '' }
+    ];
+  }
+};
 
 // 貨幣選項 Currency options
 const currencyOptions = [
@@ -187,6 +211,9 @@ const currencySelectProps = {
   selectedLabelKey: 'symbol'
 };
 
+// 當前頁面狀態 Current page state
+const currentPage = ref('basic');
+
 // 重置表單 Reset form
 const resetForm = () => {
   return {
@@ -194,18 +221,24 @@ const resetForm = () => {
     name: '',
     courseType: '',
     quantity: '',
-    minQuantity: '',
-    defectiveQuantity: '',
-    location: '',
-    unitPrice: '',
-    unitPriceCurrency: 'NT$', // 預設新台幣
-    cost: '',
-    costCurrency: 'NT$', // 預設新台幣
     notes: '',
     qrcode: null,
-    image: null // 添加圖片欄位 Add image field
+    image: null,
+    warehouses: [{
+      location: '',
+      minQuantity: '',
+      defectiveQuantity: '',
+      quantity: ''
+    }]
   };
+  currentPage.value = 'basic';
 };
+
+// 移除這裡的 addWarehouse 函數
+// const addWarehouse = () => { ... };
+
+// 移除這裡的 removeWarehouse 函數
+// const removeWarehouse = (index) => { ... };
 
 export default {
   name: 'InventoryLogic',
@@ -614,6 +647,8 @@ export default {
         loading.value = true;
         // 獲取課程種類 Get course types
         await fetchCourseTypes();
+        // 獲取倉庫列表 Get warehouse list
+        await fetchWarehouseList();
         // 獲取庫存列表 Get inventory list
         await fetchInventoryList();
       } catch (error) {
@@ -715,6 +750,25 @@ export default {
       form.value.image = null;
     };
 
+    // 新增倉庫函數移到這裡 Add warehouse function moved here
+    const addWarehouse = () => {
+      // 新增一個空的倉庫資訊 Add a new empty warehouse info
+      const newWarehouse = {
+        location: '', // 倉庫位置 warehouse location
+        quantity: 0, // 當前數量 current quantity
+        minQuantity: 0, // 最小庫存量 minimum quantity
+        defectiveQuantity: 0 // 不良品數量 defective quantity
+      };
+      
+      // 將新倉庫添加到倉庫列表中 Add new warehouse to the warehouse list
+      form.value.warehouses.push(newWarehouse);
+    };
+
+    // 移除倉庫函數移到這裡 Remove warehouse function moved here
+    const removeWarehouse = (index) => {
+      form.value.warehouses.splice(index, 1);
+    };
+
     return {
       // 狀態 State
       userName,
@@ -784,7 +838,10 @@ export default {
       openImageUpload,
       removeImage,
       handleImageDrop,
-      handleImageSelect
+      handleImageSelect,
+      addWarehouse,
+      removeWarehouse,
+      currentPage,
     };
   }
 }; 
