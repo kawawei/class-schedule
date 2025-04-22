@@ -17,7 +17,7 @@ exports.getInventoryList = async (req, res) => {
       include: [{
         model: WarehouseInventory,
         as: 'warehouses',
-        attributes: ['location', 'quantity', 'defectiveQuantity']
+        attributes: ['location', 'location_id', 'quantity', 'defectiveQuantity']
       }]
     });
 
@@ -50,7 +50,7 @@ exports.getInventoryDetails = async (req, res) => {
       include: [{
         model: WarehouseInventory,
         as: 'warehouses',
-        attributes: ['location', 'quantity', 'defectiveQuantity']
+        attributes: ['location', 'location_id', 'quantity', 'defectiveQuantity']
       }]
     });
 
@@ -166,6 +166,7 @@ exports.createInventory = async (req, res) => {
         const warehouseRecords = validWarehouses.map(warehouse => ({
           inventoryId: inventory.id,
           location: warehouse.location,
+          location_id: warehouse.location_id,
           quantity: Number(warehouse.quantity) || 0,
           defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
         }));
@@ -179,7 +180,7 @@ exports.createInventory = async (req, res) => {
       include: [{
         model: WarehouseInventory,
         as: 'warehouses',
-        attributes: ['location', 'quantity', 'defectiveQuantity']
+        attributes: ['location', 'location_id', 'quantity', 'defectiveQuantity']
       }]
     });
 
@@ -302,6 +303,7 @@ exports.updateInventory = async (req, res) => {
         const warehouseRecords = validWarehouses.map(warehouse => ({
           inventoryId: id,
           location: warehouse.location,
+          location_id: warehouse.location_id,
           quantity: Number(warehouse.quantity) || 0,
           defectiveQuantity: Number(warehouse.defectiveQuantity) || 0
         }));
@@ -315,7 +317,7 @@ exports.updateInventory = async (req, res) => {
       include: [{
         model: WarehouseInventory,
         as: 'warehouses',
-        attributes: ['location', 'quantity', 'defectiveQuantity']
+        attributes: ['location', 'location_id', 'quantity', 'defectiveQuantity']
       }]
     });
 

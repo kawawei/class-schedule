@@ -180,6 +180,7 @@
                 label="倉庫位置"
                 :options="warehouseOptions"
                 placeholder="請選擇倉庫"
+                @change="(value) => handleWarehouseSelect(value, index)"
               />
               <AppInput
                 v-model="warehouse.quantity"

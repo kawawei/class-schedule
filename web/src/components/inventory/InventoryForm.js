@@ -20,6 +20,7 @@ const resetForm = () => {
     image: null,
     warehouses: [{
       location: '', // 倉庫位置 warehouse location
+      location_id: null, // 倉庫ID warehouse ID
       quantity: 0, // 當前數量 current quantity
       minQuantity: 0, // 最小庫存量 minimum quantity
       defectiveQuantity: 0 // 不良品數量 defective quantity
@@ -50,6 +51,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     // 新增一個空的倉庫資訊 Add a new empty warehouse info
     const newWarehouse = {
       location: '', // 從現有倉庫列表中選擇 Select from existing warehouse list
+      location_id: null, // 倉庫ID warehouse ID
       quantity: 0, // 當前數量 current quantity
       minQuantity: 0, // 最小庫存量 minimum quantity
       defectiveQuantity: 0 // 不良品數量 defective quantity
@@ -193,6 +195,19 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     previewImageUrl.value = '';
   };
   
+  // 處理倉庫選擇 Handle warehouse selection
+  const handleWarehouseSelect = (value, index) => {
+    // 從 warehouseOptions 中找到對應的倉庫
+    // Find the corresponding warehouse from warehouseOptions
+    const selectedWarehouse = props.warehouseOptions.find(option => option.value === value);
+    if (selectedWarehouse) {
+      // 更新倉庫資訊
+      // Update warehouse information
+      form.value.warehouses[index].location = selectedWarehouse.label;
+      form.value.warehouses[index].location_id = selectedWarehouse.value;
+    }
+  };
+  
   // 提交表單 Submit form
   const submitForm = async () => {
     try {
@@ -286,6 +301,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     fetchQRCodes,
     previewImage,
     closeImagePreview,
+    handleWarehouseSelect,
     submitForm,
     resetForm
   };

@@ -282,7 +282,8 @@ export default {
     
     // 篩選後的貨物列表 Filtered inventory list
     const filteredInventory = computed(() => {
-      console.log('開始篩選貨物列表，當前篩選條件:', {
+      console.log('=== 開始篩選貨物列表 ===');
+      console.log('篩選條件:', {
         selectedLocation: selectedLocation.value,
         selectedType: selectedType.value,
         searchQuery: searchQuery.value,
@@ -291,28 +292,44 @@ export default {
       });
       
       let result = [...inventoryData.value];
+      console.log('原始數據數量:', result.length);
       
       // 倉庫位置過濾 Location filter
       if (selectedLocation.value) {
         console.log('正在按倉庫位置篩選:', selectedLocation.value);
-        result = result.filter(item => {
-          // 檢查是否有選定倉庫的庫存
-          const hasWarehouse = item.warehouses?.some(w => 
-            w.location === selectedLocation.value && w.quantity > 0
-          );
-          console.log('檢查貨物在選定倉庫的狀態:', {
-            itemName: item.name,
+        result = result.map(item => {
+          // 檢查貨物是否在選定的倉庫中有庫存
+          // Check if the item has stock in the selected warehouse
+          const hasStockInWarehouse = item.warehouses.some(w => w.location === selectedLocation.value);
+          console.log('貨物狀態:', {
+            name: item.name,
             warehouseId: selectedLocation.value,
-            hasStock: hasWarehouse
+            hasStock: hasStockInWarehouse,
+            warehouses: item.warehouses.map(w => ({
+              location: w.location,
+              quantity: w.quantity
+            }))
           });
 
-          if (hasWarehouse) {
+          if (hasStockInWarehouse) {
+            // 創建一個新的對象，而不是直接修改原始對象
+            // Create a new object instead of modifying the original one
+            const filteredItem = { ...item };
             // 只保留選定倉庫的數據
-            item.warehouses = item.warehouses.filter(w => w.location === selectedLocation.value);
+            filteredItem.warehouses = item.warehouses.filter(w => w.location === selectedLocation.value);
+            // 更新數量顯示
+            filteredItem.quantity = filteredItem.warehouses[0]?.quantity || 0;
+            filteredItem.defectiveQuantity = filteredItem.warehouses[0]?.defectiveQuantity || 0;
+            console.log('更新後的貨物數據:', {
+              name: filteredItem.name,
+              quantity: filteredItem.quantity,
+              defectiveQuantity: filteredItem.defectiveQuantity
+            });
+            return filteredItem;
           }
           
-          return hasWarehouse;
-        });
+          return null;
+        }).filter(Boolean); // 過濾掉 null 值
       }
       
       // 搜索過濾 Search filter
@@ -372,10 +389,17 @@ export default {
         });
       }
       
-      console.log('篩選後的結果:', {
-        totalItems: result.length,
-        items: result
-      });
+      console.log('=== 篩選結果 ===');
+      console.log('總數量:', result.length);
+      console.log('貨物列表:', result.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        defectiveQuantity: item.defectiveQuantity,
+        warehouses: item.warehouses.map(w => ({
+          location: w.location,
+          quantity: w.quantity
+        }))
+      })));
       
       return result;
     });
@@ -665,6 +689,17 @@ export default {
       previewImageUrl.value = '';
     };
     
+    // QR Code 選擇相關的狀態 QR Code selection related states
+    const qrcodeSelectVisible = ref(false);
+    const qrcodeList = ref([]);
+    const selectedQRCode = ref(null);
+    
+    // 關閉 QR Code 選擇對話框 Close QR Code selection dialog
+    const closeQRCodeSelect = () => {
+      qrcodeSelectVisible.value = false;
+      selectedQRCode.value = null;
+    };
+    
     return {
       // 狀態 State
       userName,
@@ -688,6 +723,9 @@ export default {
       selectedItem,
       imagePreviewVisible,
       previewImageUrl,
+      qrcodeSelectVisible,
+      qrcodeList,
+      selectedQRCode,
       
       // 選項 Options
       courseTypeOptionsRef,
@@ -723,7 +761,8 @@ export default {
       previewImage,
       closeImagePreview,
       getWarehouseName,
-      getWarehouseQuantity
+      getWarehouseQuantity,
+      closeQRCodeSelect
     };
   }
 };
