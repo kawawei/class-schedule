@@ -1,6 +1,6 @@
 const { Warehouse } = require('../models');
 const { validateWarehouse } = require('../validators/warehouseValidator');
-const ApiError = require('../utils/ApiError');
+const ApiError = require('../utils/apiError');
 
 // 獲取倉庫列表 Get warehouse list
 exports.getWarehouses = async (req, res, next) => {
