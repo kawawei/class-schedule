@@ -524,7 +524,16 @@ export default {
       try {
         const response = await axios.get(`/inventory/${item.id}`);
         if (response.data && response.data.success) {
-          selectedItem.value = response.data.data;
+          const itemData = response.data.data;
+          
+          // 如果選擇了特定倉庫，只保留該倉庫的數據
+          if (selectedLocation.value) {
+            itemData.warehouses = itemData.warehouses.filter(w => 
+              w.location === selectedLocation.value
+            );
+          }
+          
+          selectedItem.value = itemData;
           detailsDialogVisible.value = true;
         } else {
           throw new Error(response.data?.message || '獲取詳情失敗');
