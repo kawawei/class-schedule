@@ -345,13 +345,13 @@
             <div class="info-row">
               <span class="label">總數量：</span>
               <span class="value">{{ selectedLocation.value 
-                ? selectedItem.warehouses?.find(w => w.location === selectedLocation.value)?.quantity || 0
+                ? selectedItem?.warehouses?.find(w => w.location === selectedLocation.value)?.quantity || 0
                 : getTotalQuantity(selectedItem?.warehouses) }} 個</span>
             </div>
             <div class="info-row">
               <span class="label">總不良品數量：</span>
               <span class="value">{{ selectedLocation.value 
-                ? selectedItem.warehouses?.find(w => w.location === selectedLocation.value)?.defectiveQuantity || 0
+                ? selectedItem?.warehouses?.find(w => w.location === selectedLocation.value)?.defectiveQuantity || 0
                 : getTotalDefectiveQuantity(selectedItem?.warehouses) }} 個</span>
             </div>
           </div>
