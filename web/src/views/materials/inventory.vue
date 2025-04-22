@@ -232,11 +232,8 @@
         v-model="form"
         :course-type-options="courseTypeOptionsRef"
         :currency-options="currencyOptions"
+        :warehouse-options="locationOptions"
         :is-editing="isEditing"
-        @add-warehouse="addWarehouse"
-        @remove-warehouse="removeWarehouse"
-        @open-qrcode-select="openQRCodeSelect"
-        @remove-qrcode="removeQRCode"
       />
     </template>
   </AppDialog>

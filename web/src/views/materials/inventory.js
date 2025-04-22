@@ -4,6 +4,7 @@ import Message from '@/utils/message';
 import { courseAPI, scheduleAPI } from '@/utils/api';
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/api';
+import inventoryFormLogic from '@/components/inventory/InventoryForm';
 
 // 課程種類選項 Course type options
 const courseTypeOptionsRef = ref([]);
@@ -52,18 +53,13 @@ const fetchWarehouseList = async () => {
     }
 
     const warehouses = await response.json();
-    locationOptions.value = [
-      { label: '全部位置', value: '' },
-      ...warehouses.map(warehouse => ({
-        label: warehouse.name,
-        value: warehouse.id.toString()
-      }))
-    ];
+    locationOptions.value = warehouses.map(warehouse => ({
+      label: warehouse.name,
+      value: warehouse.id.toString()
+    }));
   } catch (error) {
     console.error('獲取倉庫列表失敗 Failed to fetch warehouse list:', error);
-    locationOptions.value = [
-      { label: '全部位置', value: '' }
-    ];
+    locationOptions.value = [];
   }
 };
 
@@ -211,35 +207,6 @@ const currencySelectProps = {
   selectedLabelKey: 'symbol'
 };
 
-// 當前頁面狀態 Current page state
-const currentPage = ref('basic');
-
-// 重置表單 Reset form
-const resetForm = () => {
-  return {
-    id: null,
-    name: '',
-    courseType: '',
-    quantity: '',
-    notes: '',
-    qrcode: null,
-    image: null,
-    warehouses: [{
-      location: '',
-      minQuantity: '',
-      defectiveQuantity: '',
-      quantity: ''
-    }]
-  };
-  currentPage.value = 'basic';
-};
-
-// 移除這裡的 addWarehouse 函數
-// const addWarehouse = () => { ... };
-
-// 移除這裡的 removeWarehouse 函數
-// const removeWarehouse = (index) => { ... };
-
 export default {
   name: 'InventoryLogic',
   setup() {
@@ -278,14 +245,9 @@ export default {
     const isEditing = ref(false);
     const itemToDelete = ref(null);
     
-    // 表單數據 Form data
-    const form = ref(resetForm());
-
-    // QR Code 選擇相關的狀態 QR Code selection related states
-    const qrcodeSelectVisible = ref(false);
-    const qrcodeList = ref([]);
-    const qrcodeLoading = ref(false);
-    const selectedQRCode = ref(null);
+    // 表單邏輯和數據 Form logic and data
+    const formLogic = inventoryFormLogic.createInventoryFormLogic();
+    const form = formLogic.form;
     
     // 詳情對話框狀態 Details dialog state
     const detailsDialogVisible = ref(false);
@@ -354,9 +316,11 @@ export default {
     };
     
     // 打開新增貨物對話框 Open add inventory dialog
-    const openAddInventoryDialog = () => {
+    const openAddInventoryDialog = async () => {
       isEditing.value = false;
-      resetForm();
+      form.value = inventoryFormLogic.resetForm();
+      // 獲取倉庫列表 Get warehouse list
+      await fetchWarehouseList();
       dialogVisible.value = true;
     };
 
@@ -368,6 +332,9 @@ export default {
     // 打開編輯貨物對話框 Open edit inventory dialog
     const editInventory = async (item) => {
       try {
+        // 獲取倉庫列表 Get warehouse list
+        await fetchWarehouseList();
+        
         // 獲取完整的貨物詳情 Get complete inventory details
         const response = await axios.get(`/inventory/${item.id}`);
         if (response.data && response.data.success) {
@@ -389,10 +356,12 @@ export default {
               url: itemData.qrcode_url,
               name: itemData.qrcode_name
             } : null,
-            // 從第一個倉庫獲取數據 Get data from the first warehouse
-            location: itemData.warehouses?.[0]?.location || '',
-            quantity: itemData.warehouses?.[0]?.quantity || 0,
-            defectiveQuantity: itemData.warehouses?.[0]?.defectiveQuantity || 0
+            warehouses: itemData.warehouses || [{
+              location: '',
+              quantity: 0,
+              minQuantity: 0,
+              defectiveQuantity: 0
+            }]
           };
           
           dialogVisible.value = true;
@@ -408,7 +377,7 @@ export default {
     // 關閉對話框 Close dialog
     const closeDialog = () => {
       dialogVisible.value = false;
-      form.value = resetForm();
+      form.value = inventoryFormLogic.resetForm();
     };
     
     // 獲取貨物列表 Get inventory list
@@ -442,71 +411,11 @@ export default {
 
     // 提交表單 Submit form
     const submitForm = async () => {
-      try {
-        loading.value = true;
-        
-        // 準備基本數據 Prepare basic data
-        const inventoryData = {
-          name: form.value.name,
-          courseType: form.value.courseType,
-          minQuantity: Number(form.value.minQuantity),
-          unitPrice: Number(form.value.unitPrice),
-          unitPriceCurrency: form.value.unitPriceCurrency,
-          cost: Number(form.value.cost),
-          costCurrency: form.value.costCurrency,
-          notes: form.value.notes,
-          qrcode_url: form.value.qrcode?.url,
-          qrcode_name: form.value.qrcode?.name,
-          warehouses: [{
-            location: form.value.location,
-            quantity: Number(form.value.quantity),
-            defectiveQuantity: Number(form.value.defectiveQuantity)
-          }]
-        };
-
-        let response;
-        
-        // 如果有圖片，使用 FormData If there's an image, use FormData
-        if (form.value.image?.file) {
-          const formData = new FormData();
-          formData.append('data', JSON.stringify(inventoryData));
-          formData.append('image', form.value.image.file);
-          
-          if (isEditing.value) {
-            response = await axios.put(`/inventory/${form.value.id}`, formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            });
-          } else {
-            response = await axios.post(`/inventory`, formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            });
-          }
-        } else {
-          // 如果沒有圖片，直接使用 JSON If no image, use JSON directly
-          if (isEditing.value) {
-            response = await axios.put(`/inventory/${form.value.id}`, inventoryData);
-          } else {
-            response = await axios.post(`/inventory`, inventoryData);
-          }
-        }
-
-        if (response.data && response.data.success) {
-          Message.success(isEditing.value ? '更新成功 / Update successful' : '創建成功 / Creation successful');
-          await fetchInventoryList();
-          dialogVisible.value = false;
-          form.value = resetForm();
-        } else {
-          throw new Error(response.data?.message || (isEditing.value ? '更新失敗' : '創建失敗'));
-        }
-      } catch (error) {
-        console.error('提交表單失敗:', error);
-        Message.error(error.message || '操作失敗');
-      } finally {
-        loading.value = false;
+      const success = await formLogic.submitForm();
+      if (success) {
+        await fetchInventoryList();
+        dialogVisible.value = false;
+        form.value = inventoryFormLogic.resetForm();
       }
     };
     
@@ -572,53 +481,6 @@ export default {
       } catch (error) {
         console.error('刪除失敗:', error);
         throw error;
-      }
-    };
-    
-    // QR Code 相關功能 QR Code related functions
-    const openQRCodeSelect = async () => {
-      await fetchQRCodes();
-      qrcodeSelectVisible.value = true;
-    };
-
-    const selectQRCode = (qrcode) => {
-      selectedQRCode.value = qrcode;
-    };
-
-    const confirmQRCodeSelect = () => {
-      if (selectedQRCode.value) {
-        form.value.qrcode = {
-          url: selectedQRCode.value.qrcode_url,
-          name: selectedQRCode.value.name
-        };
-      }
-      closeQRCodeSelect();
-    };
-
-    const closeQRCodeSelect = () => {
-      qrcodeSelectVisible.value = false;
-      selectedQRCode.value = null;
-    };
-
-    const fetchQRCodes = async () => {
-      try {
-        qrcodeLoading.value = true;
-        const response = await axios.get(`/qrcode`);
-        if (response.data && response.data.success) {
-          qrcodeList.value = response.data.data;
-        } else {
-          console.error('獲取 QR Code 列表失敗: 響應格式不正確', response.data);
-          Message.error('獲取 QR Code 列表失敗');
-        }
-      } catch (error) {
-        console.error('獲取 QR Code 列表失敗:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status
-        });
-        Message.error(error.response?.data?.message || '獲取 QR Code 列表失敗');
-      } finally {
-        qrcodeLoading.value = false;
       }
     };
     
@@ -690,85 +552,6 @@ export default {
       previewImageUrl.value = '';
     };
     
-    // 打開圖片上傳 Open image upload
-    const openImageUpload = async () => {
-      try {
-        // 創建文件輸入元素 Create file input element
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        
-        // 監聽文件選擇 Listen for file selection
-        input.onchange = (e) => handleImageSelect(e.target.files[0]);
-        
-        // 觸發文件選擇 Trigger file selection
-        input.click();
-      } catch (error) {
-        console.error('打開圖片上傳失敗:', error);
-        Message.error(error.message || '打開圖片上傳失敗');
-      }
-    };
-
-    // 處理圖片拖放 Handle image drop
-    const handleImageDrop = (e) => {
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleImageSelect(file);
-      }
-    };
-
-    // 處理圖片選擇 Handle image select
-    const handleImageSelect = (file) => {
-      if (!file) return;
-      
-      // 檢查文件類型 Check file type
-      if (!file.type.startsWith('image/')) {
-        Message.error('請選擇圖片文件 / Please select an image file');
-        return;
-      }
-      
-      // 檢查文件大小（最大 5MB）Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        Message.error('圖片大小不能超過 5MB / Image size cannot exceed 5MB');
-        return;
-      }
-      
-      // 創建預覽 Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        form.value.image = {
-          file,
-          url: e.target.result,
-          name: file.name
-        };
-      };
-      reader.readAsDataURL(file);
-    };
-    
-    // 移除圖片 Remove image
-    const removeImage = () => {
-      form.value.image = null;
-    };
-
-    // 新增倉庫函數移到這裡 Add warehouse function moved here
-    const addWarehouse = () => {
-      // 新增一個空的倉庫資訊 Add a new empty warehouse info
-      const newWarehouse = {
-        location: '', // 倉庫位置 warehouse location
-        quantity: 0, // 當前數量 current quantity
-        minQuantity: 0, // 最小庫存量 minimum quantity
-        defectiveQuantity: 0 // 不良品數量 defective quantity
-      };
-      
-      // 將新倉庫添加到倉庫列表中 Add new warehouse to the warehouse list
-      form.value.warehouses.push(newWarehouse);
-    };
-
-    // 移除倉庫函數移到這裡 Remove warehouse function moved here
-    const removeWarehouse = (index) => {
-      form.value.warehouses.splice(index, 1);
-    };
-
     return {
       // 狀態 State
       userName,
@@ -788,10 +571,6 @@ export default {
       isEditing,
       itemToDelete,
       form,
-      qrcodeSelectVisible,
-      qrcodeList,
-      qrcodeLoading,
-      selectedQRCode,
       detailsDialogVisible,
       selectedItem,
       imagePreviewVisible,
@@ -825,23 +604,12 @@ export default {
       getStockStatus,
       getStockStatusText,
       fetchInventoryList,
-      openQRCodeSelect,
-      selectQRCode,
-      confirmQRCodeSelect,
-      closeQRCodeSelect,
-      fetchQRCodes,
       getTotalQuantity,
       getTotalDefectiveQuantity,
       closeDetailsDialog,
       previewImage,
-      closeImagePreview,
-      openImageUpload,
-      removeImage,
-      handleImageDrop,
-      handleImageSelect,
-      addWarehouse,
-      removeWarehouse,
-      currentPage,
+      closeImagePreview
     };
   }
-}; 
+};
+

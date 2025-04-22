@@ -175,10 +175,12 @@
             </div>
 
             <div class="warehouse-row">
-              <AppInput
+              <AppSelect
                 v-model="warehouse.location"
                 label="倉庫位置"
-                placeholder="請輸入倉庫位置"
+                :options="warehouseOptions"
+                placeholder="請選擇倉庫"
+                required
               />
               <AppInput
                 v-model="warehouse.quantity"
@@ -203,14 +205,157 @@
         </div>
       </div>
     </div>
+
+    <!-- QR Code 選擇對話框 QR Code selection dialog -->
+    <AppDialog
+      v-model="qrcodeSelectVisible"
+      title="選擇 QR Code"
+      size="lg"
+      @close="closeQRCodeSelect"
+    >
+      <template #default>
+        <div class="qrcode-select">
+          <div class="qrcode-grid">
+            <div
+              v-for="qrcode in qrcodeList"
+              :key="qrcode.id"
+              class="qrcode-item"
+              :class="{ 'selected': selectedQRCode?.id === qrcode.id }"
+              @click="selectQRCode(qrcode)"
+            >
+              <div class="qrcode-image">
+                <img
+                  :src="qrcode.qrcode_url.startsWith('http') ? qrcode.qrcode_url : `${API_BASE_URL}${qrcode.qrcode_url}`"
+                  :alt="qrcode.name"
+                />
+              </div>
+              <div class="qrcode-name">{{ qrcode.name }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="dialog-footer">
+          <AppButton @click="closeQRCodeSelect">取消</AppButton>
+          <AppButton type="primary" @click="confirmQRCodeSelect" :disabled="!selectedQRCode">確定</AppButton>
+        </div>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
 <script>
-import InventoryForm from './InventoryForm.js';
-export default InventoryForm;
+import { ref } from 'vue';
+import AppInput from '@/components/base/AppInput.vue';
+import AppSelect from '@/components/base/AppSelect.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
+import AppButton from '@/components/base/AppButton.vue';
+import { API_BASE_URL } from '@/utils/api';
+import inventoryFormLogic from './InventoryForm.js';
+
+export default {
+  name: 'InventoryForm',
+  components: {
+    AppInput,
+    AppSelect,
+    AppDialog,
+    AppButton
+  },
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => ({})
+    },
+    courseTypeOptions: {
+      type: Array,
+      default: () => []
+    },
+    currencyOptions: {
+      type: Array,
+      default: () => []
+    },
+    warehouseOptions: {
+      type: Array,
+      default: () => []
+    },
+    isEditing: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    const formLogic = inventoryFormLogic.createInventoryFormLogic(props, emit);
+    const currentPage = ref('basic');
+
+    return {
+      ...formLogic,
+      currentPage,
+      API_BASE_URL
+    };
+  }
+};
 </script>
 
 <style lang="scss" scoped>
 @import './InventoryForm.scss';
+
+.qrcode-select {
+  padding: 20px;
+
+  .qrcode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+  }
+
+  .qrcode-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #409EFF;
+      box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+    }
+
+    &.selected {
+      border-color: #409EFF;
+      background-color: rgba(64,158,255,.1);
+    }
+
+    .qrcode-image {
+      width: 100%;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+
+      img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+    }
+
+    .qrcode-name {
+      text-align: center;
+      font-size: 14px;
+      color: #606266;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 20px;
+}
 </style> 
