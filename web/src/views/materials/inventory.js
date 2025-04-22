@@ -600,6 +600,11 @@ export default {
       selectedQRCode.value = null;
     };
 
+    // 移除 QR Code Remove QR Code
+    const removeQRCode = () => {
+      form.value.qrcode = null;
+    };
+
     const fetchQRCodes = async () => {
       try {
         qrcodeLoading.value = true;
@@ -829,6 +834,7 @@ export default {
       selectQRCode,
       confirmQRCodeSelect,
       closeQRCodeSelect,
+      removeQRCode,
       fetchQRCodes,
       getTotalQuantity,
       getTotalDefectiveQuantity,

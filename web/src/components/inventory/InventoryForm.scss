@@ -1,0 +1,749 @@
+// 圖片上傳區域樣式 Image upload area styles
+.image-upload {
+  width: 100%;
+  
+  label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-secondary);
+  }
+
+  .upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-light);
+    }
+
+    .selected-image {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-sm);
+
+      .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: contain;
+      }
+
+      .image-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+
+        p {
+          margin: 0;
+          color: var(--text-secondary);
+        }
+      }
+    }
+
+    .upload-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-sm);
+      color: var(--text-secondary);
+
+      svg {
+        color: var(--text-secondary);
+      }
+
+      p {
+        margin: 0;
+      }
+    }
+  }
+}
+
+// QR Code 選擇區域樣式 QR Code selection area styles
+.qrcode-row {
+  .qrcode-selection {
+    width: 100%;
+
+    label {
+      display: block;
+      margin-bottom: var(--spacing-xs);
+      color: var(--text-secondary);
+    }
+
+    .qrcode-content {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-md);
+
+      .selected-qrcode {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+
+        .qrcode-preview {
+          width: 100px;
+          height: 100px;
+          object-fit: contain;
+        }
+
+        .qrcode-info {
+          flex: 1;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          p {
+            margin: 0;
+            color: var(--text-primary);
+          }
+        }
+      }
+
+      .select-qrcode-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background-color: white;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &:hover {
+          border-color: var(--color-primary);
+          color: var(--color-primary);
+          background-color: var(--color-primary-light);
+        }
+
+        svg {
+          color: currentColor;
+        }
+      }
+    }
+  }
+}
+
+// 通用按鈕樣式 Common button styles
+.remove-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-danger);
+    color: white;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// 表單樣式 Form styles
+.inventory-form {
+  padding: var(--spacing-md);
+  
+  .form-row {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    
+    > * {
+      flex: 1;
+    }
+    
+    &.qrcode-row {
+      align-items: flex-start;
+      margin-bottom: var(--spacing-lg);
+      
+      .qrcode-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        
+        .select-qrcode-btn {
+          width: 100%;
+          height: 120px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 2px dashed var(--border-color);
+          border-radius: var(--radius-lg);
+          color: var(--text-secondary);
+          font-size: var(--font-size-md);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          
+          &:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background-color: var(--color-primary-light);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          
+          svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: var(--spacing-xs);
+          }
+        }
+        
+        .selected-qrcode {
+          width: 100%;
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg);
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-md);
+          min-height: 120px;
+          
+          &:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+        
+          .qrcode-preview {
+            width: 100px;
+            height: 100px;
+            padding: var(--spacing-xs);
+            background-color: white;
+            border-radius: var(--radius-md);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            object-fit: contain;
+          }
+          
+          .qrcode-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            p {
+              font-size: var(--font-size-md);
+              font-weight: 500;
+              color: var(--text-primary);
+              margin: 0;
+            }
+            
+            .remove-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: var(--spacing-xs);
+              padding: var(--spacing-sm) var(--spacing-md);
+              color: var(--color-danger);
+              font-size: var(--font-size-sm);
+              border-radius: var(--radius-sm);
+              background-color: transparent;
+              border: 1px solid transparent;
+              transition: all 0.2s ease;
+              cursor: pointer;
+              
+              &:hover {
+                color: var(--color-danger);
+                background-color: var(--color-danger-light);
+                border-color: var(--color-danger);
+              }
+              
+              svg {
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.image-row {
+      align-items: flex-start;
+      
+      .form-label {
+        flex: none;
+        width: 100px;
+        padding-top: var(--spacing-sm);
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+      }
+      
+      .image-content {
+        flex: 1;
+        
+        .selected-image {
+          display: flex;
+          gap: var(--spacing-md);
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg);
+          
+          .image-preview {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            background-color: white;
+            padding: var(--spacing-xs);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+          
+          .image-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            
+            .remove-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: var(--spacing-xs);
+              padding: var(--spacing-sm) var(--spacing-md);
+              color: var(--color-danger);
+              font-size: var(--font-size-sm);
+              border-radius: var(--radius-sm);
+              background-color: transparent;
+              border: 1px solid transparent;
+              transition: all 0.2s ease;
+              cursor: pointer;
+              
+              &:hover {
+                color: var(--color-danger);
+                background-color: var(--color-danger-light);
+                border-color: var(--color-danger);
+              }
+              
+              svg {
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+        
+        .upload-image-btn {
+          width: 100%;
+          height: 120px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-md);
+          background-color: var(--bg-secondary);
+          border: 2px dashed var(--border-color);
+          border-radius: var(--radius-lg);
+          color: var(--text-secondary);
+          font-size: var(--font-size-md);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          
+          &:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background-color: var(--color-primary-light);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          
+          svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: var(--spacing-xs);
+          }
+          
+          .upload-hint {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+          }
+        }
+      }
+    }
+
+    .price-input {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 85px;
+      gap: var(--spacing-xs);
+      align-items: flex-end;
+
+      .app-input {
+        width: 100%;
+      }
+
+      .currency-select {
+        width: 85px;
+        
+        :deep(.app-select) {
+          .select-trigger {
+            height: 36px;
+          }
+        }
+      }
+    }
+
+    // 價格行的特殊樣式
+    &:has(.price-input) {
+      gap: var(--spacing-lg); // 增加價格輸入框之間的間距
+      
+      .price-input {
+        flex: 1;
+        min-width: 0; // 防止溢出
+      }
+    }
+  }
+}
+
+// 對話框分頁樣式 Dialog tabs styles
+.dialog-tabs {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-md) 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--spacing-md);
+
+  .tab-button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: var(--color-primary);
+    }
+
+    &.active {
+      color: var(--color-primary);
+      font-weight: 500;
+
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--color-primary);
+      }
+    }
+  }
+}
+
+// 倉庫管理區域樣式 Warehouse management area styles
+.warehouse-section {
+  margin-top: var(--spacing-lg);
+
+  .warehouse-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+
+    h3 {
+      font-size: var(--font-size-lg);
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .add-warehouse-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background-color: white;
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-md);
+      color: var(--color-primary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: var(--color-primary);
+        color: white;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .warehouse-list {
+    .warehouse-item {
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .warehouse-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+
+        h4 {
+          margin: 0;
+          font-size: var(--font-size-md);
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        .remove-warehouse-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: none;
+          border-radius: var(--radius-md);
+          background-color: transparent;
+          color: var(--color-danger);
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: var(--color-danger-light);
+          }
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+
+      .warehouse-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+
+        .location-input {
+          width: 100%;
+        }
+
+        .inventory-table {
+          width: 100%;
+          overflow-x: auto;
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+
+            th, td {
+              padding: var(--spacing-sm);
+              border: 1px solid var(--border-color);
+              text-align: left;
+            }
+
+            th {
+              background-color: var(--bg-secondary);
+              font-weight: 500;
+              white-space: nowrap;
+            }
+
+            td {
+              min-width: 120px;
+
+              .app-input {
+                margin: 0;
+                
+                :deep(input) {
+                  border: none;
+                  padding: 4px;
+                  width: 100%;
+                  
+                  &:focus {
+                    outline: none;
+                    background-color: var(--color-primary-light);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        .no-spec-inventory {
+          .inventory-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-md);
+
+            :deep(.app-input) {
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.specifications-section {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+
+  .specifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .add-spec-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #0056b3;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .specifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .specification-item {
+      background-color: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 16px;
+
+      .specification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+
+        h4 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .remove-spec-btn {
+          padding: 4px;
+          background: none;
+          border: none;
+          color: #dc3545;
+          cursor: pointer;
+          transition: color 0.2s;
+
+          &:hover {
+            color: #c82333;
+          }
+        }
+      }
+
+      .specification-content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .specification-values {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+
+          .value-item {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+
+            .remove-value-btn {
+              padding: 8px;
+              background: none;
+              border: none;
+              color: #dc3545;
+              cursor: pointer;
+              transition: color 0.2s;
+
+              &:hover {
+                color: #c82333;
+              }
+            }
+          }
+
+          .add-value-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 8px;
+
+            &:hover {
+              background-color: #5a6268;
+            }
+
+            svg {
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+      }
+    }
+  }
+} 
