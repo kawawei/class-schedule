@@ -118,13 +118,19 @@
           </div>
         </template>
 
-        <!-- 自定義列插槽 Custom column slots -->
+        <!-- 數量欄位 Quantity column -->
         <template #quantity="{ row }">
-          <span :class="{ 'low-stock': getTotalQuantity(row.warehouses) <= row.minQuantity }">
-            {{ getTotalQuantity(row.warehouses) }}
+          <span :class="{ 'low-stock': getStockStatus(row) !== 'primary' }">
+            {{ getWarehouseQuantity(selectedLocation.value, 'normal', row.warehouses) }}
           </span>
         </template>
+
+        <!-- 不良品數量欄位 Defective quantity column -->
+        <template #defectiveQuantity="{ row }">
+          {{ getWarehouseQuantity(selectedLocation.value, 'defective', row.warehouses) }}
+        </template>
         
+        <!-- 狀態欄位 Status column -->
         <template #status="{ row }">
           <StatusBadge
             :status="getStockStatus(row)"
@@ -313,7 +319,9 @@
         </div>
         <div class="warehouse-list">
           <div 
-            v-for="warehouse in selectedItem?.warehouses" 
+            v-for="warehouse in (selectedLocation.value 
+              ? selectedItem?.warehouses?.filter(w => w.location === selectedLocation.value)
+              : selectedItem?.warehouses)" 
             :key="warehouse.location"
             class="warehouse-item"
           >
@@ -336,11 +344,15 @@
           <div class="total-info">
             <div class="info-row">
               <span class="label">總數量：</span>
-              <span class="value">{{ getTotalQuantity(selectedItem?.warehouses) }} 個</span>
+              <span class="value">{{ selectedLocation.value 
+                ? selectedItem.warehouses?.find(w => w.location === selectedLocation.value)?.quantity || 0
+                : getTotalQuantity(selectedItem?.warehouses) }} 個</span>
             </div>
             <div class="info-row">
               <span class="label">總不良品數量：</span>
-              <span class="value">{{ getTotalDefectiveQuantity(selectedItem?.warehouses) }} 個</span>
+              <span class="value">{{ selectedLocation.value 
+                ? selectedItem.warehouses?.find(w => w.location === selectedLocation.value)?.defectiveQuantity || 0
+                : getTotalDefectiveQuantity(selectedItem?.warehouses) }} 個</span>
             </div>
           </div>
         </div>

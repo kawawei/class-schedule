@@ -111,10 +111,7 @@ const inventoryColumns = [
     title: '當前數量',
     width: 120,
     align: 'center',
-    render: (row) => {
-      // 計算所有倉庫的總數量 Calculate total quantity from all warehouses
-      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.quantity || 0), 0) : 0;
-    }
+    slot: true
   },
   {
     key: 'minQuantity',
@@ -127,10 +124,7 @@ const inventoryColumns = [
     title: '不良品數量',
     width: 120,
     align: 'center',
-    render: (row) => {
-      // 計算所有倉庫的不良品總數量 Calculate total defective quantity from all warehouses
-      return row.warehouses ? row.warehouses.reduce((sum, w) => sum + (w.defectiveQuantity || 0), 0) : 0;
-    }
+    slot: true
   },
   {
     key: 'unitPrice',
@@ -265,7 +259,36 @@ export default {
     
     // 篩選後的貨物列表 Filtered inventory list
     const filteredInventory = computed(() => {
+      console.log('開始篩選貨物列表，當前篩選條件:', {
+        selectedLocation: selectedLocation.value,
+        selectedType: selectedType.value,
+        searchQuery: searchQuery.value,
+        minQuantity: minQuantity.value,
+        maxQuantity: maxQuantity.value
+      });
+      
       let result = [...inventoryData.value];
+      
+      // 倉庫位置過濾 Location filter
+      if (selectedLocation.value) {
+        console.log('正在按倉庫位置篩選:', selectedLocation.value);
+        result = result.map(item => {
+          // 創建新的物件，只包含選定倉庫的數據
+          const filteredWarehouses = item.warehouses?.filter(w => 
+            w.location === selectedLocation.value && w.quantity > 0
+          );
+          
+          if (filteredWarehouses?.length > 0) {
+            return {
+              ...item,
+              warehouses: filteredWarehouses
+            };
+          }
+          return null;
+        }).filter(Boolean); // 移除空值
+        
+        console.log('倉庫篩選後的結果:', result);
+      }
       
       // 搜索過濾 Search filter
       if (searchQuery.value) {
@@ -277,25 +300,53 @@ export default {
       }
       
       // 課程種類過濾 Course type filter
-      if (filters.courseType) {
-        result = result.filter(item => item.courseType === filters.courseType);
-      }
-      
-      // 倉庫位置過濾 Location filter
-      if (filters.location) {
-        result = result.filter(item => item.location === filters.location);
+      if (selectedType.value) {
+        result = result.filter(item => item.courseType === selectedType.value);
       }
       
       // 數量範圍過濾 Quantity range filter
-      if (filters.minQuantity) {
-        result = result.filter(item => item.quantity >= Number(filters.minQuantity));
+      if (minQuantity.value) {
+        const min = Number(minQuantity.value);
+        result = result.filter(item => {
+          const quantity = selectedLocation.value
+            ? item.warehouses[0].quantity
+            : getTotalQuantity(item.warehouses);
+          return quantity >= min;
+        });
       }
-      if (filters.maxQuantity) {
-        result = result.filter(item => item.quantity <= Number(filters.maxQuantity));
+      
+      if (maxQuantity.value) {
+        const max = Number(maxQuantity.value);
+        result = result.filter(item => {
+          const quantity = selectedLocation.value
+            ? item.warehouses[0].quantity
+            : getTotalQuantity(item.warehouses);
+          return quantity <= max;
+        });
       }
+      
+      console.log('篩選後的結果:', {
+        totalItems: result.length,
+        items: result
+      });
       
       return result;
     });
+    
+    // 獲取指定倉庫的數量 Get quantity for specific warehouse
+    const getWarehouseQuantity = (locationId, type = 'normal', warehouses) => {
+      if (!warehouses) return 0;
+      if (!locationId) {
+        return type === 'normal' 
+          ? getTotalQuantity(warehouses)
+          : getTotalDefectiveQuantity(warehouses);
+      }
+      
+      const warehouse = warehouses?.find(w => w.location === locationId);
+      return type === 'normal' 
+        ? (warehouse?.quantity || 0)
+        : (warehouse?.defectiveQuantity || 0);
+    };
     
     // 獲取庫存狀態 Get stock status
     const getStockStatus = (item) => {
@@ -548,8 +599,8 @@ export default {
     // 預覽圖片 Preview image
     const previewImage = (imageUrl) => {
       if (!imageUrl) return;
-      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
-      imagePreviewVisible.value = true;
+      previewImageUrl.value = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}/uploads/${row.company_code}/materials/${imageUrl}`;
+      showPreview.value = true;
     };
     
     // 關閉圖片預覽 Close image preview
@@ -615,7 +666,8 @@ export default {
       closeDetailsDialog,
       previewImage,
       closeImagePreview,
-      getWarehouseName
+      getWarehouseName,
+      getWarehouseQuantity
     };
   }
 };
