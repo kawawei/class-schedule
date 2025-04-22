@@ -12,6 +12,13 @@
       </button>
       <button 
         class="tab-button" 
+        :class="{ active: currentPage === 'specifications' }"
+        @click="currentPage = 'specifications'"
+      >
+        規格管理
+      </button>
+      <button 
+        class="tab-button" 
         :class="{ active: currentPage === 'inventory' }"
         @click="currentPage = 'inventory'"
       >
@@ -144,6 +151,79 @@
           type="textarea"
           placeholder="請輸入備註"
         />
+      </div>
+    </div>
+
+    <!-- 規格管理頁面 Specifications page -->
+    <div v-if="currentPage === 'specifications'" class="form-content">
+      <!-- 規格表格 Specification Table -->
+      <div class="spec-table-container">
+        <!-- 表格標題 Table Header -->
+        <div class="spec-table-header">
+          <div class="header-cell type-cell">規格種類 / Type</div>
+          <div class="header-cell values-cell">規格值 / Values</div>
+        </div>
+
+        <!-- 表格內容 Table Content -->
+        <div class="spec-table-body">
+          <div v-for="(spec, index) in specifications" :key="index" class="spec-row">
+            <!-- 規格種類 Type -->
+            <div class="type-cell">
+              <AppInput
+                v-model="spec.typeName"
+                placeholder="請輸入規格種類名稱"
+                class="type-input"
+              />
+            </div>
+
+            <!-- 規格值 Values -->
+            <div class="values-cell">
+              <div class="values-wrapper">
+                <div class="value-inputs">
+                  <div 
+                    v-for="(value, vIndex) in spec.values"
+                    :key="vIndex"
+                    class="value-input-wrapper"
+                  >
+                    <AppInput
+                      v-model="value.name"
+                      placeholder="請輸入規格值"
+                      class="value-input"
+                    />
+                    <button 
+                      class="icon-button delete-btn"
+                      @click.stop="removeSpecificationValue(index, vIndex)"
+                      title="刪除規格值"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <AppButton 
+                  type="text" 
+                  class="add-value-btn"
+                  @click.stop="addSpecificationValue(index)"
+                >
+                  添加規格值
+                </AppButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 新增規格種類按鈕 Add Specification Type Button -->
+        <div class="spec-table-footer">
+          <AppButton 
+            type="primary" 
+            class="add-spec-btn"
+            @click="addSpecificationType"
+          >
+            新增規格種類 / Add Specification Type
+          </AppButton>
+        </div>
       </div>
     </div>
 
@@ -285,7 +365,19 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    const formLogic = inventoryFormLogic.createInventoryFormLogic(props, emit);
+    const formLogic = {
+      ...inventoryFormLogic.createInventoryFormLogic(props, emit),
+      removeSpecificationValue(typeIndex, valueIndex) {
+        const currentSpec = this.specifications[typeIndex];
+        
+        currentSpec.values.splice(valueIndex, 1);
+        
+        if (currentSpec.values.length === 0) {
+          this.specifications.splice(typeIndex, 1);
+        }
+      }
+    };
+
     const currentPage = ref('basic');
 
     return {
@@ -300,62 +392,11 @@ export default {
 <style lang="scss" scoped>
 @import './InventoryForm.scss';
 
-.qrcode-select {
-  padding: 20px;
-
-  .qrcode-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 20px;
-  }
-
-  .qrcode-item {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-      border-color: #409EFF;
-      box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
-    }
-
-    &.selected {
-      border-color: #409EFF;
-      background-color: rgba(64,158,255,.1);
-    }
-
-    .qrcode-image {
-      width: 100%;
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-
-      img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-    }
-
-    .qrcode-name {
-      text-align: center;
-      font-size: 14px;
-      color: #606266;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-}
-
-.dialog-footer {
+// 添加新的樣式
+:deep(.spec-table-footer) {
+  padding: 16px;
+  border-top: 1px solid #EBEEF5;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 10px 20px;
+  justify-content: center;
 }
 </style> 

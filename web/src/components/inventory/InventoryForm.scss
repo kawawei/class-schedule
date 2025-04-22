@@ -422,8 +422,6 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       gap: 20px;
-      max-height: 400px;
-      overflow-y: auto;
     }
 
     .qrcode-item {
@@ -480,40 +478,51 @@
 // 對話框分頁樣式 Dialog tabs styles
 .dialog-tabs {
   display: flex;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-md) 0;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid #DCDFE6;
+  margin-bottom: 20px;
+}
 
-  .tab-button {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border: none;
-    background: none;
-    color: var(--text-secondary);
-    font-size: var(--font-size-md);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: var(--color-primary);
-    }
-
-    &.active {
-      color: var(--color-primary);
-      font-weight: 500;
-
-      &:after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background-color: var(--color-primary);
-      }
+.tab-button {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #606266;
+  cursor: pointer;
+  position: relative;
+  
+  &.active {
+    color: #409EFF;
+    font-weight: 500;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #409EFF;
     }
   }
+  
+  &:hover {
+    color: #409EFF;
+  }
+}
+
+.form-content {
+  padding: 20px;
+}
+
+// 移除舊的樣式
+.specifications-section,
+.specifications-table,
+.table-header,
+.table-body,
+.value-tag,
+.delete-type-btn {
+  display: none;
 }
 
 // 倉庫管理區域樣式 Warehouse management area styles
@@ -619,4 +628,176 @@
       }
     }
   }
+}
+
+.form-section {
+  margin: 24px 0;
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #333;
+    }
+  }
+}
+
+.add-spec-btn {
+  font-size: 14px;
+}
+
+.spec-table-container {
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #DCDFE6;
+
+  .spec-table-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+
+    .header-cell {
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+  }
+
+  .spec-table-body {
+    .spec-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+      align-items: start;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .type-cell {
+        padding-right: var(--spacing-md);
+      }
+
+      .values-cell {
+        .values-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+
+          .value-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+          }
+        }
+      }
+    }
+  }
+}
+
+.type-cell,
+.values-cell {
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.type-input {
+  width: 100%;
+}
+
+.values-wrapper {
+  width: 100%;
+  
+  .value-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+}
+
+.value-input {
+  width: 200px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+
+  :deep(.el-input-group__append) {
+    padding: 0;
+    border: none;
+  }
+}
+
+.add-value-btn {
+  color: #409EFF;
+  padding: 0;
+  height: auto;
+  
+  &:hover {
+    color: #66B1FF;
+  }
+}
+
+.remove-value-btn,
+.remove-type-btn {
+  padding: 8px;
+  border: none;
+  background: none;
+  color: #909399;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    color: #F56C6C;
+  }
+}
+
+.value-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+
+  .value-input {
+    flex: 1;
+  }
+
+  .delete-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background-color: var(--color-danger-light);
+    color: var(--color-danger);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--color-danger);
+      color: white;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// 移除不需要的樣式 Remove unnecessary styles
+.action-cell {
+  display: none;
 } 

@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, watch, unref, reactive } from 'vue';
 import AppInput from '@/components/base/AppInput.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
 import Message from '@/utils/message';
@@ -45,6 +45,12 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   // 圖片預覽相關 Image preview related
   const imagePreviewVisible = ref(false);
   const previewImageUrl = ref('');
+  
+  // 規格管理相關狀態 Specifications Management State
+  const specifications = reactive([]);
+  
+  // 防抖標誌 Debounce flags
+  const isProcessing = ref(false);
   
   // 新增倉庫函數 Add warehouse function
   const addWarehouse = () => {
@@ -208,6 +214,144 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     }
   };
   
+  // 刪除規格值 Remove Specification Value
+  const removeSpecificationValue = (typeIndex, valueIndex) => {
+    console.log('=== 刪除規格值 ===');
+    console.log('規格種類索引:', typeIndex);
+    console.log('規格值索引:', valueIndex);
+    console.log('刪除前的規格數據:', JSON.stringify(specifications));
+
+    if (specifications[typeIndex]?.values) {
+      // 只刪除指定的規格值 Only delete the specified value
+      specifications[typeIndex].values = specifications[typeIndex].values.filter((_, index) => index !== valueIndex);
+      console.log('刪除規格值後的數據:', JSON.stringify(specifications));
+    }
+  };
+
+  // 刪除規格種類 Remove Specification Type
+  const removeSpecificationType = (typeIndex) => {
+    console.log('=== 刪除規格種類 ===');
+    console.log('規格種類索引:', typeIndex);
+    console.log('刪除前的規格數據:', JSON.stringify(specifications));
+
+    specifications.splice(typeIndex, 1);
+    console.log('刪除後的規格數據:', JSON.stringify(specifications));
+  };
+
+  // 添加規格種類 Add Specification Type
+  const addSpecificationType = () => {
+    if (isProcessing.value) return;
+    isProcessing.value = true;
+
+    console.log('=== 添加規格種類 ===');
+    console.log('當前規格數量:', specifications.length);
+    
+    specifications.push(reactive({
+      typeName: '',
+      values: []
+    }));
+    
+    console.log('添加後規格數量:', specifications.length);
+    console.log('新增的規格內容:', specifications[specifications.length - 1]);
+
+    setTimeout(() => {
+      isProcessing.value = false;
+    }, 100);
+  };
+
+  // 添加規格值 Add Specification Value
+  const addSpecificationValue = (typeIndex) => {
+    if (isProcessing.value) return;
+    isProcessing.value = true;
+
+    console.log('=== 添加規格值 ===');
+    console.log('規格種類索引:', typeIndex);
+    console.log('添加前該規格的值數量:', specifications[typeIndex].values.length);
+    
+    if (!specifications[typeIndex].values) {
+      specifications[typeIndex].values = reactive([]);
+    }
+    
+    specifications[typeIndex].values.push(reactive({
+      name: ''
+    }));
+    
+    console.log('添加後該規格的值數量:', specifications[typeIndex].values.length);
+    console.log('添加後所有規格值:', JSON.stringify(specifications[typeIndex].values));
+
+    setTimeout(() => {
+      isProcessing.value = false;
+    }, 100);
+  };
+
+  // 生成所有規格組合 Generate All Specification Combinations
+  const generateSpecificationCombinations = () => {
+    // 只處理有效的規格（有名稱和至少一個值）Only process valid specifications
+    const validSpecs = specifications.filter(
+      spec => spec.typeName && spec.values.length > 0
+    );
+
+    if (validSpecs.length === 0) return [];
+
+    // 遞歸生成組合 Recursively generate combinations
+    const combine = (specs, current = {}, index = 0) => {
+      if (index === specs.length) {
+        return [current];
+      }
+
+      const spec = specs[index];
+      const results = [];
+
+      for (const value of spec.values) {
+        if (!value.name) continue; // 跳過空值 Skip empty values
+        const newCurrent = {
+          ...current,
+          [spec.typeName]: value.name
+        };
+        results.push(...combine(specs, newCurrent, index + 1));
+      }
+
+      return results;
+    };
+
+    return combine(validSpecs);
+  };
+
+  // 監聽規格變化並更新表單數據 Watch specification changes and update form data
+  let updateTimeout = null;
+  watch(specifications, (newValue) => {
+    // 清除之前的定時器 Clear previous timeout
+    if (updateTimeout) {
+      clearTimeout(updateTimeout);
+    }
+
+    // 使用定時器延遲更新 Use timeout to delay update
+    updateTimeout = setTimeout(() => {
+      console.log('=== 規格數據變化 ===');
+      console.log('變化後的完整規格數據:', JSON.stringify(newValue));
+      
+      const combinations = generateSpecificationCombinations();
+      // 更新表單數據中的規格信息 Update specifications in form data
+      const formData = unref(form);
+      formData.specifications = {
+        types: newValue
+          .filter(spec => spec.typeName.trim()) // 過濾空的規格名稱 Filter out empty type names
+          .map(spec => ({
+            name: spec.typeName,
+            values: spec.values
+              .map(v => v.name)
+              .filter(name => name.trim()) // 過濾空的規格值 Filter out empty values
+          })),
+        combinations: combinations
+      };
+      
+      console.log('更新到表單的規格數據:', JSON.stringify(formData.specifications));
+      emit('update:modelValue', formData);
+    }, 100);
+  }, { 
+    deep: true
+  });
+  
   // 提交表單 Submit form
   const submitForm = async () => {
     try {
@@ -230,7 +374,8 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
           quantity: Number(warehouse.quantity),
           minQuantity: Number(warehouse.minQuantity),
           defectiveQuantity: Number(warehouse.defectiveQuantity)
-        }))
+        })),
+        specifications: form.value.specifications
       };
 
       let response;
@@ -303,7 +448,12 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     closeImagePreview,
     handleWarehouseSelect,
     submitForm,
-    resetForm
+    resetForm,
+    specifications,
+    addSpecificationType,
+    removeSpecificationValue,
+    addSpecificationValue,
+    removeSpecificationType
   };
 };
 
