@@ -227,13 +227,13 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
         formData.append('image', form.value.image.file);
         
         if (form.value.id) {
-          response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, formData, {
+          response = await axios.put(`inventory/${form.value.id}`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
           });
         } else {
-          response = await axios.post(`${API_BASE_URL}/inventory`, formData, {
+          response = await axios.post('inventory', formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
@@ -242,9 +242,9 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
       } else {
         // 如果沒有圖片，直接使用 JSON If no image, use JSON directly
         if (form.value.id) {
-          response = await axios.put(`${API_BASE_URL}/inventory/${form.value.id}`, inventoryData);
+          response = await axios.put(`inventory/${form.value.id}`, inventoryData);
         } else {
-          response = await axios.post(`${API_BASE_URL}/inventory`, inventoryData);
+          response = await axios.post('inventory', inventoryData);
         }
       }
 
