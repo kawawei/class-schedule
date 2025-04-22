@@ -318,10 +318,32 @@ export default {
       // 搜索過濾 Search filter
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
-        result = result.filter(item => 
-          item.name.toLowerCase().includes(query) ||
-          item.courseType.toLowerCase().includes(query)
-        );
+        // 將全形轉換為半形的函數
+        const toHalfWidth = (str) => {
+          return str.replace(/[\uFF01-\uFF5E]/g, (char) => 
+            String.fromCharCode(char.charCodeAt(0) - 0xFEE0)
+          );
+        };
+        
+        result = result.filter(item => {
+          // 將貨物名稱轉換為半形
+          const normalizedName = toHalfWidth(item.name.toLowerCase());
+          // 將搜索關鍵字轉換為半形
+          const normalizedQuery = toHalfWidth(query);
+          
+          return normalizedName.includes(normalizedQuery) ||
+            item.courseType.toLowerCase().includes(query) ||
+            item.id.toString() === query;
+        });
+        
+        console.log('搜索結果:', {
+          query: query,
+          normalizedQuery: toHalfWidth(query),
+          items: result.map(item => ({
+            name: item.name,
+            normalizedName: toHalfWidth(item.name)
+          }))
+        });
       }
       
       // 課程種類過濾 Course type filter
