@@ -386,7 +386,9 @@ export default {
             costCurrency: itemData.costCurrency,
             notes: itemData.notes,
             qrcode: itemData.qrcode_url ? {
-              url: itemData.qrcode_url,
+              url: itemData.qrcode_url.startsWith('http') 
+                ? itemData.qrcode_url 
+                : `${API_BASE_URL}${itemData.qrcode_url}`,
               name: itemData.qrcode_name
             } : null,
             // 從第一個倉庫獲取數據 Get data from the first warehouse
@@ -588,7 +590,9 @@ export default {
     const confirmQRCodeSelect = () => {
       if (selectedQRCode.value) {
         form.value.qrcode = {
-          url: selectedQRCode.value.qrcode_url,
+          url: selectedQRCode.value.qrcode_url.startsWith('http') 
+            ? selectedQRCode.value.qrcode_url 
+            : `${API_BASE_URL}${selectedQRCode.value.qrcode_url}`,
           name: selectedQRCode.value.name
         };
       }
