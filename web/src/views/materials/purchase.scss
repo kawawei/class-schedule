@@ -1,0 +1,194 @@
+// 進貨管理頁面樣式 Purchase Management Page Styles
+.purchase-page {
+  .purchase-content {
+    padding: var(--spacing-lg);
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+
+      h2 {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+      }
+    }
+
+    .advanced-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+      padding: var(--spacing-md);
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-md);
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+
+        label {
+          font-size: var(--font-size-sm);
+          color: var(--text-secondary);
+        }
+
+        &.add-button {
+          justify-content: flex-end;
+          align-items: flex-end;
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-xs);
+      justify-content: center;
+
+      .icon-button {
+        padding: 4px 8px;
+        background: transparent !important;
+        border: none !important;
+        color: var(--text-primary);
+        transition: color 0.3s ease;
+        min-width: unset !important;
+        height: unset !important;
+        opacity: 1 !important;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          color: var(--color-primary);
+          background: var(--bg-hover) !important;
+        }
+
+        &.view-btn {
+          color: var(--color-primary);
+          
+          &:hover {
+            color: var(--color-primary-dark);
+          }
+        }
+
+        &.approve-btn {
+          color: var(--color-success);
+          
+          &:hover {
+            color: var(--color-success-dark);
+          }
+        }
+
+        &.reject-btn {
+          color: var(--color-danger);
+          
+          &:hover {
+            color: var(--color-danger-dark);
+          }
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+
+      &.pending {
+        background-color: var(--color-warning-light);
+        color: var(--color-warning);
+      }
+
+      &.approved {
+        background-color: var(--color-success-light);
+        color: var(--color-success);
+      }
+
+      &.rejected {
+        background-color: var(--color-danger-light);
+        color: var(--color-danger);
+      }
+    }
+  }
+}
+
+// 進貨單表單樣式 Purchase Order Form Styles
+.purchase-form {
+  .form-section {
+    margin-bottom: var(--spacing-lg);
+
+    h3 {
+      margin-bottom: var(--spacing-md);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--spacing-md);
+    }
+  }
+
+  .items-list {
+    margin-top: var(--spacing-md);
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: var(--spacing-md);
+      align-items: center;
+      padding: var(--spacing-sm);
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--spacing-sm);
+    }
+  }
+}
+
+// 進貨單詳情樣式 Purchase Order Details Styles
+.purchase-details {
+  .details-header {
+    margin-bottom: var(--spacing-lg);
+
+    h3 {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .status {
+      margin-top: var(--spacing-sm);
+    }
+  }
+
+  .details-content {
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--spacing-sm) 0;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .label {
+        color: var(--text-secondary);
+      }
+    }
+  }
+} 

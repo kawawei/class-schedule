@@ -83,6 +83,26 @@ const WarehouseIcon = {
   }
 };
 
+const PurchaseIcon = {
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z' }),
+      h('line', { x1: 3, y1: 6, x2: 21, y2: 6 }),
+      h('path', { d: 'M16 10a4 4 0 0 1-8 0' })
+    ]);
+  }
+};
+
 // 定義標籤頁配置 Define tab configurations
 const tabs = [
   {
@@ -90,6 +110,12 @@ const tabs = [
     label: '教材管理',
     icon: MaterialIcon,
     iconBg: 'rgba(0, 122, 255, 0.1)'
+  },
+  {
+    key: 'purchase',
+    label: '進貨管理',
+    icon: PurchaseIcon,
+    iconBg: 'rgba(255, 149, 0, 0.1)'
   },
   {
     key: 'qrcode',
