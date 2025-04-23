@@ -69,6 +69,11 @@ export const useProcurementManagement = () => {
   // 當前選中的日期範圍 Current selected date range
   const activeDateRange = ref('');
 
+  // 對話框顯示控制 Dialog visibility control
+  const showProcurementDialog = ref(false);
+  const dialogType = ref('add'); // 'add' or 'edit'
+  const currentProcurement = ref(null);
+
   // 過濾後的採購單列表 Filtered procurement list
   const filteredProcurements = computed(() => {
     return procurements.value.filter(procurement => {
@@ -155,7 +160,30 @@ export const useProcurementManagement = () => {
 
   // 開啟新增採購單對話框 Open add procurement dialog
   const openAddProcurementDialog = () => {
-    Message.info('此功能開發中');
+    dialogType.value = 'add';
+    currentProcurement.value = null;
+    showProcurementDialog.value = true;
+  };
+
+  // 關閉採購單對話框 Close procurement dialog
+  const closeProcurementDialog = () => {
+    showProcurementDialog.value = false;
+    currentProcurement.value = null;
+  };
+
+  // 處理採購單提交 Handle procurement form submission
+  const handleProcurementSubmit = async (formData) => {
+    try {
+      loading.value = true;
+      // TODO: 實現採購單提交邏輯
+      console.log('提交的採購單數據：', formData);
+      Message.success('採購單提交成功');
+      closeProcurementDialog();
+    } catch (error) {
+      Message.error('採購單提交失敗');
+    } finally {
+      loading.value = false;
+    }
   };
 
   // 查看採購單詳情 View procurement details
@@ -199,7 +227,12 @@ export const useProcurementManagement = () => {
     isActiveDateRange,
     handleDateRangeSelect,
     getStatusText,
+    showProcurementDialog,
+    dialogType,
+    currentProcurement,
     openAddProcurementDialog,
+    closeProcurementDialog,
+    handleProcurementSubmit,
     viewProcurementDetails,
     approveProcurement,
     rejectProcurement,

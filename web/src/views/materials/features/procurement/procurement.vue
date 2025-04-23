@@ -134,6 +134,20 @@
           </div>
         </template>
       </DataTable>
+
+      <!-- 採購單表單對話框 Procurement Form Dialog -->
+      <AppDialog
+        v-model="showProcurementDialog"
+        :title="dialogType === 'add' ? '新增採購單' : '編輯採購單'"
+        width="80%"
+        destroy-on-close
+      >
+        <ProcurementForm
+          :initial-data="currentProcurement"
+          @submit="handleProcurementSubmit"
+          @cancel="closeProcurementDialog"
+        />
+      </AppDialog>
     </div>
   </div>
 </template>
@@ -142,8 +156,10 @@
 import AppButton from '@/components/base/AppButton.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import { useProcurementManagement } from './procurement';
+import ProcurementForm from './components/ProcurementForm.vue'
 
 export default {
   name: 'ProcurementManagement',
@@ -152,7 +168,9 @@ export default {
     AppButton,
     AppInput,
     AppSelect,
-    DataTable
+    AppDialog,
+    DataTable,
+    ProcurementForm
   },
 
   setup() {

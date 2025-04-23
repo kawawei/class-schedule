@@ -2,7 +2,11 @@
   <transition name="dialog-fade">
     <div v-if="modelValue" class="app-dialog-overlay" @click.self="closeDialog">
       <transition name="dialog-zoom">
-        <div class="app-dialog" :class="{ 'app-dialog-lg': size === 'lg', 'app-dialog-sm': size === 'sm' }">
+        <div 
+          class="app-dialog" 
+          :class="{ 'app-dialog-lg': size === 'lg', 'app-dialog-sm': size === 'sm' }"
+          :style="width ? { width: typeof width === 'number' ? `${width}px` : width } : {}"
+        >
           <div class="app-dialog-header">
             <h3 class="app-dialog-title">{{ title }}</h3>
             <button class="app-dialog-close" @click="closeDialog">×</button>
@@ -40,6 +44,11 @@ export default {
       type: String,
       default: 'md',
       validator: (value) => ['sm', 'md', 'lg'].includes(value)
+    },
+    // 自定義寬度 Custom width
+    width: {
+      type: [String, Number],
+      default: ''
     },
     // 對話框是否可見 Dialog visibility (v-model)
     modelValue: {
@@ -144,8 +153,8 @@ export default {
   backdrop-filter: blur(5px);
   border-radius: var(--radius-md);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  width: 500px;
-  max-width: 100%;
+  width: 500px; // 中等尺寸的預設寬度 Default width for medium size
+  max-width: 95vw; // 確保在小螢幕上不會溢出 Ensure no overflow on small screens
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -154,11 +163,12 @@ export default {
   z-index: 1000000;
   
   &.app-dialog-sm {
-    width: 400px;
+    width: 400px; // 小型對話框寬度 Small dialog width
   }
   
   &.app-dialog-lg {
-    width: 700px;
+    width: 900px; // 加寬大型對話框 Increase large dialog width
+    min-width: 800px; // 設置最小寬度 Set minimum width
   }
 }
 
@@ -212,5 +222,21 @@ export default {
 // 確認刪除對話框的按鈕置中對齊
 .app-dialog-sm .app-dialog-footer {
   justify-content: center; // 小型對話框（如確認刪除）按鈕置中對齊
+}
+
+// 在小螢幕上的響應式設計 Responsive design for small screens
+@media (max-width: 992px) {
+  .app-dialog {
+    width: 95vw;
+    
+    &.app-dialog-lg {
+      width: 95vw;
+      min-width: auto; // 在小螢幕上取消最小寬度限制 Remove minimum width constraint on small screens
+    }
+    
+    &.app-dialog-sm {
+      width: 90vw;
+    }
+  }
 }
 </style> 
