@@ -9,22 +9,24 @@ import { API_BASE_URL } from '@/utils/api';
 const resetForm = () => {
   return {
     id: null,
-    name: '',
-    courseType: '',
-    unitPrice: '',
-    unitPriceCurrency: 'NT$',
-    cost: '',
-    costCurrency: 'NT$',
-    notes: '',
-    qrcode: null,
-    image: null,
+    name: '', // 貨物名稱 Item name
+    courseType: '', // 課程種類 Course type
+    minQuantity: 0, // 最小庫存量 Minimum quantity
+    unitPrice: 0, // 單價 Unit price
+    unitPriceCurrency: 'NT$', // 單價貨幣 Unit price currency
+    cost: 0, // 成本 Cost
+    costCurrency: 'NT$', // 成本貨幣 Cost currency
+    notes: '', // 備註 Notes
+    qrcode: null, // QR Code
+    image: null, // 圖片 Image
     warehouses: [{
-      location: '', // 倉庫位置 warehouse location
-      location_id: null, // 倉庫ID warehouse ID
-      quantity: 0, // 當前數量 current quantity
-      minQuantity: 0, // 最小庫存量 minimum quantity
-      defectiveQuantity: 0 // 不良品數量 defective quantity
-    }]
+      location: '', // 倉庫位置 Warehouse location
+      location_id: null, // 倉庫ID Warehouse ID
+      quantity: 0, // 當前數量 Current quantity
+      minQuantity: 0, // 最小庫存量 Minimum quantity
+      defectiveQuantity: 0 // 不良品數量 Defective quantity
+    }],
+    specifications: null // 規格 Specifications
   };
 };
 
@@ -69,9 +71,16 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   
   // 防抖標誌 Debounce flags
   const isProcessing = ref(false);
+
+  // 監聽表單變化 Watch form changes
+  watch(form, (newVal) => {
+    console.log('=== 表單數據更新 (Form Data Updated) ===');
+    console.log(JSON.stringify(newVal, null, 2));
+  }, { deep: true });
   
   // 新增倉庫函數 Add warehouse function
   const addWarehouse = () => {
+    console.log('=== 新增倉庫 (Add Warehouse) ===');
     // 新增一個空的倉庫資訊 Add a new empty warehouse info
     const newWarehouse = {
       location: '', // 從現有倉庫列表中選擇 Select from existing warehouse list
@@ -83,15 +92,21 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     
     // 將新倉庫添加到倉庫列表中 Add new warehouse to the warehouse list
     form.value.warehouses.push(newWarehouse);
+    console.log('新增倉庫後的倉庫列表:', form.value.warehouses);
   };
 
   // 移除倉庫函數 Remove warehouse function
   const removeWarehouse = (index) => {
+    console.log('=== 移除倉庫 (Remove Warehouse) ===');
+    console.log('移除的倉庫索引:', index);
+    console.log('移除前的倉庫列表:', form.value.warehouses);
     form.value.warehouses.splice(index, 1);
+    console.log('移除後的倉庫列表:', form.value.warehouses);
   };
   
   // 打開圖片上傳 Open image upload
   const openImageUpload = async () => {
+    console.log('=== 打開圖片上傳 (Open Image Upload) ===');
     try {
       // 創建文件輸入元素 Create file input element
       const input = document.createElement('input');
@@ -111,14 +126,19 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
 
   // 處理圖片拖放 Handle image drop
   const handleImageDrop = (e) => {
+    console.log('=== 處理圖片拖放 (Handle Image Drop) ===');
     const file = e.dataTransfer.files[0];
     if (file) {
+      console.log('拖放的圖片文件:', file.name);
       handleImageSelect(file);
     }
   };
 
   // 處理圖片選擇 Handle image select
   const handleImageSelect = (file) => {
+    console.log('=== 處理圖片選擇 (Handle Image Select) ===');
+    console.log('選擇的圖片文件:', file.name);
+    
     if (!file) return;
     
     // 檢查文件類型 Check file type
@@ -141,17 +161,22 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
         url: e.target.result,
         name: file.name
       };
+      console.log('圖片已上傳:', form.value.image);
     };
     reader.readAsDataURL(file);
   };
   
   // 移除圖片 Remove image
   const removeImage = () => {
+    console.log('=== 移除圖片 (Remove Image) ===');
+    console.log('移除前的圖片:', form.value.image);
     form.value.image = null;
+    console.log('移除後的圖片:', form.value.image);
   };
   
   // QR Code 相關功能 QR Code related functions
   const openQRCodeSelect = async () => {
+    console.log('=== 打開 QR Code 選擇 (Open QR Code Select) ===');
     try {
       await fetchQRCodes();
       qrcodeSelectVisible.value = true;
@@ -162,10 +187,13 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   };
 
   const selectQRCode = (qrcode) => {
+    console.log('=== 選擇 QR Code (Select QR Code) ===');
+    console.log('選擇的 QR Code:', qrcode);
     selectedQRCode.value = qrcode;
   };
 
   const confirmQRCodeSelect = () => {
+    console.log('=== 確認 QR Code 選擇 (Confirm QR Code Select) ===');
     if (selectedQRCode.value) {
       form.value.qrcode = {
         url: selectedQRCode.value.qrcode_url.startsWith('http') 
@@ -173,34 +201,40 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
           : `${API_BASE_URL}${selectedQRCode.value.qrcode_url}`,
         name: selectedQRCode.value.name
       };
+      console.log('已選擇的 QR Code:', form.value.qrcode);
     }
     closeQRCodeSelect();
   };
 
   const closeQRCodeSelect = () => {
+    console.log('=== 關閉 QR Code 選擇 (Close QR Code Select) ===');
     qrcodeSelectVisible.value = false;
     selectedQRCode.value = null;
   };
 
   // 移除 QR Code Remove QR Code
   const removeQRCode = () => {
+    console.log('=== 移除 QR Code (Remove QR Code) ===');
+    console.log('移除前的 QR Code:', form.value.qrcode);
     form.value.qrcode = null;
+    console.log('移除後的 QR Code:', form.value.qrcode);
   };
 
   const fetchQRCodes = async () => {
+    console.log('=== 獲取 QR Code 列表 (Fetch QR Codes) ===');
     try {
       qrcodeLoading.value = true;
       const response = await axios.get('qrcode');
       
       if (response.data && response.data.success) {
         qrcodeList.value = response.data.data;
+        console.log('獲取的 QR Code 列表:', qrcodeList.value);
       } else {
         throw new Error(response.data?.message || '獲取 QR Code 列表失敗');
       }
     } catch (error) {
       console.error('獲取 QR Code 列表失敗:', error);
-      Message.error(error.message || '獲取 QR Code 列表失敗');
-      throw error;
+      Message.error('獲取 QR Code 列表失敗');
     } finally {
       qrcodeLoading.value = false;
     }
@@ -221,6 +255,10 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   
   // 處理倉庫選擇 Handle warehouse selection
   const handleWarehouseSelect = (value, index) => {
+    console.log('=== 處理倉庫選擇 (Handle Warehouse Select) ===');
+    console.log('選擇的值:', value);
+    console.log('倉庫索引:', index);
+    
     // 從 warehouseOptions 中找到對應的倉庫
     // Find the corresponding warehouse from warehouseOptions
     const selectedWarehouse = props.warehouseOptions.find(option => option.value === value);
@@ -229,12 +267,13 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
       // Update warehouse information
       form.value.warehouses[index].location = selectedWarehouse.label;
       form.value.warehouses[index].location_id = selectedWarehouse.value;
+      console.log('更新後的倉庫資訊:', form.value.warehouses[index]);
     }
   };
   
   // 刪除規格值 Remove Specification Value
   const removeSpecificationValue = (typeIndex, valueIndex) => {
-    console.log('=== 刪除規格值 ===');
+    console.log('=== 刪除規格值 (Remove Specification Value) ===');
     console.log('規格種類索引:', typeIndex);
     console.log('規格值索引:', valueIndex);
     console.log('刪除前的規格數據:', JSON.stringify(specifications));
@@ -248,7 +287,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
 
   // 刪除規格種類 Remove Specification Type
   const removeSpecificationType = (typeIndex) => {
-    console.log('=== 刪除規格種類 ===');
+    console.log('=== 刪除規格種類 (Remove Specification Type) ===');
     console.log('規格種類索引:', typeIndex);
     console.log('刪除前的規格數據:', JSON.stringify(specifications));
 
@@ -261,7 +300,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     if (isProcessing.value) return;
     isProcessing.value = true;
 
-    console.log('=== 添加規格種類 ===');
+    console.log('=== 添加規格種類 (Add Specification Type) ===');
     console.log('當前規格數量:', specifications.length);
     
     const newSpec = reactive({
@@ -288,7 +327,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     if (isProcessing.value) return;
     isProcessing.value = true;
 
-    console.log('=== 添加規格值 ===');
+    console.log('=== 添加規格值 (Add Specification Value) ===');
     console.log('規格種類索引:', typeIndex);
     console.log('添加前該規格的值數量:', specifications[typeIndex].values.length);
     
@@ -464,30 +503,49 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   
   // 提交表單 Submit form
   const submitForm = async () => {
+    console.log('=== 提交表單 (Submit Form) ===');
+    console.log('表單數據:', JSON.stringify(form.value, null, 2));
+    
     try {
       loading.value = true;
       
+      // 驗證必填字段 Validate required fields
+      if (!form.value.name) {
+        throw new Error('請輸入貨物名稱 / Please enter item name');
+      }
+      if (!form.value.courseType) {
+        throw new Error('請選擇課程種類 / Please select course type');
+      }
+      
       // 準備基本數據 Prepare basic data
       const inventoryData = {
-        name: form.value.name,
+        name: form.value.name.trim(),
         courseType: form.value.courseType,
-        minQuantity: Number(form.value.minQuantity),
-        unitPrice: Number(form.value.unitPrice),
-        unitPriceCurrency: form.value.unitPriceCurrency,
-        cost: Number(form.value.cost),
-        costCurrency: form.value.costCurrency,
-        notes: form.value.notes,
-        qrcode_url: form.value.qrcode?.url,
-        qrcode_name: form.value.qrcode?.name,
+        minQuantity: Math.max(0, Number(form.value.minQuantity) || 0),
+        unitPrice: Math.max(0, Number(form.value.unitPrice) || 0),
+        unitPriceCurrency: form.value.unitPriceCurrency || 'NT$',
+        cost: Math.max(0, Number(form.value.cost) || 0),
+        costCurrency: form.value.costCurrency || 'NT$',
+        notes: (form.value.notes || '').trim(),
+        qrcode_url: form.value.qrcode?.url || null,
+        qrcode_name: form.value.qrcode?.name || null,
         warehouses: form.value.warehouses.map(warehouse => ({
           location: warehouse.location,
-          quantity: Number(warehouse.quantity),
-          minQuantity: Number(warehouse.minQuantity),
-          defectiveQuantity: Number(warehouse.defectiveQuantity)
-        })),
-        specifications: form.value.specifications
+          location_id: warehouse.location_id,
+          quantity: Math.max(0, Number(warehouse.quantity) || 0),
+          minQuantity: Math.max(0, Number(warehouse.minQuantity) || 0),
+          defectiveQuantity: Math.max(0, Number(warehouse.defectiveQuantity) || 0)
+        })).filter(w => w.location), // 只保留有倉庫位置的記錄 Only keep records with warehouse location
+        specifications: form.value.specifications || null
       };
 
+      // 驗證倉庫數據 Validate warehouse data
+      if (!inventoryData.warehouses.length) {
+        throw new Error('請至少添加一個倉庫位置 / Please add at least one warehouse location');
+      }
+
+      console.log('準備提交的數據:', JSON.stringify(inventoryData, null, 2));
+      
       let response;
       
       // 如果有圖片，使用 FormData If there's an image, use FormData
@@ -519,6 +577,7 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
       }
 
       if (response.data && response.data.success) {
+        console.log('提交成功:', response.data);
         Message.success(form.value.id ? '更新成功 / Update successful' : '創建成功 / Creation successful');
         return true;
       } else {

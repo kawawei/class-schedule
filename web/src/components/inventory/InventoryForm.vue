@@ -35,6 +35,7 @@
           label="貨物名稱"
           placeholder="請輸入貨物名稱"
           required
+          @input="console.log('貨物名稱已更新:', form.name)"
         />
         <AppSelect
           v-model="form.courseType"
@@ -42,6 +43,7 @@
           :options="courseTypeOptions"
           placeholder="請選擇課程種類"
           required
+          @change="console.log('課程種類已更新:', form.courseType)"
         />
       </div>
 
@@ -54,11 +56,13 @@
             type="number"
             placeholder="請輸入單價"
             required
+            @input="console.log('單價已更新:', form.unitPrice)"
           />
           <AppSelect
             v-model="form.unitPriceCurrency"
             :options="currencyOptions"
             class="currency-select"
+            @change="console.log('單價貨幣已更新:', form.unitPriceCurrency)"
           />
         </div>
         <div class="price-input">
@@ -68,11 +72,13 @@
             type="number"
             placeholder="請輸入成本"
             required
+            @input="console.log('成本已更新:', form.cost)"
           />
           <AppSelect
             v-model="form.costCurrency"
             :options="currencyOptions"
             class="currency-select"
+            @change="console.log('成本貨幣已更新:', form.costCurrency)"
           />
         </div>
       </div>
@@ -84,6 +90,7 @@
             <div class="selected-image">
               <img :src="form.image.url" :alt="form.image.name" class="image-preview" />
               <div class="image-info">
+                <p>已選擇圖片: {{ form.image.name }}</p>
                 <button class="remove-btn" @click="removeImage">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -119,7 +126,7 @@
             <div class="selected-qrcode">
               <img :src="form.qrcode.url" class="qrcode-preview" :alt="form.qrcode.name" />
               <div class="qrcode-info">
-                <p>{{ form.qrcode.name }}</p>
+                <p>已選擇 QR Code: {{ form.qrcode.name }}</p>
                 <button class="remove-btn" @click="removeQRCode">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -150,6 +157,7 @@
           label="備註"
           type="textarea"
           placeholder="請輸入備註"
+          @input="console.log('備註已更新:', form.notes)"
         />
       </div>
     </div>
@@ -173,6 +181,7 @@
                 v-model="spec.typeName"
                 placeholder="請輸入規格種類名稱"
                 class="type-input"
+                @input="console.log(`規格種類 ${index + 1} 已更新:`, spec.typeName)"
               />
             </div>
 
@@ -189,6 +198,7 @@
                       v-model="value.name"
                       placeholder="請輸入規格值"
                       class="value-input"
+                      @input="console.log(`規格種類 ${index + 1} 的值 ${vIndex + 1} 已更新:`, value.name)"
                     />
                     <button 
                       class="icon-button delete-btn"
@@ -260,25 +270,31 @@
                 label="倉庫位置"
                 :options="warehouseOptions"
                 placeholder="請選擇倉庫"
-                @change="(value) => handleWarehouseSelect(value, index)"
+                @change="(value) => {
+                  handleWarehouseSelect(value, index);
+                  console.log(`倉庫 ${index + 1} 位置已更新:`, warehouse.location);
+                }"
               />
               <AppInput
                 v-model="warehouse.quantity"
                 label="當前數量"
                 type="number"
                 placeholder="請輸入當前數量"
+                @input="console.log(`倉庫 ${index + 1} 當前數量已更新:`, warehouse.quantity)"
               />
               <AppInput
                 v-model="warehouse.minQuantity"
                 label="最小庫存量"
                 type="number"
                 placeholder="請輸入最小庫存量"
+                @input="console.log(`倉庫 ${index + 1} 最小庫存量已更新:`, warehouse.minQuantity)"
               />
               <AppInput
                 v-model="warehouse.defectiveQuantity"
                 label="不良品數量"
                 type="number"
                 placeholder="請輸入不良品數量"
+                @input="console.log(`倉庫 ${index + 1} 不良品數量已更新:`, warehouse.defectiveQuantity)"
               />
             </div>
           </div>
