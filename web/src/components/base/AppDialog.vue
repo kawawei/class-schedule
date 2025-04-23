@@ -12,10 +12,10 @@
             <button class="app-dialog-close" @click="closeDialog">×</button>
           </div>
           <slot></slot>
-          <div class="app-dialog-footer" v-if="$slots.footer">
+          <div class="app-dialog-footer" v-if="!hideFooter">
             <slot name="footer">
-              <AppButton type="secondary" @click="closeDialog">取消</AppButton>
-              <AppButton type="primary" @click="confirmDialog" :loading="loading">確定</AppButton>
+              <AppButton type="secondary" @click="closeDialog">取消 Cancel</AppButton>
+              <AppButton type="primary" @click="confirmDialog" :loading="loading">確定 Confirm</AppButton>
             </slot>
           </div>
         </div>
@@ -25,12 +25,17 @@
 </template>
 
 <script>
+import AppButton from './AppButton.vue';
+
 /**
  * 對話框組件
  * Dialog component
  */
 export default {
   name: 'AppDialog',
+  components: {
+    AppButton
+  },
   props: {
     // 對話框標題 Dialog title
     title: {
@@ -55,6 +60,11 @@ export default {
     },
     // 是否正在加載 Whether the dialog is loading
     loading: {
+      type: Boolean,
+      default: false
+    },
+    // 是否隱藏底部按鈕 Whether to hide the footer
+    hideFooter: {
       type: Boolean,
       default: false
     }
