@@ -137,6 +137,12 @@
             <div v-if="currentTab === 'purchase'" class="purchase-management">
               <PurchasePage />
             </div>
+
+          
+            <!-- 出貨管理 Shipment Management -->
+            <div v-if="currentTab === 'shipment'" class="tab-content">
+              <shipment-management />
+            </div>
           </div>
         </div>
       </div>
@@ -353,6 +359,7 @@ import AppInput from '@/components/base/AppInput.vue';
 import InventoryPage from './inventory.vue';
 import WarehousePage from './warehouse.vue';
 import PurchasePage from './purchase.vue';
+import ShipmentManagement from './shipment.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -365,7 +372,8 @@ export default {
     AppInput,
     InventoryPage,
     WarehousePage,
-    PurchasePage
+    PurchasePage,
+    ShipmentManagement
   },
   setup() {
     return {

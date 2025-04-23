@@ -103,6 +103,28 @@ const PurchaseIcon = {
   }
 };
 
+// 添加出貨管理圖標 Add shipment management icon
+const ShipmentIcon = {
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M16 16h6' }),
+      h('path', { d: 'M19 13v6' }),
+      h('path', { d: 'M2 9l3-3 3 3' }),
+      h('path', { d: 'M5 6v14' })
+    ]);
+  }
+};
+
 // 定義標籤頁配置 Define tab configurations
 const tabs = [
   {
@@ -116,6 +138,12 @@ const tabs = [
     label: '進貨管理',
     icon: PurchaseIcon,
     iconBg: 'rgba(255, 149, 0, 0.1)'
+  },
+  {
+    key: 'shipment',
+    label: '出貨管理',
+    icon: ShipmentIcon,
+    iconBg: 'rgba(52, 199, 89, 0.1)'
   },
   {
     key: 'qrcode',
@@ -141,7 +169,9 @@ export default {
     AppInput,
     MaterialIcon,
     QRCodeIcon,
-    WarehouseIcon
+    WarehouseIcon,
+    PurchaseIcon,
+    ShipmentIcon
   },
   setup() {
     // 用戶信息 User information
