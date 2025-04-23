@@ -138,7 +138,11 @@
               <PurchasePage />
             </div>
 
-          
+            <!-- 採購管理標籤頁 Procurement Management Tab -->
+            <div v-if="currentTab === 'procurement'" class="procurement-management">
+              <ProcurementManagement />
+            </div>
+
             <!-- 出貨管理 Shipment Management -->
             <div v-if="currentTab === 'shipment'" class="tab-content">
               <shipment-management />
@@ -360,6 +364,7 @@ import InventoryPage from './inventory.vue';
 import WarehousePage from './warehouse.vue';
 import PurchasePage from './purchase.vue';
 import ShipmentManagement from './shipment.vue';
+import ProcurementManagement from './procurement.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -373,7 +378,8 @@ export default {
     InventoryPage,
     WarehousePage,
     PurchasePage,
-    ShipmentManagement
+    ShipmentManagement,
+    ProcurementManagement
   },
   setup() {
     return {
