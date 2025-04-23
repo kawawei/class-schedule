@@ -26,11 +26,11 @@
 export default {
   name: 'AppButton',
   props: {
-    // 按鈕類型 Button type (primary, secondary, success, warning, danger, info, text)
+    // 按鈕類型 Button type (primary, secondary, success, warning, danger, info, text, default)
     type: {
       type: String,
       default: 'primary',
-      validator: (value) => ['primary', 'secondary', 'success', 'warning', 'danger', 'info', 'text'].includes(value)
+      validator: (value) => ['primary', 'secondary', 'success', 'warning', 'danger', 'info', 'text', 'default'].includes(value)
     },
     // 按鈕大小 Button size (sm, md, lg)
     size: {

@@ -8,6 +8,7 @@ import { API_BASE_URL } from '@/utils/api';  // 導入 API_BASE_URL Import API_B
 import { useWebSocket } from './utils/websocket';  // 導入 WebSocket 工具 Import WebSocket utility
 import { qrcodeColumns, fetchQRCodes, deleteQRCode } from './features/qrcode/qrcodeTable';  // 導入 QRCode 工具 Import QRCode utility
 import { useQRCodeForm } from './features/qrcode/qrcodeForm';  // 導入 QRCode 表單工具 Import QRCode form utility
+import axios from 'axios';  // 導入 axios Import axios
 
 // WebSocket 連接 URL（將 http/https 替換為 ws/wss）
 // WebSocket connection URL (replace http/https with ws/wss)

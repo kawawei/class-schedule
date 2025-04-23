@@ -378,18 +378,21 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
       console.log('newValue.specifications:', newValue.specifications);
       console.log('newValue.specifications?.types:', newValue.specifications?.types);
       
-      // 只在編輯模式下處理規格數據，且只在初始加載時處理
-      // Only process specifications in edit mode, and only on initial load
-      if (props.isEditing && newValue.specifications && newValue.id) {
+      // 先處理規格數據 Handle specifications data first
+      if (newValue.specifications) {
         console.log('=== 開始處理規格數據 (Start Processing Specifications) ===');
         const convertedSpecs = convertBackendToFrontend(newValue.specifications);
         console.log('轉換後的規格數據:', JSON.stringify(convertedSpecs, null, 2));
         specifications.splice(0, specifications.length, ...convertedSpecs);
         console.log('更新後的 specifications 數組:', JSON.stringify(specifications, null, 2));
+      } else {
+        console.log('=== 警告：沒有找到規格數據 (Warning: No Specifications Found) ===');
+        console.log('newValue:', newValue);
+        // 清空現有規格 Clear existing specifications
+        specifications.splice(0, specifications.length);
       }
       
-      // 更新其他表單數據，但保留 specifications
-      // Update other form data while preserving specifications
+      // 然後更新其他表單數據，但保留 specifications Handle other form data while preserving specifications
       const { specifications: _, ...restData } = newValue;
       form.value = {
         ...restData,
