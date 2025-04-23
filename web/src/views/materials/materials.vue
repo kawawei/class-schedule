@@ -152,6 +152,11 @@
             <div v-if="currentTab === 'bundle'" class="bundle-management">
               <BundleManagement />
             </div>
+
+            <!-- 盤點管理標籤頁 Stocktaking Management Tab -->
+            <div v-if="currentTab === 'stocktaking'" class="stocktaking-management">
+              <StocktakingManagement />
+            </div>
           </div>
         </div>
       </div>
@@ -371,6 +376,7 @@ import PurchasePage from './features/purchase/purchase.vue';
 import ShipmentManagement from './features/shipment/shipment.vue';
 import ProcurementManagement from './features/procurement/procurement.vue';
 import BundleManagement from './features/bundle/bundle.vue';
+import StocktakingManagement from './features/stocktaking/stocktaking.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -386,7 +392,8 @@ export default {
     PurchasePage,
     ShipmentManagement,
     ProcurementManagement,
-    BundleManagement
+    BundleManagement,
+    StocktakingManagement
   },
   setup() {
     return {

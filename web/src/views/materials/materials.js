@@ -170,6 +170,27 @@ const BundleIcon = {
   }
 };
 
+// 添加盤點管理圖標 Add stocktaking management icon
+const StocktakingIcon = {
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('path', { d: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2' }),
+      h('rect', { x: 9, y: 3, width: 6, height: 4, rx: 1 }),
+      h('path', { d: 'M9 14l2 2 4-4' })
+    ]);
+  }
+};
+
 // 定義標籤頁配置 Define tab configurations
 const tabs = [
   {
@@ -203,6 +224,12 @@ const tabs = [
     iconBg: 'rgba(52, 199, 89, 0.1)'
   },
   {
+    key: 'stocktaking',
+    label: '盤點管理',
+    icon: StocktakingIcon,
+    iconBg: 'rgba(255, 69, 58, 0.1)'
+  },
+  {
     key: 'qrcode',
     label: 'QRCode管理',
     icon: QRCodeIcon,
@@ -230,7 +257,8 @@ export default {
     PurchaseIcon,
     ShipmentIcon,
     ProcurementIcon,
-    BundleIcon
+    BundleIcon,
+    StocktakingIcon
   },
   setup() {
     // 用戶信息 User information
