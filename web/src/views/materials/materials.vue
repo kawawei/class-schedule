@@ -145,7 +145,7 @@
 
             <!-- 出貨管理 Shipment Management -->
             <div v-if="currentTab === 'shipment'" class="tab-content">
-              <shipment-management />
+              <ShipmentManagement />
             </div>
 
             <!-- 組合商品管理標籤頁 Bundle Management Tab -->
@@ -368,7 +368,7 @@ import AppInput from '@/components/base/AppInput.vue';
 import InventoryPage from './inventory.vue';
 import WarehousePage from './warehouse.vue';
 import PurchasePage from './purchase.vue';
-import ShipmentManagement from './shipment.vue';
+import ShipmentManagement from './features/shipment/shipment.vue';
 import ProcurementManagement from './features/procurement/procurement.vue';
 import BundleManagement from './features/bundle/bundle.vue';
 import materialsLogic from './materials.js';
