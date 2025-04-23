@@ -146,6 +146,30 @@ const ProcurementIcon = {
   }
 };
 
+// 添加組合商品管理圖標 Add bundle management icon
+const BundleIcon = {
+  render() {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 20,
+      height: 20,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }, [
+      h('rect', { x: 2, y: 7, width: 8, height: 14 }),
+      h('rect', { x: 14, y: 7, width: 8, height: 14 }),
+      h('path', { d: 'M12 3h.01' }),
+      h('path', { d: 'M12 21h.01' }),
+      h('path', { d: 'M6 3h12' }),
+      h('path', { d: 'M6 21h12' })
+    ]);
+  }
+};
+
 // 定義標籤頁配置 Define tab configurations
 const tabs = [
   {
@@ -165,6 +189,12 @@ const tabs = [
     label: '採購管理',
     icon: ProcurementIcon,
     iconBg: 'rgba(175, 82, 222, 0.1)'
+  },
+  {
+    key: 'bundle',
+    label: '組合商品管理',
+    icon: BundleIcon,
+    iconBg: 'rgba(90, 200, 250, 0.1)'
   },
   {
     key: 'shipment',
@@ -199,7 +229,8 @@ export default {
     WarehouseIcon,
     PurchaseIcon,
     ShipmentIcon,
-    ProcurementIcon
+    ProcurementIcon,
+    BundleIcon
   },
   setup() {
     // 用戶信息 User information

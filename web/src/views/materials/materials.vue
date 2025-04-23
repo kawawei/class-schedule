@@ -147,6 +147,11 @@
             <div v-if="currentTab === 'shipment'" class="tab-content">
               <shipment-management />
             </div>
+
+            <!-- 組合商品管理標籤頁 Bundle Management Tab -->
+            <div v-if="currentTab === 'bundle'" class="bundle-management">
+              <BundleManagement />
+            </div>
           </div>
         </div>
       </div>
@@ -365,6 +370,7 @@ import WarehousePage from './warehouse.vue';
 import PurchasePage from './purchase.vue';
 import ShipmentManagement from './shipment.vue';
 import ProcurementManagement from './procurement.vue';
+import BundleManagement from './features/bundle/bundle.vue';
 import materialsLogic from './materials.js';
 
 export default {
@@ -379,7 +385,8 @@ export default {
     WarehousePage,
     PurchasePage,
     ShipmentManagement,
-    ProcurementManagement
+    ProcurementManagement,
+    BundleManagement
   },
   setup() {
     return {
