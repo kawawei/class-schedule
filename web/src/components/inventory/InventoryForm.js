@@ -264,17 +264,23 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
     console.log('=== 添加規格種類 ===');
     console.log('當前規格數量:', specifications.length);
     
-    specifications.push(reactive({
+    const newSpec = reactive({
       typeName: '',
       values: []
-    }));
+    });
+    
+    // 使用 nextTick 確保 DOM 更新後再設置狀態
+    // Use nextTick to ensure DOM is updated before setting state
+    specifications.push(newSpec);
     
     console.log('添加後規格數量:', specifications.length);
     console.log('新增的規格內容:', specifications[specifications.length - 1]);
 
+    // 延長防抖時間，確保輸入框穩定顯示
+    // Extend debounce time to ensure input box stays visible
     setTimeout(() => {
       isProcessing.value = false;
-    }, 100);
+    }, 1000);
   };
 
   // 添加規格值 Add Specification Value
@@ -290,16 +296,22 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
       specifications[typeIndex].values = reactive([]);
     }
     
-    specifications[typeIndex].values.push(reactive({
+    const newValue = reactive({
       name: ''
-    }));
+    });
+    
+    // 使用 push 方法添加新值
+    // Use push method to add new value
+    specifications[typeIndex].values.push(newValue);
     
     console.log('添加後該規格的值數量:', specifications[typeIndex].values.length);
     console.log('添加後所有規格值:', JSON.stringify(specifications[typeIndex].values));
 
+    // 延長防抖時間，確保輸入框穩定顯示
+    // Extend debounce time to ensure input box stays visible
     setTimeout(() => {
       isProcessing.value = false;
-    }, 100);
+    }, 1000);
   };
 
   // 生成所有規格組合 Generate All Specification Combinations
@@ -337,35 +349,56 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
 
   // 監聽規格變化並更新表單數據 Watch specification changes and update form data
   let updateTimeout = null;
+  let isUpdatingFromModelValue = false; // 標記是否正在從 modelValue 更新 Flag if updating from modelValue
+  let lastEmittedValue = null; // 記錄最後一次發送的值 Record the last emitted value
+
   watch(specifications, (newValue) => {
+    // 如果正在從 modelValue 更新，則不觸發 watch
+    // If updating from modelValue, don't trigger watch
+    if (isUpdatingFromModelValue) return;
+
     // 清除之前的定時器 Clear previous timeout
     if (updateTimeout) {
       clearTimeout(updateTimeout);
     }
 
-    // 使用定時器延遲更新 Use timeout to delay update
+    // 延長更新延遲時間，避免過早觸發更新
+    // Extend update delay time to avoid premature updates
     updateTimeout = setTimeout(() => {
-      console.log('=== 規格數據變化 ===');
-      console.log('變化後的完整規格數據:', JSON.stringify(newValue));
-      
-      const combinations = generateSpecificationCombinations();
-      // 更新表單數據中的規格信息 Update specifications in form data
-      const formData = unref(form);
-      formData.specifications = {
-        types: newValue
-          .filter(spec => spec.typeName.trim()) // 過濾空的規格名稱 Filter out empty type names
-          .map(spec => ({
-            name: spec.typeName,
-            values: spec.values
-              .map(v => v.name)
-              .filter(name => name.trim()) // 過濾空的規格值 Filter out empty values
-          })),
-        combinations: combinations
-      };
-      
-      console.log('更新到表單的規格數據:', JSON.stringify(formData.specifications));
-      emit('update:modelValue', formData);
-    }, 100);
+      if (!isProcessing.value) {  // 只在非處理狀態下更新 Only update when not processing
+        console.log('=== 規格數據變化 ===');
+        console.log('變化後的完整規格數據:', JSON.stringify(newValue));
+        
+        const combinations = generateSpecificationCombinations();
+        // 更新表單數據中的規格信息 Update specifications in form data
+        const formData = unref(form);
+        const newSpecifications = {
+          types: newValue
+            .filter(spec => spec.typeName.trim()) // 過濾空的規格名稱 Filter out empty type names
+            .map(spec => ({
+              name: spec.typeName,
+              values: spec.values
+                .map(v => v.name)
+                .filter(name => name.trim()) // 過濾空的規格值 Filter out empty values
+            })),
+          combinations: combinations
+        };
+
+        // 比較新值和最後一次發送的值是否相同
+        // Compare new value with last emitted value
+        const newValueStr = JSON.stringify(newSpecifications);
+        const lastValueStr = JSON.stringify(lastEmittedValue);
+        
+        if (newValueStr !== lastValueStr) {
+          formData.specifications = newSpecifications;
+          lastEmittedValue = newSpecifications;
+          console.log('更新到表單的規格數據:', JSON.stringify(formData.specifications));
+          emit('update:modelValue', formData);
+        } else {
+          console.log('規格數據未變化，跳過更新');
+        }
+      }
+    }, 1000); // 延長更新延遲時間 Extend update delay time
   }, { 
     deep: true
   });
@@ -373,36 +406,59 @@ const createInventoryFormLogic = (props = {}, emit = () => {}) => {
   // 監聽 modelValue 變化，處理規格數據 Watch modelValue changes, handle specifications data
   watch(() => props.modelValue, (newValue) => {
     if (newValue) {
+      // 比較新值和當前值是否相同
+      // Compare new value with current value
+      const currentSpecStr = JSON.stringify(lastEmittedValue);
+      const newSpecStr = JSON.stringify(newValue.specifications);
+      
+      if (currentSpecStr === newSpecStr) {
+        console.log('接收到的數據與當前數據相同，跳過更新');
+        return;
+      }
+
       console.log('=== 編輯對話框打開，接收到的完整數據 (Complete Data Received) ===');
       console.log('newValue:', JSON.stringify(newValue, null, 2));
       console.log('newValue.specifications:', newValue.specifications);
       console.log('newValue.specifications?.types:', newValue.specifications?.types);
       
-      // 先處理規格數據 Handle specifications data first
-      if (newValue.specifications) {
-        console.log('=== 開始處理規格數據 (Start Processing Specifications) ===');
-        const convertedSpecs = convertBackendToFrontend(newValue.specifications);
-        console.log('轉換後的規格數據:', JSON.stringify(convertedSpecs, null, 2));
-        specifications.splice(0, specifications.length, ...convertedSpecs);
-        console.log('更新後的 specifications 數組:', JSON.stringify(specifications, null, 2));
-      } else {
-        console.log('=== 警告：沒有找到規格數據 (Warning: No Specifications Found) ===');
-        console.log('newValue:', newValue);
-        // 清空現有規格 Clear existing specifications
-        specifications.splice(0, specifications.length);
+      // 設置標記，防止觸發 specifications 的 watch
+      // Set flag to prevent triggering specifications watch
+      isUpdatingFromModelValue = true;
+      
+      try {
+        // 先處理規格數據 Handle specifications data first
+        if (newValue.specifications) {
+          console.log('=== 開始處理規格數據 (Start Processing Specifications) ===');
+          const convertedSpecs = convertBackendToFrontend(newValue.specifications);
+          console.log('轉換後的規格數據:', JSON.stringify(convertedSpecs, null, 2));
+          specifications.splice(0, specifications.length, ...convertedSpecs);
+          lastEmittedValue = newValue.specifications;
+          console.log('更新後的 specifications 數組:', JSON.stringify(specifications, null, 2));
+        } else {
+          console.log('=== 警告：沒有找到規格數據 (Warning: No Specifications Found) ===');
+          console.log('newValue:', newValue);
+          // 清空現有規格 Clear existing specifications
+          specifications.splice(0, specifications.length);
+          lastEmittedValue = null;
+        }
+        
+        // 然後更新其他表單數據，但保留 specifications Handle other form data while preserving specifications
+        const { specifications: _, ...restData } = newValue;
+        form.value = {
+          ...restData,
+          specifications: lastEmittedValue
+        };
+        
+        console.log('=== 更新後的表單數據 (Updated Form Data) ===');
+        console.log('form.value:', JSON.stringify(form.value, null, 2));
+        console.log('=== 當前規格數據 (Current Specifications) ===');
+        console.log('specifications:', JSON.stringify(specifications, null, 2));
+      } finally {
+        // 重置標記 Reset flag
+        setTimeout(() => {
+          isUpdatingFromModelValue = false;
+        }, 100);
       }
-      
-      // 然後更新其他表單數據，但保留 specifications Handle other form data while preserving specifications
-      const { specifications: _, ...restData } = newValue;
-      form.value = {
-        ...restData,
-        specifications: form.value.specifications
-      };
-      
-      console.log('=== 更新後的表單數據 (Updated Form Data) ===');
-      console.log('form.value:', JSON.stringify(form.value, null, 2));
-      console.log('=== 當前規格數據 (Current Specifications) ===');
-      console.log('specifications:', JSON.stringify(specifications, null, 2));
     }
   }, { immediate: true });
   
