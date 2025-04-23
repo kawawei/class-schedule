@@ -9,8 +9,16 @@ SET random_string = SUBSTR(MD5(RANDOM()::TEXT), 1, 6)
 WHERE random_string IS NULL;
 
 -- 添加唯一性約束 Add unique constraint
-ALTER TABLE qrcodes
-ADD CONSTRAINT IF NOT EXISTS qrcodes_random_string_unique UNIQUE (random_string);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'qrcodes_random_string_unique'
+    ) THEN
+        ALTER TABLE qrcodes
+        ADD CONSTRAINT qrcodes_random_string_unique UNIQUE (random_string);
+    END IF;
+END $$;
 
 -- 添加註釋 Add comments
 COMMENT ON COLUMN qrcodes.random_string IS '隨機字串 / Random string';
