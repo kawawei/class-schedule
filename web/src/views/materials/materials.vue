@@ -367,7 +367,7 @@ import AppDialog from '@/components/base/AppDialog.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import InventoryPage from './inventory.vue';
 import WarehousePage from './warehouse.vue';
-import PurchasePage from './purchase.vue';
+import PurchasePage from './features/purchase/purchase.vue';
 import ShipmentManagement from './features/shipment/shipment.vue';
 import ProcurementManagement from './features/procurement/procurement.vue';
 import BundleManagement from './features/bundle/bundle.vue';
