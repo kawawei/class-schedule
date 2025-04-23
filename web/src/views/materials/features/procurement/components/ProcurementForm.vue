@@ -1,157 +1,136 @@
 <template>
+  <!-- 移除容器樣式，直接使用對話框背景 Remove container styles and use dialog background directly -->
   <div class="procurement-form">
-    <div class="procurement-form__content">
-      <!-- 基本資訊 -->
-      <AppCard class="procurement-form__section">
-        <template #header>
-          <div class="procurement-form__section-header">
-            <span>基本資訊</span>
-          </div>
-        </template>
-        
-        <div class="grid grid-cols-2">
-          <div class="col-span-1">
-            <div class="form-group">
-              <label class="required">採購單號</label>
-              <AppInput 
-                v-model="formData.procurementNo" 
-                placeholder="請輸入採購單號"
-                :error="errors.procurementNo"
-              />
-            </div>
-          </div>
-          <div class="col-span-1">
-            <div class="form-group">
-              <label class="required">採購日期</label>
-              <AppInput
-                v-model="formData.procurementDate"
-                type="date"
-                placeholder="請選擇採購日期"
-                :error="errors.procurementDate"
-              />
-            </div>
-          </div>
+    <h3 class="form-title">基本資訊</h3>
+    <div class="grid grid-cols-2">
+      <div class="col-span-1">
+        <div class="form-group">
+          <label class="required">採購單號</label>
+          <AppInput 
+            v-model="formData.procurementNo" 
+            placeholder="請輸入採購單號"
+            :error="errors.procurementNo"
+          />
         </div>
-
-        <div class="grid grid-cols-2">
-          <div class="col-span-1">
-            <div class="form-group">
-              <label class="required">供應商</label>
-              <AppSelect
-                v-model="formData.supplierId"
-                :options="supplierOptions"
-                placeholder="請選擇供應商"
-                :error="errors.supplierId"
-                filterable
-              />
-            </div>
-          </div>
-          <div class="col-span-1">
-            <div class="form-group">
-              <label class="required">採購狀態</label>
-              <AppSelect
-                v-model="formData.status"
-                :options="statusOptions"
-                placeholder="請選擇採購狀態"
-                :error="errors.status"
-              />
-            </div>
-          </div>
-        </div>
-      </AppCard>
-
-      <!-- 採購項目 -->
-      <AppCard class="procurement-form__section">
-        <template #header>
-          <div class="procurement-form__section-header">
-            <span>採購項目</span>
-            <AppButton type="primary" @click="handleAddItem">
-              <template #icon>
-                <i class="fas fa-plus"></i>
-              </template>
-              新增項目
-            </AppButton>
-          </div>
-        </template>
-
-        <div class="data-table-wrapper">
-          <DataTable
-            :data="formData.items"
-            :columns="itemColumns"
-            border
-          >
-            <template #materialNo="{ row }">
-              <AppInput v-model="row.materialNo" placeholder="請輸入物料編號" />
-            </template>
-            <template #materialName="{ row }">
-              <AppInput v-model="row.materialName" placeholder="請輸入物料名稱" />
-            </template>
-            <template #specification="{ row }">
-              <AppInput v-model="row.specification" placeholder="請輸入規格" />
-            </template>
-            <template #unit="{ row }">
-              <AppInput v-model="row.unit" placeholder="請輸入單位" />
-            </template>
-            <template #quantity="{ row }">
-              <AppInput 
-                v-model.number="row.quantity" 
-                type="number" 
-                :min="1"
-                @input="calculateItemAmount(row)"
-              />
-            </template>
-            <template #unitPrice="{ row }">
-              <AppInput 
-                v-model.number="row.unitPrice" 
-                type="number" 
-                :min="0" 
-                :step="0.01"
-                @input="calculateItemAmount(row)"
-              />
-            </template>
-            <template #amount="{ row }">
-              {{ formatAmount(row.amount) }}
-            </template>
-            <template #actions="{ index }">
-              <AppButton type="danger" size="small" @click="handleRemoveItem(index)">
-                <i class="fas fa-trash"></i>
-              </AppButton>
-            </template>
-          </DataTable>
-
-          <div class="total-row">
-            <span class="total-label">總金額：</span>
-            <span class="total-amount">NT$ {{ formatAmount(totalAmount) }}</span>
-          </div>
-        </div>
-      </AppCard>
-
-      <!-- 備註 -->
-      <AppCard class="procurement-form__section">
-        <template #header>
-          <div class="procurement-form__section-header">
-            <span>備註</span>
-          </div>
-        </template>
-        
-        <div class="grid">
-          <div class="form-group">
-            <label>備註</label>
-            <AppInput
-              v-model="formData.remark"
-              type="textarea"
-              :rows="4"
-              placeholder="請輸入備註"
-            />
-          </div>
-        </div>
-      </AppCard>
-
-      <!-- 表單操作按鈕 -->
-      <div class="procurement-form__actions">
-        <AppButton @click="handleCancel">取消</AppButton>
-        <AppButton type="primary" @click="handleSubmit">確定</AppButton>
       </div>
+      <div class="col-span-1">
+        <div class="form-group">
+          <label class="required">採購日期</label>
+          <AppInput
+            v-model="formData.procurementDate"
+            type="date"
+            placeholder="請選擇採購日期"
+            :error="errors.procurementDate"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2">
+      <div class="col-span-1">
+        <div class="form-group">
+          <label class="required">供應商</label>
+          <AppSelect
+            v-model="formData.supplierId"
+            :options="supplierOptions"
+            placeholder="請選擇供應商"
+            :error="errors.supplierId"
+            filterable
+          />
+        </div>
+      </div>
+      <div class="col-span-1">
+        <div class="form-group">
+          <label class="required">採購狀態</label>
+          <AppSelect
+            v-model="formData.status"
+            :options="statusOptions"
+            placeholder="請選擇採購狀態"
+            :error="errors.status"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <div class="items-header">
+      <h3 class="form-title">採購項目</h3>
+      <AppButton type="primary" @click="handleAddItem">
+        <template #icon>
+          <i class="fas fa-plus"></i>
+        </template>
+        新增項目
+      </AppButton>
+    </div>
+
+    <div class="data-table-wrapper">
+      <DataTable
+        :data="formData.items"
+        :columns="itemColumns"
+        border
+      >
+        <template #materialNo="{ row }">
+          <AppInput v-model="row.materialNo" placeholder="請輸入物料編號" />
+        </template>
+        <template #materialName="{ row }">
+          <AppInput v-model="row.materialName" placeholder="請輸入物料名稱" />
+        </template>
+        <template #specification="{ row }">
+          <AppInput v-model="row.specification" placeholder="請輸入規格" />
+        </template>
+        <template #unit="{ row }">
+          <AppInput v-model="row.unit" placeholder="請輸入單位" />
+        </template>
+        <template #quantity="{ row }">
+          <AppInput 
+            v-model.number="row.quantity" 
+            type="number" 
+            :min="1"
+            @input="calculateItemAmount(row)"
+          />
+        </template>
+        <template #unitPrice="{ row }">
+          <AppInput 
+            v-model.number="row.unitPrice" 
+            type="number" 
+            :min="0" 
+            :step="0.01"
+            @input="calculateItemAmount(row)"
+          />
+        </template>
+        <template #amount="{ row }">
+          {{ formatAmount(row.amount) }}
+        </template>
+        <template #actions="{ index }">
+          <AppButton type="danger" size="small" @click="handleRemoveItem(index)">
+            <i class="fas fa-trash"></i>
+          </AppButton>
+        </template>
+      </DataTable>
+
+      <div class="total-row">
+        <span class="total-label">總金額：</span>
+        <span class="total-amount">NT$ {{ formatAmount(totalAmount) }}</span>
+      </div>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <h3 class="form-title">備註</h3>
+    <div class="form-group">
+      <label>備註</label>
+      <AppInput
+        v-model="formData.remark"
+        type="textarea"
+        :rows="4"
+        placeholder="請輸入備註"
+      />
+    </div>
+
+    <div class="form-actions">
+      <AppButton @click="handleCancel">取消</AppButton>
+      <AppButton type="primary" @click="handleSubmit">確定</AppButton>
     </div>
   </div>
 </template>
@@ -331,54 +310,35 @@ export default {
 
 <style lang="scss" scoped>
 .procurement-form {
-  width: 100%;
-  min-height: 100%;
-  padding: 20px;
-  background-color: #f5f7fa;
+  padding: 20px 24px;
+}
 
-  &__content {
-    width: 100%;
-    min-width: 800px;
-    max-width: 1000px;
-    margin: 0 auto;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  }
+.form-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 20px;
+}
 
-  &__section {
-    margin-bottom: 20px;
+.form-divider {
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 24px -24px;
+}
 
-    :deep(.app-card__header) {
-      background-color: #f8f9fa;
-      border-bottom: 1px solid #e9ecef;
-      padding: 12px 20px;
-    }
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 
-    :deep(.app-card__body) {
-      padding: 20px;
-    }
-  }
-
-  &__section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 20px;
+  .form-title {
+    margin-bottom: 0;
   }
 }
 
 .form-group {
   margin-bottom: 20px;
-  padding: 0 12px;
 
   label {
     display: block;
@@ -437,5 +397,15 @@ export default {
   &.grid-cols-2 {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 24px -24px -20px;
+  padding: 20px 24px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
 }
 </style> 

@@ -11,10 +11,8 @@
             <h3 class="app-dialog-title">{{ title }}</h3>
             <button class="app-dialog-close" @click="closeDialog">×</button>
           </div>
-          <div class="app-dialog-body">
-            <slot></slot>
-          </div>
-          <div class="app-dialog-footer">
+          <slot></slot>
+          <div class="app-dialog-footer" v-if="$slots.footer">
             <slot name="footer">
               <AppButton type="secondary" @click="closeDialog">取消</AppButton>
               <AppButton type="primary" @click="confirmDialog" :loading="loading">確定</AppButton>
@@ -153,22 +151,29 @@ export default {
   backdrop-filter: blur(5px);
   border-radius: var(--radius-md);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  width: 500px; // 中等尺寸的預設寬度 Default width for medium size
-  max-width: 95vw; // 確保在小螢幕上不會溢出 Ensure no overflow on small screens
+  width: 500px;
+  max-width: 95vw;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
   z-index: 1000000;
+  padding: 0;
   
   &.app-dialog-sm {
-    width: 400px; // 小型對話框寬度 Small dialog width
+    width: 400px;
   }
   
   &.app-dialog-lg {
-    width: 900px; // 加寬大型對話框 Increase large dialog width
-    min-width: 800px; // 設置最小寬度 Set minimum width
+    width: 900px;
+    min-width: 800px;
+  }
+
+  > :not(.app-dialog-header):not(.app-dialog-footer) {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
   }
 }
 
@@ -199,14 +204,6 @@ export default {
   &:hover {
     color: var(--text-primary);
   }
-}
-
-.app-dialog-body {
-  padding: var(--spacing-lg);
-  overflow-y: auto;
-  flex: 1;
-  position: relative;
-  z-index: 1000001;
 }
 
 .app-dialog-footer {
