@@ -369,7 +369,7 @@ import InventoryPage from './inventory.vue';
 import WarehousePage from './warehouse.vue';
 import PurchasePage from './purchase.vue';
 import ShipmentManagement from './shipment.vue';
-import ProcurementManagement from './procurement.vue';
+import ProcurementManagement from './features/procurement/procurement.vue';
 import BundleManagement from './features/bundle/bundle.vue';
 import materialsLogic from './materials.js';
 
