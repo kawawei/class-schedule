@@ -7,30 +7,32 @@
         <!-- 日期範圍過濾器 Date Range Filter -->
         <div class="filter-group date-range">
           <label>日期範圍</label>
-          <div class="quick-select-buttons">
-            <button 
-              v-for="option in dateOptions" 
-              :key="option.value"
-              :class="['quick-select-btn', { active: isActiveDateRange(option.value) }]"
-              @click="handleDateRangeSelect(option.value)"
-            >
-              {{ option.label }}
-            </button>
-          </div>
-          <div class="date-inputs">
-            <AppInput
-              v-model="dateRange.startDate"
-              type="date"
-              class="date-input"
-              placeholder="年/月/日"
-            />
-            <span class="separator">至</span>
-            <AppInput
-              v-model="dateRange.endDate"
-              type="date"
-              class="date-input"
-              placeholder="年/月/日"
-            />
+          <div class="filter-content">
+            <div class="quick-select-buttons">
+              <button 
+                v-for="option in dateOptions" 
+                :key="option.value"
+                :class="['quick-select-btn', { active: isActiveDateRange(option.value) }]"
+                @click="handleDateRangeSelect(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+            <div class="date-inputs">
+              <AppInput
+                v-model="dateRange.startDate"
+                type="date"
+                class="date-input"
+                placeholder="年/月/日"
+              />
+              <span class="separator">至</span>
+              <AppInput
+                v-model="dateRange.endDate"
+                type="date"
+                class="date-input"
+                placeholder="年/月/日"
+              />
+            </div>
           </div>
         </div>
 

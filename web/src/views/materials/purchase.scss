@@ -16,15 +16,16 @@
     
     .advanced-filters {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
+      justify-content: center;
       flex-wrap: nowrap;
-      gap: var(--spacing-sm);
+      gap: var(--spacing-lg);
       padding: var(--spacing-md) var(--spacing-lg);
       background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
       margin-bottom: var(--spacing-md);
       width: 100%;
-      min-height: 110px;
+      min-height: 80px;
       
       .filter-group {
         flex-shrink: 0;
@@ -42,12 +43,19 @@
         }
         
         &.date-range {
-          width: 400px;
+          width: auto;
+          
+          .filter-content {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+          }
           
           .quick-select-buttons {
             display: flex;
             gap: var(--spacing-xs);
-            margin-bottom: var(--spacing-xs);
+            margin-bottom: 0;
+            flex-shrink: 0;
             
             .quick-select-btn {
               padding: var(--spacing-xs) var(--spacing-sm);
@@ -82,6 +90,7 @@
             align-items: center;
             gap: var(--spacing-sm);
             height: 32px;
+            flex-shrink: 0;
             
             .date-input {
               flex: 1;
@@ -98,7 +107,7 @@
         
         &.supplier {
           width: 180px;
-          margin-left: auto;
+          margin-left: 0;
           
           .supplier-select {
             height: 32px;
@@ -114,10 +123,22 @@
         }
         
         &.actions {
-          margin-left: var(--spacing-sm);
+          margin-left: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          margin-top: 15px; // label height (20px) + margin-bottom (8px)
           
           .add-button {
-            height: 32px;
+            height: 40px;
+            padding: 0 var(--spacing-md);
+            font-size: var(--font-size-md);
+            
+            :deep(svg) {
+              width: 20px;
+              height: 20px;
+              margin-right: var(--spacing-xs);
+            }
           }
         }
       }
