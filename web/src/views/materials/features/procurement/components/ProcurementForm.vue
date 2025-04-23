@@ -155,11 +155,6 @@
         placeholder="請輸入備註"
       />
     </div>
-
-    <div class="form-actions">
-      <AppButton @click="handleCancel">取消</AppButton>
-      <AppButton type="primary" @click="handleSubmit">確定</AppButton>
-    </div>
   </div>
 </template>
 
