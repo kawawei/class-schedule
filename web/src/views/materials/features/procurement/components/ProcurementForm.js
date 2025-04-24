@@ -71,7 +71,6 @@ export const useProcurementForm = (props, { emit }) => {
 
   // 採購項目表格列定義 Procurement item table column definitions
   const itemColumns = [
-    { key: 'materialNo', title: '物料編號', width: 120, slot: true },
     { key: 'materialName', title: '物料名稱', width: 150, slot: true },
     { key: 'specification', title: '規格', width: 120, slot: true },
     { key: 'unit', title: '單位', width: 80, slot: true },
@@ -137,22 +136,45 @@ export const useProcurementForm = (props, { emit }) => {
     return parts.join(' + ')
   })
 
-  // 計算單項金額 Calculate item amount
-  const calculateItemAmount = (row) => {
-    const quantity = Number(row.quantity) || 0
-    const unitPrice = Number(row.unitPrice) || 0
-    row.amount = quantity * unitPrice
-    calculateTotals() // 重新計算總金額 Recalculate total amount
-  }
-
   // 監聽幣種變化 Watch currency changes
   watch(() => formData.items, () => {
     // 當項目變化時重新計算總金額
     // Recalculate total amount when items change
     formData.items.forEach(item => {
-      calculateItemAmount(item)
+      // 確保每個項目都有 specifications 數組 Ensure each item has specifications array
+      if (!item.specifications) {
+        item.specifications = [{
+          specification: '',
+          quantity: 1,
+          unitPrice: 0,
+          amount: 0
+        }]
+      }
+      // 計算每個規格的金額 Calculate amount for each specification
+      item.specifications.forEach((spec, index) => {
+        calculateItemAmount(item, index)
+      })
     })
   }, { deep: true })
+
+  // 計算單項金額 Calculate item amount
+  const calculateItemAmount = (row, specIndex) => {
+    if (!row.specifications) {
+      row.specifications = [{
+        specification: '',
+        quantity: 1,
+        unitPrice: 0,
+        amount: 0
+      }]
+    }
+    const spec = row.specifications[specIndex]
+    if (spec) {
+      const quantity = Number(spec.quantity) || 0
+      const unitPrice = Number(spec.unitPrice) || 0
+      spec.amount = quantity * unitPrice
+      calculateTotals()
+    }
+  }
 
   // 新增採購項目 Add procurement item
   const handleAddItem = () => {
@@ -163,13 +185,14 @@ export const useProcurementForm = (props, { emit }) => {
       
       formData.items.push({
         materialId: '', // 初始化物料ID Initialize material ID
-        materialNo: '',
         materialName: '',
-        specification: '',
+        specifications: [{ // 規格列表，支持多規格 Specification list, supporting multiple specifications
+          specification: '',
+          quantity: 1,
+          unitPrice: 0,
+          amount: 0,
+        }],
         unit: '',
-        quantity: 1,
-        unitPrice: 0,
-        amount: 0,
         currency: 'TWD', // 默認使用新台幣 Default to TWD
       })
       
@@ -249,8 +272,10 @@ export const useProcurementForm = (props, { emit }) => {
   const calculateTotals = () => {
     // 計算商品小計 Calculate subtotal
     const subtotal = formData.items.reduce((sum, item) => {
-      const itemAmount = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
-      return sum + itemAmount
+      if (!item.specifications) return sum
+      return sum + item.specifications.reduce((specSum, spec) => {
+        return specSum + (Number(spec.amount) || 0)
+      }, 0)
     }, 0)
 
     // 計算額外費用總計 Calculate extra charges total
@@ -282,33 +307,6 @@ export const useProcurementForm = (props, { emit }) => {
 
   const hasExtraCharges = computed(() => {
     return formData.extraCharges && formData.extraCharges.length > 0
-  })
-
-  // 監聽數據變化 Watch data changes
-  watch([
-    () => formData.items,
-    () => formData.extraCharges
-  ], () => {
-    calculateTotals()
-  }, { deep: true, immediate: true })
-
-  // 監聽單個項目的數量和單價變化 Watch individual item quantity and unit price changes
-  watch(() => formData.items.map(item => [item.quantity, item.unitPrice]), () => {
-    formData.items.forEach(calculateItemAmount)
-  }, { deep: true })
-
-  // 監聽額外費用金額變化 Watch extra charges amount changes
-  watch(() => formData.extraCharges.map(charge => charge.amount), () => {
-    calculateTotals()
-  }, { deep: true })
-
-  // 監聽採購項目幣種變化 Watch procurement item currency changes
-  watch(() => currentCurrency.value, (newCurrency) => {
-    // 更新所有額外費用的幣種 Update all extra charges' currency
-    formData.extraCharges.forEach(charge => {
-      charge.currency = newCurrency
-    })
-    calculateTotals()
   })
 
   // 驗證表單 Validate form
@@ -463,14 +461,18 @@ export const useProcurementForm = (props, { emit }) => {
     if (selectedMaterial) {
       row.materialId = materialId // 保存物料ID Save material ID
       row.materialName = selectedMaterial.label
-      row.materialNo = selectedMaterial.value // 設置物料編號 Set material number
-      row.specification = '' // 清空規格，等待用戶選擇 Clear specification, waiting for user selection
+      row.specifications = [{ // 重置規格列表 Reset specification list
+        specification: '',
+        quantity: 1,
+        unitPrice: 0,
+        amount: 0,
+      }]
       row.unit = selectedMaterial.unit
 
       // 如果物料只有一個規格組合，自動選擇該規格 If material has only one specification combination, select it automatically
       const specs = getSpecificationOptions(materialId)
       if (specs.length === 1) {
-        row.specification = specs[0].value
+        row.specifications[0].specification = specs[0].value
       }
 
       // 打印規格選項以便調試 Print specification options for debugging
@@ -482,6 +484,31 @@ export const useProcurementForm = (props, { emit }) => {
   // 獲取特定物料的規格選項 Get specification options for specific material
   const getSpecificationOptions = (materialId) => {
     return specificationOptions.value[materialId] || []
+  }
+
+  // 新增規格行 Add specification row
+  const handleAddSpecification = (row) => {
+    if (!row.specifications) {
+      row.specifications = []
+    }
+    
+    row.specifications.push({
+      specification: '',
+      quantity: 1,
+      unitPrice: 0,
+      amount: 0,
+    })
+  }
+
+  // 刪除規格行 Remove specification row
+  const handleRemoveSpecification = (row, index) => {
+    row.specifications.splice(index, 1)
+    // 如果刪除後沒有規格了，添加一個空的規格行
+    // If no specifications left after deletion, add an empty specification row
+    if (row.specifications.length === 0) {
+      handleAddSpecification(row)
+    }
+    calculateTotals()
   }
 
   // 初始化時獲取物料列表 Fetch materials list on initialization
@@ -514,6 +541,7 @@ export const useProcurementForm = (props, { emit }) => {
     
     // 方法 Methods
     calculateItemAmount,
+    calculateTotals,
     formatAmount,
     handleAddItem,
     handleRemoveItem,
@@ -523,6 +551,8 @@ export const useProcurementForm = (props, { emit }) => {
     handleSubmit,
     handleMaterialSearch,
     handleMaterialSelect,
-    getSpecificationOptions
+    getSpecificationOptions,
+    handleAddSpecification,
+    handleRemoveSpecification
   }
 } 

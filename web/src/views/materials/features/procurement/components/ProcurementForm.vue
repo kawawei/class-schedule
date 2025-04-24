@@ -60,7 +60,10 @@
         :disabled="isProcessing"
       >
         <template #icon>
-          <i class="fas fa-plus"></i>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
         </template>
         新增項目
       </AppButton>
@@ -73,9 +76,6 @@
         border
         class="procurement-table"
       >
-        <template #materialNo="{ row }">
-          <AppInput v-model="row.materialNo" placeholder="請輸入物料編號" class="full-width-input" />
-        </template>
         <template #materialName="{ row }">
           <AppSelect
             v-model="row.materialId"
@@ -89,39 +89,76 @@
           />
         </template>
         <template #specification="{ row }">
-          <AppSelect
-            v-model="row.specification"
-            :options="getSpecificationOptions(row.materialId)"
-            placeholder="請選擇規格"
-            class="full-width-input"
-            :disabled="!row.materialId"
-          />
+          <div class="specifications-container">
+            <div v-for="(spec, index) in row.specifications" :key="index" class="specification-row">
+              <div class="specification-inputs">
+                <AppSelect
+                  v-model="spec.specification"
+                  :options="getSpecificationOptions(row.materialId)"
+                  placeholder="請選擇規格"
+                  class="spec-select"
+                  :disabled="!row.materialId"
+                />
+                <div class="spec-actions">
+                  <button
+                    v-if="index === row.specifications.length - 1"
+                    class="icon-button add-btn"
+                    @click="handleAddSpecification(row)"
+                    title="新增規格"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                  <button
+                    v-if="row.specifications.length > 1"
+                    class="icon-button remove-btn"
+                    @click="handleRemoveSpecification(row, index)"
+                    title="刪除規格"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
         <template #unit="{ row }">
           <AppInput v-model="row.unit" placeholder="請輸入單位" class="full-width-input" />
         </template>
         <template #quantity="{ row }">
-          <AppInput 
-            v-model.number="row.quantity" 
-            type="number" 
-            :min="1"
-            class="full-width-input text-center"
-            @input="calculateItemAmount(row)"
-          />
+          <div v-for="(spec, index) in row.specifications" :key="index">
+            <AppInput 
+              v-model.number="spec.quantity" 
+              type="number" 
+              :min="1"
+              class="quantity-input"
+              placeholder="數量"
+              @input="calculateItemAmount(row, index)"
+            />
+          </div>
         </template>
         <template #unitPrice="{ row }">
-          <AppInput 
-            v-model.number="row.unitPrice" 
-            type="number" 
-            :min="0" 
-            :step="0.01"
-            class="full-width-input text-right"
-            @input="calculateItemAmount(row)"
-          />
+          <div v-for="(spec, index) in row.specifications" :key="index">
+            <AppInput 
+              v-model.number="spec.unitPrice" 
+              type="number" 
+              :min="0" 
+              :step="0.01"
+              class="price-input"
+              placeholder="單價"
+              @input="calculateItemAmount(row, index)"
+            />
+          </div>
         </template>
         <template #amount="{ row }">
-          <div class="amount-cell">
-            {{ row.currency === 'TWD' ? 'NT$' : '¥' }} {{ formatAmount(row.amount) }}
+          <div v-for="(spec, index) in row.specifications" :key="index">
+            <div class="amount-display">
+              {{ row.currency === 'TWD' ? 'NT$' : '¥' }} {{ formatAmount(spec.amount) }}
+            </div>
           </div>
         </template>
         <template #currency="{ row }">
@@ -129,13 +166,13 @@
             v-model="row.currency"
             :options="currencyOptions"
             class="currency-select"
-            @change="calculateItemAmount(row)"
+            @change="calculateTotals"
           />
         </template>
         <template #actions="{ index }">
           <div class="action-buttons">
             <button
-              class="icon-button reject-btn"
+              class="icon-button delete-btn"
               @click="handleRemoveItem(index)"
               title="刪除"
             >
@@ -169,7 +206,10 @@
           :disabled="isProcessing"
         >
           <template #icon>
-            <i class="fas fa-plus"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </template>
           新增費用
         </AppButton>
@@ -213,7 +253,7 @@
           <template #actions="{ index }">
             <div class="action-buttons">
               <button
-                class="icon-button reject-btn"
+                class="icon-button delete-btn"
                 @click="handleRemoveCharge(index)"
                 title="刪除"
               >
