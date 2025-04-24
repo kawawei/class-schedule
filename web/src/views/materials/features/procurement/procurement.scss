@@ -255,4 +255,28 @@
       }
     }
   }
+}
+
+// 對話框底部按鈕樣式 Dialog Footer Button Styles
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px; // 增加按鈕間距 Increase spacing between buttons
+  margin-top: 20px;
+
+  :deep(.app-button) {
+    min-width: 100px; // 設置最小寬度 Set minimum width
+
+    // 取消按鈕樣式 Cancel button styles
+    &.cancel-btn {
+      --button-text-color: var(--color-danger);
+      --button-border-color: var(--color-danger);
+      
+      &:hover {
+        --button-bg-color: var(--color-danger);
+        --button-text-color: white;
+        --button-border-color: var(--color-danger);
+      }
+    }
+  }
 } 

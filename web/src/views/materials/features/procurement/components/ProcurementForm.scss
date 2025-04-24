@@ -424,4 +424,27 @@
       }
     }
   }
+}
+
+// 確定和取消按鈕樣式 Confirm and Cancel Buttons Styles
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px; // 增加按鈕間距 Increase spacing between buttons
+  margin-top: 20px;
+
+  .el-button {
+    min-width: 100px; // 設置最小寬度 Set minimum width
+
+    // 取消按鈕樣式 Cancel button styles
+    &.cancel-btn {
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+      
+      &:hover {
+        background-color: var(--color-danger);
+        color: white;
+      }
+    }
+  }
 } 

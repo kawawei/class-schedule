@@ -164,11 +164,8 @@
         </template>
         <template #footer>
           <div class="dialog-footer">
-            <AppButton @click="closeProcurementDialog">取消 Cancel</AppButton>
-            <AppButton 
-              type="primary" 
-              @click="submitProcurementForm"
-            >確定 Confirm</AppButton>
+            <AppButton type="danger" @click="closeProcurementDialog">取消 Cancel</AppButton>
+            <AppButton type="primary" @click="submitProcurementForm">確定 Confirm</AppButton>
           </div>
         </template>
       </AppDialog>
