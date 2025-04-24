@@ -1,0 +1,340 @@
+.procurement-form {
+  padding: 20px 24px;
+}
+
+.form-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.form-divider {
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 24px -24px;
+}
+
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .form-title {
+    margin-bottom: 0;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+
+    &.required::after {
+      content: '*';
+      color: #f56c6c;
+      margin-left: 4px;
+    }
+  }
+}
+
+.data-table-wrapper {
+  .total-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 12px 20px;
+    margin-top: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+
+    .total-label {
+      font-weight: 500;
+      margin-right: 8px;
+    }
+
+    .total-amount {
+      font-size: 16px;
+      font-weight: 600;
+      color: #409eff;
+    }
+  }
+}
+
+:deep(.el-table) {
+  th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+  }
+
+  .el-input {
+    width: 100%;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  &.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 24px -24px -20px;
+  padding: 20px 24px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+// 表格操作按鈕樣式 Table Action Buttons Styles
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  justify-content: center;
+
+  .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: var(--color-primary);
+      background: var(--bg-hover);
+      border-radius: var(--radius-sm);
+    }
+
+    &.reject-btn {
+      color: var(--color-danger);
+      
+      &:hover {
+        color: var(--color-danger-dark);
+      }
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// 表格樣式 Table Styles
+:deep(.data-table-wrapper) {
+  .el-table {
+    th {
+      background-color: #f8f9fa;
+      font-weight: 500;
+    }
+
+    td {
+      padding: 8px;
+      vertical-align: middle;
+    }
+
+    .amount-cell {
+      text-align: right;
+      padding-right: 16px;
+    }
+  }
+}
+
+// 金額顯示樣式 Amount Display Styles
+.total-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 20px;
+  margin-top: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+
+  .total-label {
+    font-weight: 500;
+    margin-right: 8px;
+  }
+
+  .total-amount {
+    font-size: 16px;
+    font-weight: 600;
+    color: #409eff;
+    min-width: 120px;
+    text-align: right;
+  }
+}
+
+.procurement-table {
+  width: 100%;
+  margin-bottom: 16px;
+  border: 1px solid #dcdfe6;
+  
+  :deep(.el-table) {
+    // 移除 el-table 默認邊框
+    &::before,
+    &::after {
+      display: none;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 500;
+      padding: 8px;
+      border: 1px solid #dcdfe6 !important;
+      height: 40px;
+    }
+
+    td {
+      padding: 4px 8px;
+      vertical-align: middle;
+      border: 1px solid #dcdfe6 !important;
+      height: 40px;
+    }
+
+    // 移除最後一行的底部邊框
+    tr:last-child td {
+      border-bottom: none !important;
+    }
+
+    // 確保表格內容垂直居中
+    .cell {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      
+      .full-width-input {
+        margin: 0;
+      }
+    }
+  }
+}
+
+.full-width-input {
+  width: 100%;
+  height: 32px !important;
+  
+  :deep(.el-input__inner) {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 8px;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.amount-cell {
+  text-align: right;
+  padding-right: 16px;
+  color: var(--color-primary);
+}
+
+.summary-rows {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  margin-top: -1px;
+  background-color: #f8f9fa;
+
+  .summary-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: 14px;
+
+    .label {
+      font-weight: 500;
+      margin-right: 8px;
+    }
+
+    .amount {
+      min-width: 120px;
+      text-align: right;
+      color: var(--color-primary);
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+}
+
+.currency-select {
+  width: 100%;
+  
+  :deep(.el-input__inner) {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 8px;
+    text-align: center;
+  }
+}
+
+.extra-charges-section {
+  margin-bottom: 20px;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .charges-table {
+    margin-bottom: 16px;
+  }
+}
+
+.summary-rows {
+  .summary-row {
+    &.total {
+      border-top: 1px solid var(--border-color);
+      margin-top: 8px;
+      padding-top: 8px;
+
+      .amount {
+        font-size: 18px;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.amount-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .currency-symbol {
+    color: var(--text-secondary);
+    font-size: 14px;
+    width: 32px;
+    text-align: right;
+  }
+
+  .full-width-input {
+    flex: 1;
+  }
+} 

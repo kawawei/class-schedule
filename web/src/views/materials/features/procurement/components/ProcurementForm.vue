@@ -144,6 +144,93 @@
 
     <div class="form-divider"></div>
 
+    <!-- 額外費用區塊 Extra Charges Section -->
+    <div class="extra-charges-section">
+      <div class="section-header">
+        <h3 class="form-title">額外費用</h3>
+        <AppButton 
+          type="primary" 
+          @click="handleAddCharge"
+          :disabled="isProcessing"
+        >
+          <template #icon>
+            <i class="fas fa-plus"></i>
+          </template>
+          新增費用
+        </AppButton>
+      </div>
+
+      <div class="charges-table" v-if="formData.extraCharges && formData.extraCharges.length > 0">
+        <DataTable
+          :data="formData.extraCharges"
+          :columns="chargeColumns"
+          border
+          class="extra-charges-table"
+        >
+          <template #type="{ row }">
+            <AppSelect
+              v-model="row.type"
+              :options="chargeTypes"
+              placeholder="請選擇費用類型"
+              class="charge-type-select"
+            />
+          </template>
+          <template #amount="{ row }">
+            <div class="amount-input-group">
+              <span class="currency-symbol">{{ currentCurrencySymbol }}</span>
+              <AppInput 
+                v-model.number="row.amount" 
+                type="number" 
+                :min="0" 
+                :step="0.01"
+                class="full-width-input text-right"
+                @input="calculateTotals"
+              />
+            </div>
+          </template>
+          <template #description="{ row }">
+            <AppInput 
+              v-model="row.description"
+              placeholder="請輸入說明"
+              class="full-width-input"
+            />
+          </template>
+          <template #actions="{ index }">
+            <div class="action-buttons">
+              <button
+                class="icon-button reject-btn"
+                @click="handleRemoveCharge(index)"
+                title="刪除"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </template>
+        </DataTable>
+      </div>
+    </div>
+
+    <div class="summary-rows">
+      <div class="summary-row">
+        <span class="label">商品小計：</span>
+        <span class="amount">{{ formattedSubtotal }}</span>
+      </div>
+      <div class="summary-row" v-if="hasExtraCharges">
+        <span class="label">額外費用：</span>
+        <span class="amount">{{ formattedExtraCharges }}</span>
+      </div>
+      <div class="summary-row total">
+        <span class="label">總金額：</span>
+        <span class="amount">{{ formattedTotalAmount }}</span>
+      </div>
+    </div>
+
+    <div class="form-divider"></div>
+
     <h3 class="form-title">備註</h3>
     <div class="form-group">
       <AppInput
@@ -230,6 +317,7 @@ export default {
       status: '',
       items: [],
       remark: '',
+      extraCharges: [], // 額外費用列表
       ...props.initialData
     })
 
@@ -267,6 +355,22 @@ export default {
       { key: 'currency', title: '幣種', width: 100, slot: true },
       { key: 'actions', title: '操作', width: 80, align: 'center', slot: true }
     ]
+
+    // 費用類型選項
+    const chargeTypes = [
+      { label: '運費', value: 'SHIPPING' },
+      { label: '服務費', value: 'SERVICE' },
+      { label: '手續費', value: 'HANDLING' },
+      { label: '其他費用', value: 'OTHER' }
+    ];
+
+    // 額外費用表格列定義
+    const chargeColumns = [
+      { key: 'type', title: '費用類型', width: 150, slot: true },
+      { key: 'amount', title: '金額', width: 120, align: 'right', slot: true },
+      { key: 'description', title: '說明', minWidth: 200, slot: true },
+      { key: 'actions', title: '操作', width: 80, align: 'center', slot: true }
+    ];
 
     // 格式化金額 Format amount
     const formatAmount = (amount) => {
@@ -311,6 +415,7 @@ export default {
       const quantity = Number(row.quantity) || 0;
       const unitPrice = Number(row.unitPrice) || 0;
       row.amount = quantity * unitPrice;
+      calculateTotals(); // 重新計算總金額
     };
 
     // 監聽幣種變化 Watch currency changes
@@ -361,6 +466,121 @@ export default {
         Message.error('刪除項目失敗');
       }
     }
+
+    // 獲取當前幣種符號
+    const currentCurrencySymbol = computed(() => {
+      const firstItem = formData.items[0];
+      return firstItem?.currency === 'CNY' ? '¥' : 'NT$';
+    });
+
+    // 獲取當前幣種
+    const currentCurrency = computed(() => {
+      const firstItem = formData.items[0];
+      return firstItem?.currency || 'TWD';
+    });
+
+    // 新增額外費用
+    const handleAddCharge = () => {
+      if (isProcessing.value) return;
+      
+      try {
+        isProcessing.value = true;
+        
+        formData.extraCharges.push({
+          type: '',
+          amount: 0,
+          currency: currentCurrency.value, // 使用當前採購項目的幣種
+          description: ''
+        });
+        
+        console.log('新增費用項目成功，當前費用項目數量:', formData.extraCharges.length);
+      } catch (error) {
+        console.error('新增費用項目失敗:', error);
+        Message.error('新增費用項目失敗');
+      } finally {
+        setTimeout(() => {
+          isProcessing.value = false;
+        }, 300);
+      }
+    };
+
+    // 刪除額外費用
+    const handleRemoveCharge = (index) => {
+      try {
+        formData.extraCharges.splice(index, 1);
+        calculateTotals();
+        Message.success('刪除成功');
+      } catch (error) {
+        console.error('刪除費用項目失敗:', error);
+        Message.error('刪除費用項目失敗');
+      }
+    };
+
+    // 計算總金額（包含額外費用）
+    const calculateTotals = () => {
+      // 計算商品小計
+      const subtotal = formData.items.reduce((sum, item) => {
+        const itemAmount = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+        return sum + itemAmount;
+      }, 0);
+
+      // 計算額外費用總計
+      const extraChargesTotal = formData.extraCharges.reduce((sum, charge) => {
+        return sum + (Number(charge.amount) || 0);
+      }, 0);
+
+      // 更新總金額
+      formData.subtotal = subtotal;
+      formData.extraChargesTotal = extraChargesTotal;
+      formData.total = subtotal + extraChargesTotal;
+    };
+
+    // 格式化顯示金額
+    const formattedSubtotal = computed(() => {
+      const symbol = currentCurrencySymbol.value;
+      return `${symbol} ${formData.subtotal?.toFixed(2) || '0.00'}`;
+    });
+
+    const formattedExtraCharges = computed(() => {
+      const symbol = currentCurrencySymbol.value;
+      return `${symbol} ${formData.extraChargesTotal?.toFixed(2) || '0.00'}`;
+    });
+
+    const formattedTotalAmount = computed(() => {
+      const symbol = currentCurrencySymbol.value;
+      return `${symbol} ${formData.total?.toFixed(2) || '0.00'}`;
+    });
+
+    const hasExtraCharges = computed(() => {
+      return formData.extraCharges && formData.extraCharges.length > 0;
+    });
+
+    // 監聽數據變化
+    watch([
+      () => formData.items,
+      () => formData.extraCharges
+    ], () => {
+      calculateTotals();
+    }, { deep: true, immediate: true });
+
+    // 監聽單個項目的數量和單價變化
+    watch(() => formData.items.map(item => [item.quantity, item.unitPrice]), () => {
+      formData.items.forEach(calculateItemAmount);
+    }, { deep: true });
+
+    // 監聽額外費用金額變化
+    watch(() => formData.extraCharges.map(charge => charge.amount), () => {
+      calculateTotals();
+    }, { deep: true });
+
+    // 監聽採購項目幣種變化
+    watch(() => currentCurrency.value, (newCurrency) => {
+      // 更新所有額外費用的幣種
+      formData.extraCharges.forEach(charge => {
+        charge.currency = newCurrency;
+      });
+      calculateTotals();
+    });
 
     // 驗證表單
     const validateForm = () => {
@@ -455,304 +675,22 @@ export default {
       handleCancel,
       handleSubmit,
       formattedTotals,
-      isProcessing
+      isProcessing,
+      chargeTypes,
+      chargeColumns,
+      handleAddCharge,
+      handleRemoveCharge,
+      formattedSubtotal,
+      formattedExtraCharges,
+      formattedTotalAmount,
+      hasExtraCharges,
+      currentCurrencySymbol,
+      currentCurrency,
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
-.procurement-form {
-  padding: 20px 24px;
-}
-
-.form-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.form-divider {
-  height: 1px;
-  background-color: #e9ecef;
-  margin: 24px -24px;
-}
-
-.items-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-
-  .form-title {
-    margin-bottom: 0;
-  }
-}
-
-.form-group {
-  margin-bottom: 20px;
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #333;
-
-    &.required::after {
-      content: '*';
-      color: #f56c6c;
-      margin-left: 4px;
-    }
-  }
-}
-
-.data-table-wrapper {
-  .total-row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 12px 20px;
-    margin-top: 12px;
-    background-color: #f8f9fa;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-
-    .total-label {
-      font-weight: 500;
-      margin-right: 8px;
-    }
-
-    .total-amount {
-      font-size: 16px;
-      font-weight: 600;
-      color: #409eff;
-    }
-  }
-}
-
-:deep(.el-table) {
-  th {
-    background-color: #f8f9fa;
-    font-weight: 500;
-  }
-
-  .el-input {
-    width: 100%;
-  }
-}
-
-.grid {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 20px;
-
-  &.grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin: 24px -24px -20px;
-  padding: 20px 24px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
-}
-
-// 表格操作按鈕樣式 Table Action Buttons Styles
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-xs);
-  justify-content: center;
-
-  .icon-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: var(--color-primary);
-      background: var(--bg-hover);
-      border-radius: var(--radius-sm);
-    }
-
-    &.reject-btn {
-      color: var(--color-danger);
-      
-      &:hover {
-        color: var(--color-danger-dark);
-      }
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-}
-
-// 表格樣式 Table Styles
-:deep(.data-table-wrapper) {
-  .el-table {
-    th {
-      background-color: #f8f9fa;
-      font-weight: 500;
-    }
-
-    td {
-      padding: 8px;
-      vertical-align: middle;
-    }
-
-    .amount-cell {
-      text-align: right;
-      padding-right: 16px;
-    }
-  }
-}
-
-// 金額顯示樣式 Amount Display Styles
-.total-row {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 12px 20px;
-  margin-top: 12px;
-  background-color: #f8f9fa;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-
-  .total-label {
-    font-weight: 500;
-    margin-right: 8px;
-  }
-
-  .total-amount {
-    font-size: 16px;
-    font-weight: 600;
-    color: #409eff;
-    min-width: 120px;
-    text-align: right;
-  }
-}
-
-.procurement-table {
-  width: 100%;
-  margin-bottom: 16px;
-  border: 1px solid #dcdfe6;
-  
-  :deep(.el-table) {
-    // 移除 el-table 默認邊框
-    &::before,
-    &::after {
-      display: none;
-    }
-
-    th {
-      background-color: #f8f9fa;
-      font-weight: 500;
-      padding: 8px;
-      border: 1px solid #dcdfe6 !important;
-      height: 40px;
-    }
-
-    td {
-      padding: 4px 8px;
-      vertical-align: middle;
-      border: 1px solid #dcdfe6 !important;
-      height: 40px;
-    }
-
-    // 移除最後一行的底部邊框
-    tr:last-child td {
-      border-bottom: none !important;
-    }
-
-    // 確保表格內容垂直居中
-    .cell {
-      display: flex;
-      align-items: center;
-      height: 100%;
-      
-      .full-width-input {
-        margin: 0;
-      }
-    }
-  }
-}
-
-.full-width-input {
-  width: 100%;
-  height: 32px !important;
-  
-  :deep(.el-input__inner) {
-    height: 32px;
-    line-height: 32px;
-    padding: 0 8px;
-  }
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.amount-cell {
-  text-align: right;
-  padding-right: 16px;
-  color: var(--color-primary);
-}
-
-.summary-rows {
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  margin-top: -1px;
-  background-color: #f8f9fa;
-
-  .summary-row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 12px 16px;
-    font-size: 14px;
-
-    .label {
-      font-weight: 500;
-      margin-right: 8px;
-    }
-
-    .amount {
-      min-width: 120px;
-      text-align: right;
-      color: var(--color-primary);
-      font-weight: 600;
-      font-size: 16px;
-    }
-  }
-}
-
-.currency-select {
-  width: 100%;
-  
-  :deep(.el-input__inner) {
-    height: 32px;
-    line-height: 32px;
-    padding: 0 8px;
-    text-align: center;
-  }
-}
+<style lang="scss">
+@import './ProcurementForm.scss';
 </style> 
