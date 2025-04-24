@@ -11,6 +11,7 @@ import {
   endOfMonth, 
   format 
 } from 'date-fns';
+import { useRouter } from 'vue-router';
 
 // 採購管理頁面邏輯 Procurement Management Page Logic
 export const useProcurementManagement = () => {
@@ -210,8 +211,29 @@ export const useProcurementManagement = () => {
   };
 
   // 審核採購單 Approve procurement
-  const approveProcurement = (procurement) => {
-    Message.info('此功能開發中');
+  const approveProcurement = async (procurement) => {
+    try {
+      // 更新採購單狀態 Update procurement status
+      procurement.status = 'approved';
+      
+      // 在實際應用中，這裡應該調用後端 API
+      // In real application, should call backend API here
+      
+      Message.success('採購單審核通過！');
+    } catch (error) {
+      console.error('Error approving procurement:', error);
+      Message.error('審核失敗，請稍後重試！');
+    }
+  };
+
+  // 進貨操作 Purchase operation
+  const handlePurchase = (procurement) => {
+    // 跳轉到進貨頁面並帶上採購單信息
+    // Navigate to purchase page with procurement info
+    router.push({
+      name: 'purchase',
+      query: { procurementId: procurement.id }
+    });
   };
 
   // 拒絕採購單 Reject procurement
@@ -255,6 +277,7 @@ export const useProcurementManagement = () => {
     viewProcurementDetails,
     approveProcurement,
     rejectProcurement,
+    handlePurchase,
     applyFilters
   };
 }; 

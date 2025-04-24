@@ -77,7 +77,16 @@
           <AppInput v-model="row.materialNo" placeholder="請輸入物料編號" class="full-width-input" />
         </template>
         <template #materialName="{ row }">
-          <AppInput v-model="row.materialName" placeholder="請輸入物料名稱" class="full-width-input" />
+          <AppSelect
+            v-model="row.materialName"
+            :options="materialOptions"
+            placeholder="請輸入或選擇物料名稱"
+            class="full-width-input"
+            searchable
+            :loading="loadingMaterials"
+            @search="handleMaterialSearch"
+            @change="handleMaterialSelect(row, $event)"
+          />
         </template>
         <template #specification="{ row }">
           <AppInput v-model="row.specification" placeholder="請輸入規格" class="full-width-input" />

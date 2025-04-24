@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { format } from 'date-fns'
 import Message from '@/utils/message'
+import { API_BASE_URL } from '@/utils/api'
 
 // 採購表單邏輯 Procurement Form Logic
 export const useProcurementForm = (props, { emit }) => {
@@ -389,11 +390,71 @@ export const useProcurementForm = (props, { emit }) => {
     }
   }
 
+  // 物料選項 Material options
+  const materialOptions = ref([])
+  const loadingMaterials = ref(false)
+
+  // 獲取物料列表 Fetch materials list
+  const fetchMaterials = async (query = '') => {
+    try {
+      loadingMaterials.value = true
+      // 調用庫存API獲取物料列表 Call inventory API to get materials list
+      const response = await fetch(`${API_BASE_URL}/inventory${query ? `?search=${encodeURIComponent(query)}` : ''}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // 轉換數據格式為下拉選項格式 Convert data format to select options format
+        materialOptions.value = data.data.map(material => ({
+          label: material.name,
+          value: material.id,
+          specification: material.specifications?.[0]?.value || '', // 使用第一個規格值 Use first specification value
+          unit: material.unit || '個' // 默認單位 Default unit
+        }))
+      } else {
+        throw new Error(data.message || '獲取物料列表失敗')
+      }
+    } catch (error) {
+      console.error('獲取物料列表失敗:', error)
+      Message.error(error.message || '獲取物料列表失敗')
+      materialOptions.value = [] // 發生錯誤時清空選項 Clear options on error
+    } finally {
+      loadingMaterials.value = false
+    }
+  }
+
+  // 處理物料搜索 Handle material search
+  const handleMaterialSearch = async (query) => {
+    await fetchMaterials(query)
+  }
+
+  // 處理物料選擇 Handle material selection
+  const handleMaterialSelect = (row, materialId) => {
+    const selectedMaterial = materialOptions.value.find(m => m.value === materialId)
+    if (selectedMaterial) {
+      row.materialName = selectedMaterial.label
+      row.specification = selectedMaterial.specification
+      row.unit = selectedMaterial.unit
+    }
+  }
+
+  // 初始化時獲取物料列表 Fetch materials list on initialization
+  fetchMaterials()
+
   return {
     // 狀態 States
     formData,
     errors,
     isProcessing,
+    loadingMaterials,
     
     // 選項和配置 Options and configurations
     statusOptions,
@@ -401,6 +462,7 @@ export const useProcurementForm = (props, { emit }) => {
     itemColumns,
     chargeTypes,
     chargeColumns,
+    materialOptions,
     
     // 計算屬性 Computed properties
     formattedTotals,
@@ -419,6 +481,8 @@ export const useProcurementForm = (props, { emit }) => {
     handleAddCharge,
     handleRemoveCharge,
     handleCancel,
-    handleSubmit
+    handleSubmit,
+    handleMaterialSearch,
+    handleMaterialSelect
   }
 } 
