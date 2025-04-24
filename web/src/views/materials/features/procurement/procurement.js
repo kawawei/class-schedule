@@ -24,22 +24,7 @@ export const useProcurementManagement = () => {
   });
   
   // 模擬數據 Mock data
-  const procurements = ref([
-    {
-      id: 'PR001',
-      supplierName: '金石堂',
-      totalAmount: 5000,
-      status: 'pending',
-      createdAt: '2024-03-20'
-    },
-    {
-      id: 'PR002',
-      supplierName: '博客來',
-      totalAmount: 8000,
-      status: 'approved',
-      createdAt: '2024-03-19'
-    }
-  ]);
+  const procurements = ref([]);  // 清空初始數據，確保響應性 Clear initial data to ensure reactivity
 
   // 供應商選項 Supplier options
   const supplierOptions = ref([
@@ -171,16 +156,49 @@ export const useProcurementManagement = () => {
     currentProcurement.value = null;
   };
 
+  // 提交採購單表單 Submit procurement form
+  const submitProcurementForm = async () => {
+    const formRef = document.querySelector('.procurement-form')?.__vueParentComponent?.ctx;
+    if (formRef && typeof formRef.handleSubmit === 'function') {
+      await formRef.handleSubmit();
+    }
+  };
+
   // 處理採購單提交 Handle procurement form submission
   const handleProcurementSubmit = async (formData) => {
+    console.log('Received form data:', formData); // 日誌：接收到的表單數據 Log: received form data
+    
     try {
       loading.value = true;
-      // TODO: 實現採購單提交邏輯
-      console.log('提交的採購單數據：', formData);
-      Message.success('採購單提交成功');
-      closeProcurementDialog();
+      
+      // 計算總金額 Calculate total amount
+      const totalAmount = formData.items.reduce((sum, item) => {
+        return sum + (Number(item.quantity) * Number(item.unitPrice));
+      }, 0);
+
+      // 創建新的採購單 Create new procurement order
+      const newProcurement = {
+        id: formData.procurementNumber || `PO${Date.now()}`,
+        supplierName: formData.supplier,
+        totalAmount: totalAmount, // 簡化總金額結構 Simplify total amount structure
+        status: 'pending',
+        createdAt: format(new Date(), 'yyyy-MM-dd'),
+        items: formData.items,
+        remark: formData.remark || ''
+      };
+
+      console.log('New procurement to be added:', newProcurement); // 日誌：即將添加的新採購單 Log: new procurement to be added
+      
+      // 使用展開運算符更新數組 Update array using spread operator
+      procurements.value = [newProcurement, ...procurements.value];
+      
+      console.log('Updated procurements list:', procurements.value); // 日誌：更新後的採購單列表 Log: updated procurement list
+      
+      showProcurementDialog.value = false;
+      Message.success('採購單已成功創建！ Procurement order created successfully!');
     } catch (error) {
-      Message.error('採購單提交失敗');
+      console.error('Error submitting procurement:', error);
+      Message.error('創建採購單時發生錯誤！ Error creating procurement order!');
     } finally {
       loading.value = false;
     }
@@ -232,6 +250,7 @@ export const useProcurementManagement = () => {
     currentProcurement,
     openAddProcurementDialog,
     closeProcurementDialog,
+    submitProcurementForm,
     handleProcurementSubmit,
     viewProcurementDetails,
     approveProcurement,

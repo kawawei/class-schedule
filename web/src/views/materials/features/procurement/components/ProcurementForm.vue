@@ -30,12 +30,10 @@
       <div class="col-span-1">
         <div class="form-group">
           <label class="required">供應商</label>
-          <AppSelect
+          <AppInput
             v-model="formData.supplierId"
-            :options="supplierOptions"
-            placeholder="請選擇供應商"
+            placeholder="請輸入供應商名稱"
             :error="errors.supplierId"
-            filterable
           />
         </div>
       </div>
@@ -243,13 +241,6 @@ export default {
       status: ''
     })
 
-    // 供應商選項
-    const supplierOptions = [
-      { value: 'kingstone', label: '金石堂' },
-      { value: 'books', label: '博客來' },
-      { value: 'eslite', label: '誠品' }
-    ]
-
     // 狀態選項
     const statusOptions = [
       { value: 'draft', label: '草稿' },
@@ -403,23 +394,57 @@ export default {
 
     // 取消操作
     const handleCancel = () => {
-      emit('cancel')
+      // 清空表單
+      formData.items = [];
+      formData.remark = '';
+      formData.status = '';
+      formData.supplierId = '';
+      formData.procurementNo = generateProcurementNo();
+      emit('cancel');
     }
 
-    // 提交表單
+    // 提交表單 Submit form
     const handleSubmit = async () => {
       if (!validateForm()) {
-        Message.error('請檢查表單填寫是否正確')
-        return
+        Message.error('請檢查表單填寫是否正確');
+        return;
       }
-      
-      emit('submit', formData)
+
+      try {
+        // 準備提交數據 Prepare submission data
+        const procurementData = {
+          procurementNumber: formData.procurementNo,
+          supplier: formData.supplierId,
+          items: formData.items.map(item => ({
+            ...item,
+            amount: Number(item.amount || 0).toFixed(2)
+          })),
+          currency: formData.items[0]?.currency || 'TWD',
+          remark: formData.remark
+        };
+
+        console.log('Submitting procurement data:', procurementData);
+        
+        // 觸發父組件的提交事件
+        emit('submit', procurementData);
+        
+        // 清空表單
+        formData.items = [];
+        formData.remark = '';
+        formData.status = '';
+        formData.supplierId = '';
+        formData.procurementNo = generateProcurementNo();
+        
+        Message.success('採購單建立成功！');
+      } catch (error) {
+        console.error('提交採購單失敗:', error);
+        Message.error('提交失敗，請稍後再試');
+      }
     }
 
     return {
       formData,
       errors,
-      supplierOptions,
       statusOptions,
       currencyOptions,
       itemColumns,

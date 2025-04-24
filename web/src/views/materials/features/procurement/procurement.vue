@@ -142,11 +142,23 @@
         width="80%"
         destroy-on-close
       >
-        <ProcurementForm
-          :initial-data="currentProcurement"
-          @submit="handleProcurementSubmit"
-          @cancel="closeProcurementDialog"
-        />
+        <template #default>
+          <ProcurementForm
+            :initial-data="currentProcurement"
+            @submit="handleProcurementSubmit"
+            @cancel="closeProcurementDialog"
+            ref="procurementFormRef"
+          />
+        </template>
+        <template #footer>
+          <div class="dialog-footer">
+            <AppButton @click="closeProcurementDialog">取消 Cancel</AppButton>
+            <AppButton 
+              type="primary" 
+              @click="submitProcurementForm"
+            >確定 Confirm</AppButton>
+          </div>
+        </template>
       </AppDialog>
     </div>
   </div>
