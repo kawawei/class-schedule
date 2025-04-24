@@ -461,16 +461,20 @@ export const useProcurementForm = (props, { emit }) => {
     if (selectedMaterial) {
       row.materialId = materialId // 保存物料ID Save material ID
       row.materialName = selectedMaterial.label
-      row.specifications = [{ // 重置規格列表 Reset specification list
-        specification: '',
+      row.unit = selectedMaterial.unit
+
+      // 檢查物料是否有規格選項 Check if material has specification options
+      const specs = getSpecificationOptions(materialId)
+      
+      // 重置規格列表 Reset specification list
+      row.specifications = [{
+        specification: specs.length === 0 ? '無規格' : '', // 如果沒有規格選項，設置為"無規格" If no specs, set to "No specification"
         quantity: 1,
         unitPrice: 0,
         amount: 0,
       }]
-      row.unit = selectedMaterial.unit
 
       // 如果物料只有一個規格組合，自動選擇該規格 If material has only one specification combination, select it automatically
-      const specs = getSpecificationOptions(materialId)
       if (specs.length === 1) {
         row.specifications[0].specification = specs[0].value
       }

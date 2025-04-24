@@ -359,6 +359,14 @@
 
       .spec-select {
         width: 120px;
+
+        &.no-specs {
+          :deep(.el-input__inner) {
+            color: var(--text-secondary);
+            background-color: var(--background-disabled);
+            cursor: not-allowed;
+          }
+        }
       }
 
       .quantity-input {

@@ -97,11 +97,12 @@
                   :options="getSpecificationOptions(row.materialId)"
                   placeholder="請選擇規格"
                   class="spec-select"
-                  :disabled="!row.materialId"
+                  :disabled="!row.materialId || getSpecificationOptions(row.materialId).length === 0"
+                  :class="{ 'no-specs': getSpecificationOptions(row.materialId).length === 0 }"
                 />
                 <div class="spec-actions">
                   <button
-                    v-if="index === row.specifications.length - 1"
+                    v-if="index === row.specifications.length - 1 && getSpecificationOptions(row.materialId).length > 0"
                     class="icon-button add-btn"
                     @click="handleAddSpecification(row)"
                     title="新增規格"
@@ -112,7 +113,7 @@
                     </svg>
                   </button>
                   <button
-                    v-if="row.specifications.length > 1"
+                    v-if="row.specifications.length > 1 && getSpecificationOptions(row.materialId).length > 0"
                     class="icon-button remove-btn"
                     @click="handleRemoveSpecification(row, index)"
                     title="刪除規格"
