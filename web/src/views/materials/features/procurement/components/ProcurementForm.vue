@@ -78,7 +78,7 @@
         </template>
         <template #materialName="{ row }">
           <AppSelect
-            v-model="row.materialName"
+            v-model="row.materialId"
             :options="materialOptions"
             placeholder="請輸入或選擇物料名稱"
             class="full-width-input"
@@ -89,7 +89,13 @@
           />
         </template>
         <template #specification="{ row }">
-          <AppInput v-model="row.specification" placeholder="請輸入規格" class="full-width-input" />
+          <AppSelect
+            v-model="row.specification"
+            :options="getSpecificationOptions(row.materialId)"
+            placeholder="請選擇規格"
+            class="full-width-input"
+            :disabled="!row.materialId"
+          />
         </template>
         <template #unit="{ row }">
           <AppInput v-model="row.unit" placeholder="請輸入單位" class="full-width-input" />

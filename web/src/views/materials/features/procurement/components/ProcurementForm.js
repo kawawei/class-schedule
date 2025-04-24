@@ -162,6 +162,7 @@ export const useProcurementForm = (props, { emit }) => {
       isProcessing.value = true
       
       formData.items.push({
+        materialId: '', // 初始化物料ID Initialize material ID
         materialNo: '',
         materialName: '',
         specification: '',
@@ -394,6 +395,9 @@ export const useProcurementForm = (props, { emit }) => {
   const materialOptions = ref([])
   const loadingMaterials = ref(false)
 
+  // 新增規格選項 Add specification options
+  const specificationOptions = ref({})  // 用於存儲每個物料的規格選項 Store specification options for each material
+
   // 獲取物料列表 Fetch materials list
   const fetchMaterials = async (query = '') => {
     try {
@@ -416,9 +420,26 @@ export const useProcurementForm = (props, { emit }) => {
         materialOptions.value = data.data.map(material => ({
           label: material.name,
           value: material.id,
-          specification: material.specifications?.[0]?.value || '', // 使用第一個規格值 Use first specification value
+          specifications: material.specifications || {}, // 保存完整的規格列表 Save complete specifications list
           unit: material.unit || '個' // 默認單位 Default unit
         }))
+
+        // 更新規格選項 Update specification options
+        data.data.forEach(material => {
+          if (material.specifications?.combinations) {
+            // 從組合中提取規格選項 Extract specification options from combinations
+            specificationOptions.value[material.id] = material.specifications.combinations.map(combo => {
+              // 將組合對象的值轉換為字符串 Convert combination object values to string
+              const specValues = Object.values(combo).join(' / ')
+              return {
+                label: specValues,
+                value: specValues
+              }
+            })
+          } else {
+            specificationOptions.value[material.id] = []
+          }
+        })
       } else {
         throw new Error(data.message || '獲取物料列表失敗')
       }
@@ -440,10 +461,27 @@ export const useProcurementForm = (props, { emit }) => {
   const handleMaterialSelect = (row, materialId) => {
     const selectedMaterial = materialOptions.value.find(m => m.value === materialId)
     if (selectedMaterial) {
+      row.materialId = materialId // 保存物料ID Save material ID
       row.materialName = selectedMaterial.label
-      row.specification = selectedMaterial.specification
+      row.materialNo = selectedMaterial.value // 設置物料編號 Set material number
+      row.specification = '' // 清空規格，等待用戶選擇 Clear specification, waiting for user selection
       row.unit = selectedMaterial.unit
+
+      // 如果物料只有一個規格組合，自動選擇該規格 If material has only one specification combination, select it automatically
+      const specs = getSpecificationOptions(materialId)
+      if (specs.length === 1) {
+        row.specification = specs[0].value
+      }
+
+      // 打印規格選項以便調試 Print specification options for debugging
+      console.log('Material specs:', selectedMaterial.specifications)
+      console.log('Spec options:', specs)
     }
+  }
+
+  // 獲取特定物料的規格選項 Get specification options for specific material
+  const getSpecificationOptions = (materialId) => {
+    return specificationOptions.value[materialId] || []
   }
 
   // 初始化時獲取物料列表 Fetch materials list on initialization
@@ -463,6 +501,7 @@ export const useProcurementForm = (props, { emit }) => {
     chargeTypes,
     chargeColumns,
     materialOptions,
+    specificationOptions,
     
     // 計算屬性 Computed properties
     formattedTotals,
@@ -483,6 +522,7 @@ export const useProcurementForm = (props, { emit }) => {
     handleCancel,
     handleSubmit,
     handleMaterialSearch,
-    handleMaterialSelect
+    handleMaterialSelect,
+    getSpecificationOptions
   }
 } 
