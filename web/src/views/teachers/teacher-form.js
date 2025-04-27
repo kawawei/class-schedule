@@ -230,11 +230,6 @@ export default {
         return false;
       }
       
-      if (!teacher.phone) {
-        Message.error('請輸入手機號碼');
-        return false;
-      }
-      
       if (!teacher.county || !teacher.district) {
         Message.error('請選擇縣市和區域');
         return false;
@@ -247,11 +242,6 @@ export default {
       
       if (!teacher.level) {
         Message.error('請選擇等級');
-        return false;
-      }
-      
-      if (!teacher.specialty) {
-        Message.error('請輸入專長');
         return false;
       }
       

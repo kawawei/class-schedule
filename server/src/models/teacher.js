@@ -34,17 +34,22 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
       validate: {
-        isEmail: { msg: '電子郵件格式不正確 Invalid email format' }
+        isValidEmail(value) {
+          if (value && value !== '') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              throw new Error('電子郵件格式不正確 Invalid email format');
+            }
+          }
+        }
       },
       comment: '電子郵件 Email'
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
-        notEmpty: { msg: '電話不能為空 Phone cannot be empty' },
         is: {
-          args: /^09\d{8}$|^0[1-8]\d{7,8}$/,
+          args: [/^09\d{8}$|^0[1-8]\d{7,8}$|^$/],
           msg: '電話格式不正確 Invalid phone format'
         }
       },
@@ -143,7 +148,7 @@ module.exports = (sequelize) => {
       allowNull: true,
       validate: {
         is: {
-          args: /^09\d{8}$|^0[1-8]\d{7,8}$/,
+          args: [/^09\d{8}$|^0[1-8]\d{7,8}$|^$/],
           msg: '電話格式不正確 Invalid phone format'
         }
       },

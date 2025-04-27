@@ -28,17 +28,14 @@ const validationMiddleware = {
         .allow('')
         .max(100)
         .messages({
-          'string.email': '電子郵件格式不正確 Invalid email format',
-          'string.max': '電子郵件不能超過100個字符 Email cannot exceed 100 characters'
+          'string.email': '電子郵件格式不正確 Invalid email format'
         }),
       
       phone: Joi.string()
-        .required()
         .pattern(/^09\d{8}$|^0[1-8]\d{7,8}$/)
+        .allow('')
         .messages({
-          'string.empty': '電話不能為空 Phone cannot be empty',
-          'string.pattern.base': '電話格式不正確 Invalid phone format',
-          'any.required': '電話為必填欄位 Phone is required'
+          'string.pattern.base': '電話格式不正確 Invalid phone format'
         }),
       
       line_id: Joi.string()
@@ -137,8 +134,8 @@ const validationMiddleware = {
         }),
       
       emergency_contact_phone: Joi.string()
-        .allow('')
         .pattern(/^09\d{8}$|^0[1-8]\d{7,8}$/)
+        .allow('')
         .messages({
           'string.pattern.base': '緊急聯絡人電話格式不正確 Invalid emergency contact phone format'
         }),

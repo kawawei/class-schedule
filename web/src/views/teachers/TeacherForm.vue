@@ -70,7 +70,6 @@
                     label="手機號碼"
                     v-model="teacher.phone"
                     placeholder="請輸入手機號碼"
-                    required
                   />
                 </div>
                 <div class="form-group">
@@ -79,7 +78,6 @@
                     type="email"
                     v-model="teacher.email"
                     placeholder="請輸入電子郵件"
-                    required
                   />
                 </div>
                 <div class="form-group">
@@ -121,7 +119,6 @@
                     label="詳細地址"
                     v-model="teacher.address"
                     placeholder="請輸入詳細地址"
-                    required
                   />
                 </div>
               </div>
@@ -188,7 +185,6 @@
                     label="姓名"
                     v-model="teacher.emergency_contact_name"
                     placeholder="請輸入緊急聯絡人姓名"
-                    required
                   />
                 </div>
                 <div class="form-group">
@@ -196,7 +192,6 @@
                     label="關係"
                     v-model="teacher.emergency_contact_relation"
                     placeholder="請輸入與緊急聯絡人的關係"
-                    required
                   />
                 </div>
                 <div class="form-group">
@@ -204,7 +199,6 @@
                     label="聯絡電話"
                     v-model="teacher.emergency_contact_phone"
                     placeholder="請輸入緊急聯絡人電話"
-                    required
                   />
                 </div>
               </div>
