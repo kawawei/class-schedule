@@ -1,5 +1,5 @@
 // 引入所需的函數和工具 Import required functions and utilities
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, toRefs } from 'vue'
 import { format } from 'date-fns'
 import Message from '@/utils/message'
 import { API_BASE_URL } from '@/utils/api'
@@ -559,6 +559,51 @@ export const useProcurementForm = (props, { emit }) => {
   // 初始化時獲取物料列表 Fetch materials list on initialization
   fetchMaterials()
 
+  // 只讀狀態 Readonly state
+  const readonly = ref(false)
+
+  // 監聽父組件 dialogType，決定是否只讀 Watch parent dialogType to decide readonly
+  watch(() => props.dialogType, (val) => {
+    readonly.value = val === 'view'
+  }, { immediate: true })
+
+  // 合併監聽 initialData 與 materialOptions，確保物料名稱正確顯示
+  watch([
+    () => props.initialData,
+    () => materialOptions.value
+  ], ([val, options]) => {
+    if (val && Array.isArray(options) && options.length > 0) {
+      Object.assign(formData, val)
+      // 採購日期格式轉換 Format procurementDate
+      if (formData.procurementDate) {
+        formData.procurementDate = String(formData.procurementDate).slice(0, 10) // 只取 yyyy-MM-dd
+      }
+      // 採購項目結構轉換 Convert items structure
+      if (Array.isArray(formData.items)) {
+        formData.items = formData.items.map(item => {
+          // 取得 materialId（資料庫 name 欄位實為 id）
+          const materialId = item.name
+          // 從 materialOptions 找到對應物料資訊 Find material info from materialOptions
+          const material = materialOptions.value.find(m => m.value == materialId)
+          return {
+            materialId, // 物料ID
+            materialName: material ? material.label : '', // 物料名稱
+            unit: material ? material.unit : '', // 單位
+            currency: item.currency || 'TWD', // 幣種
+            specifications: [ // 轉成規格陣列
+              {
+                specification: '', // 若有規格可補上
+                quantity: item.quantity || 1,
+                unitPrice: item.unitPrice || 0,
+                amount: (item.quantity || 1) * (item.unitPrice || 0)
+              }
+            ]
+          }
+        })
+      }
+    }
+  }, { immediate: true, deep: true })
+
   return {
     // 狀態 States
     formData,
@@ -598,6 +643,7 @@ export const useProcurementForm = (props, { emit }) => {
     handleMaterialSelect,
     getSpecificationOptions,
     handleAddSpecification,
-    handleRemoveSpecification
+    handleRemoveSpecification,
+    readonly
   }
 } 

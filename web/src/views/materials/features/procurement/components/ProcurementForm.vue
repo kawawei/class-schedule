@@ -10,6 +10,7 @@
             v-model="formData.procurementNo" 
             placeholder="請輸入採購單號"
             :error="errors.procurementNo"
+            :readonly="readonly"
           />
         </div>
       </div>
@@ -21,6 +22,7 @@
             type="date"
             placeholder="請選擇採購日期"
             :error="errors.procurementDate"
+            :readonly="readonly"
           />
         </div>
       </div>
@@ -34,6 +36,7 @@
             v-model="formData.supplier"
             placeholder="請輸入供應商名稱"
             :error="errors.supplier"
+            :readonly="readonly"
           />
         </div>
       </div>
@@ -45,6 +48,7 @@
             :options="statusOptions"
             placeholder="請選擇採購狀態"
             :error="errors.status"
+            :disabled="readonly"
           />
         </div>
       </div>
@@ -57,7 +61,7 @@
       <AppButton 
         type="primary" 
         @click.stop.prevent="handleAddItem"
-        :disabled="isProcessing"
+        :disabled="isProcessing || readonly"
       >
         <template #icon>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,6 +90,7 @@
             :loading="loadingMaterials"
             @search="handleMaterialSearch"
             @change="handleMaterialSelect(row, $event)"
+            :disabled="readonly"
           />
         </template>
         <template #specification="{ row }">
@@ -97,7 +102,7 @@
                   :options="getSpecificationOptions(row.materialId)"
                   placeholder="請選擇規格"
                   class="spec-select"
-                  :disabled="!row.materialId || getSpecificationOptions(row.materialId).length === 0"
+                  :disabled="readonly || !row.materialId || getSpecificationOptions(row.materialId).length === 0"
                   :class="{ 'no-specs': getSpecificationOptions(row.materialId).length === 0 }"
                 />
                 <div class="spec-actions">
@@ -128,7 +133,7 @@
           </div>
         </template>
         <template #unit="{ row }">
-          <AppInput v-model="row.unit" placeholder="請輸入單位" class="full-width-input" />
+          <AppInput v-model="row.unit" placeholder="請輸入單位" class="full-width-input" :readonly="readonly" />
         </template>
         <template #quantity="{ row }">
           <div v-for="(spec, index) in row.specifications" :key="index">
@@ -139,6 +144,7 @@
               class="quantity-input"
               placeholder="數量"
               @input="calculateItemAmount(row, index)"
+              :readonly="readonly"
             />
           </div>
         </template>
@@ -152,6 +158,7 @@
               class="price-input"
               placeholder="單價"
               @input="calculateItemAmount(row, index)"
+              :readonly="readonly"
             />
           </div>
         </template>
@@ -168,6 +175,7 @@
             :options="currencyOptions"
             class="currency-select"
             @change="calculateTotals"
+            :disabled="readonly"
           />
         </template>
         <template #actions="{ index }">
@@ -176,6 +184,7 @@
               class="icon-button delete-btn"
               @click="handleRemoveItem(index)"
               title="刪除"
+              :disabled="readonly"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"></path>
@@ -204,7 +213,7 @@
         <AppButton 
           type="primary" 
           @click="handleAddCharge"
-          :disabled="isProcessing"
+          :disabled="isProcessing || readonly"
         >
           <template #icon>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

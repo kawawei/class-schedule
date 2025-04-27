@@ -91,9 +91,8 @@
       >
         <!-- 狀態列 Status Column -->
         <template #status="{ row }">
-          <span :class="['status-tag', row.status]">
-            {{ getStatusText(row.status) }}
-          </span>
+          <!-- 使用 StatusBadge 元件顯示狀態 Use StatusBadge component to display status -->
+          <StatusBadge :status="mapStatusToBadge(row.status)" :text="getStatusText(row.status)" />
         </template>
 
         <!-- 操作列 Actions Column -->
@@ -166,7 +165,8 @@
         <template #footer>
           <div class="dialog-footer">
             <AppButton type="danger" @click="closeProcurementDialog">取消 Cancel</AppButton>
-            <AppButton type="primary" @click="submitProcurementForm">確定 Confirm</AppButton>
+            <AppButton v-if="dialogType === 'view'" type="primary" @click="dialogType = 'edit'">編輯 Edit</AppButton>
+            <AppButton v-else type="primary" @click="submitProcurementForm">儲存 Save</AppButton>
           </div>
         </template>
       </AppDialog>
@@ -182,6 +182,7 @@ import AppDialog from '@/components/base/AppDialog.vue';
 import DataTable from '@/components/base/DataTable.vue';
 import { useProcurementManagement } from './procurement';
 import ProcurementForm from './components/ProcurementForm.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 
 export default {
   name: 'ProcurementManagement',
@@ -192,12 +193,24 @@ export default {
     AppSelect,
     AppDialog,
     DataTable,
-    ProcurementForm
+    ProcurementForm,
+    StatusBadge
   },
 
   setup() {
+    // 狀態對應函數 Map procurement status to StatusBadge status
+    const mapStatusToBadge = (status) => {
+      switch (status) {
+        case 'draft': return 'upcoming'; // 草稿 → 即將開始
+        case 'pending': return 'in-progress'; // 待審核 → 進行中
+        case 'approved': return 'completed'; // 已審核 → 已完成
+        case 'rejected': return 'cancelled'; // 已拒絕 → 已取消
+        default: return 'upcoming';
+      }
+    };
     return {
-      ...useProcurementManagement()
+      ...useProcurementManagement(),
+      mapStatusToBadge
     };
   }
 };

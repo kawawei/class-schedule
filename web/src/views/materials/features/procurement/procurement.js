@@ -136,11 +136,13 @@ export const useProcurementManagement = () => {
   };
 
   // 獲取狀態文字 Get status text
+  // 狀態對應中文顯示 Map status to Chinese display text
   const getStatusText = (status) => {
     const texts = {
-      pending: '待審核',
-      approved: '已審核',
-      rejected: '已拒絕'
+      draft: '草稿', // draft → 草稿
+      pending: '待審核', // pending → 待審核
+      approved: '已審核', // approved → 已審核
+      rejected: '已拒絕' // rejected → 已拒絕
     };
     return texts[status] || status;
   };
@@ -209,7 +211,10 @@ export const useProcurementManagement = () => {
 
   // 查看採購單詳情 View procurement details
   const viewProcurementDetails = (procurement) => {
-    Message.info('此功能開發中');
+    // 設定當前要查看的採購單 Set the current procurement to view
+    currentProcurement.value = procurement;
+    dialogType.value = 'view'; // 設定為檢視模式 set to view mode
+    showProcurementDialog.value = true; // 顯示對話框 show dialog
   };
 
   // 審核採購單 Approve procurement
