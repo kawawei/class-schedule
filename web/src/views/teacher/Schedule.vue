@@ -68,6 +68,7 @@
             :is="currentCalendarComponent" 
             :current-date="currentDate"
             :events="filteredCourseEvents"
+            :is-teacher="true"
             @event-click="handleEventClick"
             @date-click="handleDateClick"
             @course-move="handleCourseMove"
@@ -97,6 +98,7 @@ import { zhTW } from 'date-fns/locale';
 import { useRouter } from 'vue-router';
 import { scheduleAPI, authAPI } from '@/utils/api';
 import Message from '@/utils/message';
+import courseDataService from '@/services/courseDataService'; // 引入課程數據服務 Import course data service
 
 // 導入日曆視圖組件 Import calendar view components
 import DayView from '@/components/calendar/DayView.vue';
@@ -280,6 +282,8 @@ export default defineComponent({
               column = day === 0 ? 7 : day; // 將週日(0)轉換為7，其他日期保持不變
             }
 
+            // 新增 uuid 欄位，對應 series_id，確保系列課程聚合
+            // Add uuid field, mapped from series_id, to ensure series aggregation
             return {
               id: schedule.id,
               teacher_id: schedule.teacher_id, // 添加 teacher_id
@@ -294,9 +298,13 @@ export default defineComponent({
               courseFee: schedule.course_fee || 0,
               teacherFee: schedule.teacher_fee || 0,
               assistantFee: schedule.assistant_fee || 0,
-              position: { row, column }
+              position: { row, column },
+              uuid: schedule.series_id || String(schedule.id) // 新增 uuid 欄位 Add uuid field
             };
           });
+
+          // 設置課程數據到全域服務 Set course data to global service
+          courseDataService.setCourses(courseEvents.value);
 
           console.log('轉換後的課程數據:', courseEvents.value);
         } else {

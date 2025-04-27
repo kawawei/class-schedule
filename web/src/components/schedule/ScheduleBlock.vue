@@ -44,6 +44,7 @@
         <div class="tooltip-content" v-if="tooltipData">
           <div class="tooltip-header">
             <span class="course-type">{{ tooltipData.courseType }}</span>
+            <!-- 顯示系列堂數與日期範圍 Show series count and date range -->
             <span class="course-count" v-if="seriesInfo?.count > 1">
               (共 {{ seriesInfo.count }} 堂
               <span v-if="seriesInfo.firstDate && seriesInfo.lastDate">
@@ -68,24 +69,36 @@
             <!-- 費用信息 Fee Information -->
             <div class="fees-section">
               <h4>課程費用：</h4>
-              <p>
-                <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
-                <span v-if="seriesInfo?.totalFees?.courseFee">
-                  / 總計：{{ formatCurrency(seriesInfo.totalFees.courseFee) }}
-                </span>
-              </p>
-              <p>
-                <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
-                <span v-if="seriesInfo?.totalFees?.teacherFee">
-                  / 總計：{{ formatCurrency(seriesInfo.totalFees.teacherFee) }}
-                </span>
-              </p>
-              <p v-if="tooltipData.assistantFee">
-                <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
-                <span v-if="seriesInfo?.totalFees?.assistantFee">
-                  / 總計：{{ formatCurrency(seriesInfo.totalFees.assistantFee) }}
-                </span>
-              </p>
+              <!-- 老師端只顯示教師費 Teacher view only shows teacher fee -->
+              <template v-if="isTeacher">
+                <p>
+                  <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                  <span v-if="seriesInfo?.totalFees?.teacherFee">
+                    / 總計：{{ formatCurrency(seriesInfo.totalFees.teacherFee) }}
+                  </span>
+                </p>
+              </template>
+              <!-- 管理員端顯示全部費用 Admin view shows all fees -->
+              <template v-else>
+                <p>
+                  <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
+                  <span v-if="seriesInfo?.totalFees?.courseFee">
+                    / 總計：{{ formatCurrency(seriesInfo.totalFees.courseFee) }}
+                  </span>
+                </p>
+                <p>
+                  <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                  <span v-if="seriesInfo?.totalFees?.teacherFee">
+                    / 總計：{{ formatCurrency(seriesInfo.totalFees.teacherFee) }}
+                  </span>
+                </p>
+                <p v-if="tooltipData.assistantFee">
+                  <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
+                  <span v-if="seriesInfo?.totalFees?.assistantFee">
+                    / 總計：{{ formatCurrency(seriesInfo.totalFees.assistantFee) }}
+                  </span>
+                </p>
+              </template>
             </div>
           </div>
         </div>
@@ -102,6 +115,7 @@ import { defineComponent, computed, ref, onMounted, inject, watch } from 'vue';
 import HoverTooltip from '../base/HoverTooltip.vue';
 import { scheduleAPI } from '@/utils/api';
 import './ScheduleBlock.scss';
+import { format } from 'date-fns';
 
 export default defineComponent({
   name: 'ScheduleBlock',
@@ -213,6 +227,11 @@ export default defineComponent({
     notes: {
       type: String,
       default: ''
+    },
+    // 是否為老師端（只顯示教師費）Is teacher view (show only teacher fee)
+    isTeacher: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -371,7 +390,18 @@ export default defineComponent({
     // 獲取課程系列信息 Get course series info
     const seriesInfo = computed(() => {
       if (!props.uuid || !courseDataService) return null;
-      return courseDataService.getCourseSeriesInfoByUuid(props.uuid);
+      const info = courseDataService.getCourseSeriesInfoByUuid(props.uuid);
+      if (!info) return null;
+      // 格式化日期 Format date
+      let firstDate = info.firstDate;
+      let lastDate = info.lastDate;
+      if (firstDate) firstDate = format(new Date(firstDate), 'yyyy/MM/dd');
+      if (lastDate) lastDate = format(new Date(lastDate), 'yyyy/MM/dd');
+      return {
+        ...info,
+        firstDate,
+        lastDate
+      };
     });
 
     // 格式化貨幣 Format currency

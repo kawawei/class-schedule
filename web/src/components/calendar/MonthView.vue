@@ -63,6 +63,7 @@
                 :hourly-rate="event.hourlyRate"
                 :notes="event.notes"
                 :date="event.date"
+                :is-teacher="isTeacher"
                 class="month-schedule-block"
                 @click="handleScheduleBlockClick($event, event)"
                 @dragstart="handleDragStart"
@@ -140,6 +141,11 @@ export default defineComponent({
     events: {
       type: Array,
       default: () => []
+    },
+    // 是否為教師 Is teacher
+    isTeacher: {
+      type: Boolean,
+      default: false
     }
   },
   

@@ -115,24 +115,36 @@
               <!-- 費用信息 Fee Information -->
               <div class="fees-section">
                 <h4>課程費用：</h4>
-                <p>
-                  <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
-                  <span v-if="tooltipData.totalFees?.courseFee">
-                    / 總計：{{ formatCurrency(tooltipData.totalFees.courseFee) }}
-                  </span>
-                </p>
-                <p>
-                  <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
-                  <span v-if="tooltipData.totalFees?.teacherFee">
-                    / 總計：{{ formatCurrency(tooltipData.totalFees.teacherFee) }}
-                  </span>
-                </p>
-                <p v-if="tooltipData.assistantFee">
-                  <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
-                  <span v-if="tooltipData.totalFees?.assistantFee">
-                    / 總計：{{ formatCurrency(tooltipData.totalFees.assistantFee) }}
-                  </span>
-                </p>
+                <!-- 老師端只顯示教師費 Teacher view only shows teacher fee -->
+                <template v-if="tooltipData.isTeacher">
+                  <p>
+                    <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                    <span v-if="tooltipData.totalFees?.teacherFee">
+                      / 總計：{{ formatCurrency(tooltipData.totalFees.teacherFee) }}
+                    </span>
+                  </p>
+                </template>
+                <!-- 管理員端顯示全部費用 Admin view shows all fees -->
+                <template v-else>
+                  <p>
+                    <span>本堂：</span>{{ formatCurrency(tooltipData.courseFee || 0) }}
+                    <span v-if="tooltipData.totalFees?.courseFee">
+                      / 總計：{{ formatCurrency(tooltipData.totalFees.courseFee) }}
+                    </span>
+                  </p>
+                  <p>
+                    <span>教師費：</span>{{ formatCurrency(tooltipData.teacherFee || 0) }}
+                    <span v-if="tooltipData.totalFees?.teacherFee">
+                      / 總計：{{ formatCurrency(tooltipData.totalFees.teacherFee) }}
+                    </span>
+                  </p>
+                  <p v-if="tooltipData.assistantFee">
+                    <span>助教費：</span>{{ formatCurrency(tooltipData.assistantFee) }}
+                    <span v-if="tooltipData.totalFees?.assistantFee">
+                      / 總計：{{ formatCurrency(tooltipData.totalFees.assistantFee) }}
+                    </span>
+                  </p>
+                </template>
               </div>
             </div>
           </div>
@@ -179,6 +191,11 @@ export default defineComponent({
     events: {
       type: Array,
       default: () => []
+    },
+    // 是否為教師 Is teacher
+    isTeacher: {
+      type: Boolean,
+      default: false
     }
   },
   
@@ -416,7 +433,8 @@ export default defineComponent({
               totalClasses: seriesInfo?.count || 1,
               dateRange: seriesInfo?.dateRange || null,
               totalFees: seriesInfo?.totalFees || null,
-              uuid: courseData.uuid
+              uuid: courseData.uuid,
+              isTeacher: props.isTeacher
             };
           }
         } else {
@@ -443,7 +461,8 @@ export default defineComponent({
             totalClasses: seriesInfo?.count || 1,
             dateRange: seriesInfo?.dateRange || null,
             totalFees: seriesInfo?.totalFees || null,
-            uuid: courseData.uuid
+            uuid: courseData.uuid,
+            isTeacher: props.isTeacher
           };
         }
         showTooltip.value = true;

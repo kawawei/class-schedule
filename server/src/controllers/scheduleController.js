@@ -429,7 +429,7 @@ const scheduleController = {
       if (updateType === 'series' && existingSchedule.series_id) {
         // 更新整個系列的課程 Update all courses in the series
         console.log('更新系列課程，系列ID:', existingSchedule.series_id);
-        
+
         // 更新所有相關課程 Update all related courses
         const [updatedCount, updatedSchedules] = await CourseSchedule.update(
           {
@@ -489,11 +489,11 @@ const scheduleController = {
             teacher_id: scheduleData.teacher_id === "待訂 / Pending" ? null : scheduleData.teacher_id
           },
           {
-            where: {
-              id,
-              company_code: companyCode
-            },
-            returning: true
+          where: {
+            id,
+            company_code: companyCode
+          },
+          returning: true
           }
         );
 
