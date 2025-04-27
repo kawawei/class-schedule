@@ -413,7 +413,7 @@ export const useProcurementForm = (props, { emit }) => {
         console.log('無採購項目 No procurement items')
       }
       console.log('--------------------------------------')
-
+      
       // 觸發父組件的提交事件 Emit submit event to parent component
       emit('submit', procurementData)
       

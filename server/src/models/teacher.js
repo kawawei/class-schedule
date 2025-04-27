@@ -159,6 +159,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: true,
       comment: '是否啟用 Is active'
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: '對應 users 表的 ID，建立 teacher-user 關聯 / Corresponding user ID for teacher-user relation'
     }
   }, {
     tableName: 'teachers',

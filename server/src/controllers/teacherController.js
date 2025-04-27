@@ -44,6 +44,7 @@ const teacherController = {
       const { id } = req.params;
       const { companyCode } = req.user;
       
+      // 查詢老師基本資料 Query teacher basic info
       const teacher = await Teacher.findOne({
         where: { 
           id,
@@ -55,9 +56,28 @@ const teacherController = {
         throw new ApiError(404, '找不到該老師 Teacher not found');
       }
       
+      // 查詢帳號 Query username from users table
+      const client = await mainPool.connect();
+      let username = null;
+      try {
+        const userResult = await client.query(
+          `SELECT username FROM "${companyCode}".users WHERE name = $1 AND role = 'teacher' LIMIT 1`,
+          [teacher.name]
+        );
+        if (userResult.rows.length > 0) {
+          username = userResult.rows[0].username;
+        }
+      } finally {
+        client.release();
+      }
+      
+      // 回傳時加上 username Add username to response
+      const teacherData = teacher.toJSON ? teacher.toJSON() : teacher;
+      teacherData.username = username;
+      
       res.json({
         success: true,
-        data: teacher
+        data: teacherData
       });
     } catch (error) {
       console.error('獲取老師失敗 Failed to get teacher:', error);
@@ -111,15 +131,17 @@ const teacherController = {
       await client.query('BEGIN');
       
       try {
-        // 創建老師 Create teacher
-        const teacher = await Teacher.create(teacherData);
-        
-        // 創建用戶帳號 Create user account
-        await client.query(
+        // 先建立用戶帳號 Create user account first
+        const userInsertResult = await client.query(
           `INSERT INTO "${companyCode}".users (username, password, name, email, role, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id`,
           [username, hashedPassword, teacherData.name, teacherData.email || null, 'teacher', true]
         );
+        const userId = userInsertResult.rows[0].id; // 取得 user.id Get user.id
+
+        // 建立老師資料，寫入 user_id Create teacher and write user_id
+        const teacher = await Teacher.create({ ...teacherData, user_id: userId });
         
         // 提交事務 Commit transaction
         await client.query('COMMIT');
@@ -214,10 +236,12 @@ const teacherController = {
    * @param {Function} next - 下一個中間件 Next middleware
    */
   deleteTeacher: async (req, res, next) => {
+    const client = await mainPool.connect();
     try {
       const { id } = req.params;
       const { companyCode } = req.user;
       
+      // 查詢老師資料 Query teacher info
       const teacher = await Teacher.findOne({
         where: { 
           id,
@@ -229,11 +253,27 @@ const teacherController = {
         throw new ApiError(404, '找不到該老師 Teacher not found');
       }
       
+      // 優先用 user_id 刪除帳號 Delete user by user_id first
+      let userDeleteResult = null;
+      if (teacher.user_id) {
+        userDeleteResult = await client.query(
+          `DELETE FROM "${companyCode}".users WHERE id = $1`,
+          [teacher.user_id]
+        );
+      } else {
+        // 若無 user_id，則用 name/email 查找刪除 If no user_id, delete by name/email
+        userDeleteResult = await client.query(
+          `DELETE FROM "${companyCode}".users WHERE name = $1 AND email = $2 AND role = 'teacher'`,
+          [teacher.name, teacher.email]
+        );
+      }
+
+      // 刪除老師資料 Delete teacher record
       await teacher.destroy();
       
       res.json({
         success: true,
-        message: '老師刪除成功 Teacher deleted successfully'
+        message: '老師及帳號刪除成功 Teacher and user deleted successfully'
       });
     } catch (error) {
       console.error('刪除老師失敗 Failed to delete teacher:', error);
@@ -242,6 +282,8 @@ const teacherController = {
       } else {
         next(new ApiError(500, '刪除老師失敗 Failed to delete teacher'));
       }
+    } finally {
+      client.release();
     }
   },
 

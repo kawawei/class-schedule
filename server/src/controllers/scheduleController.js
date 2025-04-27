@@ -17,7 +17,7 @@ const scheduleController = {
    */
   getAllSchedules: async (req, res, next) => {
     try {
-      const { companyCode } = req.user;
+      const { companyCode, role, teacherId } = req.user; // 取得公司代碼、角色、老師ID
       const { startDate, endDate } = req.query;
       
       // 構建查詢條件 Build query conditions
@@ -25,6 +25,10 @@ const scheduleController = {
         company_code: companyCode
       };
       
+      // 如果是老師，只查詢自己承接的課程 If teacher, only query own schedules
+      if (role === 'teacher' && teacherId) {
+        where.teacher_id = teacherId;
+      }
       // 如果有日期範圍，添加到查詢條件 Add date range to query if provided
       if (startDate && endDate) {
         where.date = {
@@ -32,14 +36,13 @@ const scheduleController = {
         };
       }
       
-      // 獲取課程排課列表，包含教師和助教信息
-      // Get schedule list with teacher and assistant information
+      // 獲取課程排課列表，包含教師和助教信息 Get schedule list with teacher and assistant information
       const schedules = await CourseSchedule.findAll({
         where,
         attributes: [
           'id',
-          'county',  // 添加縣市字段 Add county field
-          'district',  // 添加區域字段 Add district field
+          'county',
+          'district',
           'school_name',
           'class_name',
           'course_type',
@@ -365,12 +368,49 @@ const scheduleController = {
         throw new ApiError(404, '課程不存在 Course does not exist');
       }
 
+      // 檢查時間衝突 Check time conflicts
+      if (scheduleData.date && scheduleData.start_time && scheduleData.end_time) {
+        // 處理教師ID Check teacher_id
+        const teacherId = scheduleData.teacher_id === "待訂 / Pending" ? null : scheduleData.teacher_id;
+        
+        // 只有在有指定教師時才檢查時間衝突
+        // Only check time conflicts if a teacher is specified
+        if (teacherId !== null) {
+          const whereClause = {
+            date: scheduleData.date,
+            company_code: companyCode,
+            id: { [Op.ne]: id },
+            teacher_id: teacherId,
+            [Op.or]: [
+              {
+                start_time: {
+                  [Op.between]: [scheduleData.start_time, scheduleData.end_time]
+                }
+              },
+              {
+                end_time: {
+                  [Op.between]: [scheduleData.start_time, scheduleData.end_time]
+                }
+              }
+            ]
+          };
+
+          const conflictingSchedule = await CourseSchedule.findOne({
+            where: whereClause
+          });
+
+          if (conflictingSchedule) {
+            throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
+          }
+        }
+      }
+
       // 準備更新數據 Prepare update data
       const updateData = {
         school_name: scheduleData.school_name,
         class_name: scheduleData.class_name,
         course_type: scheduleData.course_type,
-        teacher_id: scheduleData.teacher_id,
+        teacher_id: scheduleData.teacher_id === "待訂 / Pending" ? null : scheduleData.teacher_id,
         start_time: scheduleData.start_time,
         end_time: scheduleData.end_time,
         course_fee: scheduleData.course_fee || null,
@@ -390,34 +430,6 @@ const scheduleController = {
         // 更新整個系列的課程 Update all courses in the series
         console.log('更新系列課程，系列ID:', existingSchedule.series_id);
         
-        // 檢查時間衝突 Check for time conflicts
-        if (scheduleData.start_time && scheduleData.end_time) {
-          const conflictingSchedule = await CourseSchedule.findOne({
-            where: {
-              id: { [Op.ne]: id },
-              company_code: companyCode,
-              teacher_id: scheduleData.teacher_id || existingSchedule.teacher_id,
-              date: existingSchedule.date, // 使用當前課程的日期 Use current course's date
-              [Op.or]: [
-                {
-                  start_time: {
-                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                  }
-                },
-                {
-                  end_time: {
-                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                  }
-                }
-              ]
-            }
-          });
-
-          if (conflictingSchedule) {
-            throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
-          }
-        }
-
         // 更新所有相關課程 Update all related courses
         const [updatedCount, updatedSchedules] = await CourseSchedule.update(
           {
@@ -470,42 +482,20 @@ const scheduleController = {
         // 更新單一課程 Update single course
         console.log('更新單一課程，ID:', id);
 
-        // 檢查時間衝突 Check for time conflicts
-        if (scheduleData.date && scheduleData.start_time && scheduleData.end_time) {
-          const conflictingSchedule = await CourseSchedule.findOne({
-            where: {
-              id: { [Op.ne]: id },
-              company_code: companyCode,
-              teacher_id: scheduleData.teacher_id || existingSchedule.teacher_id,
-              date: scheduleData.date,
-              [Op.or]: [
-                {
-                  start_time: {
-                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                  }
-                },
-                {
-                  end_time: {
-                    [Op.between]: [scheduleData.start_time, scheduleData.end_time]
-                  }
-                }
-              ]
-            }
-          });
-
-          if (conflictingSchedule) {
-            throw new ApiError(400, '該時段已有其他課程安排 There is already a course scheduled for this time slot');
-          }
-        }
-
         // 更新單一課程 Update single course
-        const [updatedCount, updatedSchedules] = await CourseSchedule.update(updateData, {
-          where: {
-            id,
-            company_code: companyCode
+        const [updatedCount, updatedSchedules] = await CourseSchedule.update(
+          {
+            ...updateData,
+            teacher_id: scheduleData.teacher_id === "待訂 / Pending" ? null : scheduleData.teacher_id
           },
-          returning: true
-        });
+          {
+            where: {
+              id,
+              company_code: companyCode
+            },
+            returning: true
+          }
+        );
 
         // 更新助教排課 Update assistant schedules
         if (scheduleData.assistants) {

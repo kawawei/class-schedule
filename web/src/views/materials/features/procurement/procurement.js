@@ -201,7 +201,7 @@ export const useProcurementManagement = () => {
       if (res.data && res.data.success) {
         Message.success('採購單已成功創建！ Procurement order created successfully!');
         procurements.value = [res.data.data, ...procurements.value]; // 新增到前端列表 Add to frontend list
-        showProcurementDialog.value = false;
+      showProcurementDialog.value = false;
       } else {
         Message.error(res.data.message || '採購單創建失敗');
       }

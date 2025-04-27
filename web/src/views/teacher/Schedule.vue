@@ -212,12 +212,25 @@ export default defineComponent({
         const userData = JSON.parse(userStr);
         console.log('用戶數據:', userData);
 
-        if (userData && userData.id) {
+        // 根據用戶角色決定 currentTeacherId 的來源
+        // Set currentTeacherId based on user role
+        if (userData) {
+          if (userData.role === 'teacher' && userData.teacherId) {
+            // 老師登入：使用 teacherId 查詢課程
+            // If teacher login, use teacherId to query courses
+            currentTeacherId.value = userData.teacherId;
+            console.log('設置當前老師ID為 teacherId:', currentTeacherId.value);
+          } else if (userData.id) {
+            // 其他用戶（如管理員）：使用 user.id 查詢課程
+            // Other users (e.g., admin): use user.id to query courses
           currentTeacherId.value = userData.id;
-          console.log('設置當前老師ID:', currentTeacherId.value);
+            console.log('設置當前老師ID為 user.id:', currentTeacherId.value);
         } else {
-          console.error('用戶數據中沒有老師ID');
+            // 無法獲取ID時的錯誤處理
+            // Error handling if no ID found
+            console.error('用戶數據中沒有可用的ID');
           Message.error('無法獲取老師信息 Unable to get teacher information');
+          }
         }
       } catch (error) {
         console.error('獲取老師信息失敗:', error);

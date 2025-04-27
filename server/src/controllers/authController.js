@@ -1,6 +1,7 @@
 const { mainPool } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Teacher } = require('../models');
 
 // 認證控制器
 const authController = {
@@ -70,6 +71,20 @@ const authController = {
                 { expiresIn: process.env.JWT_EXPIRES_IN }
             );
 
+            // 如果是老師，查詢對應的 teacherId
+            let teacherId = null;
+            if (user.role === 'teacher') {
+                const teacher = await Teacher.findOne({
+                    where: {
+                        user_id: user.id,
+                        company_code: company_code
+                    }
+                });
+                if (teacher) {
+                    teacherId = teacher.id;
+                }
+            }
+
             // 返回用戶信息和 token
             res.json({
                 success: true,
@@ -81,7 +96,8 @@ const authController = {
                         username: user.username,
                         name: user.name,
                         email: user.email,
-                        role: user.role
+                        role: user.role,
+                        teacherId
                     },
                     company: {
                         id: company.id,

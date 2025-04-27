@@ -131,14 +131,8 @@ export default {
         localStorage.setItem('isAuthenticated', 'true');
         
         // 保存用戶資料 Save user data
-        const userData = {
-          id: response.data.user.id,
-          username: response.data.user.username,
-          name: response.data.user.name,
-          email: response.data.user.email,
-          role: response.data.user.role
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
+        // 直接存 response.data.user，確保 teacherId 等欄位都被保存
+        localStorage.setItem('user', JSON.stringify(response.data.user));
 
         // 保存公司資料 Save company data
         const companyData = {
@@ -149,8 +143,8 @@ export default {
         localStorage.setItem('companyData', JSON.stringify(companyData));
         
         // 根據用戶角色導向到不同的儀表板 Redirect to different dashboards based on user role
-        console.log('用戶角色:', userData.role); // Log user role
-        if (userData.role === 'teacher') {
+        console.log('用戶角色:', response.data.user.role); // Log user role
+        if (response.data.user.role === 'teacher') {
           console.log('導向到老師儀表板 Redirecting to teacher dashboard');
           router.push('/teacher/dashboard');
         } else {
