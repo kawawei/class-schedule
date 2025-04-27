@@ -214,6 +214,18 @@
           width: 16px;
           height: 16px;
         }
+
+        // 刪除按鈕危險樣式 Delete button danger style
+        &.delete-btn,
+        &.danger {
+          color: var(--color-danger) !important; // 紅色字 Red text
+          background: transparent !important; // 透明底 Transparent background
+        }
+        &.delete-btn:hover,
+        &.danger:hover {
+          color: var(--color-danger-dark) !important; // 深紅色字 Darker red text
+          background: rgba(255,77,79,0.08) !important; // 紅色透明底 Red translucent background
+        }
       }
     }
   }
