@@ -1,5 +1,5 @@
 // 引入所需的函數和工具 Import required functions and utilities
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Message from '@/utils/message';
 import { 
   parseISO, 
@@ -12,6 +12,7 @@ import {
   format 
 } from 'date-fns';
 import { useRouter } from 'vue-router';
+import axios from 'axios'; // 新增：直接引入 axios
 
 // 採購管理頁面邏輯 Procurement Management Page Logic
 export const useProcurementManagement = () => {
@@ -36,8 +37,8 @@ export const useProcurementManagement = () => {
 
   // 表格列定義 Table columns definition
   const procurementColumns = [
-    { key: 'id', title: '採購單號' },
-    { key: 'supplierName', title: '供應商' },
+    { key: 'procurementNo', title: '採購單號' },
+    { key: 'supplier', title: '供應商' },
     { key: 'totalAmount', title: '總金額' },
     { key: 'status', title: '狀態', slot: true },
     { key: 'createdAt', title: '創建時間' },
@@ -167,39 +168,40 @@ export const useProcurementManagement = () => {
 
   // 處理採購單提交 Handle procurement form submission
   const handleProcurementSubmit = async (formData) => {
-    console.log('Received form data:', formData); // 日誌：接收到的表單數據 Log: received form data
-    
     try {
       loading.value = true;
-      
-      // 計算總金額 Calculate total amount
-      const totalAmount = formData.items.reduce((sum, item) => {
-        return sum + (Number(item.quantity) * Number(item.unitPrice));
-      }, 0);
-
-      // 創建新的採購單 Create new procurement order
-      const newProcurement = {
-        id: formData.procurementNumber || `PO${Date.now()}`,
-        supplierName: formData.supplier,
-        totalAmount: totalAmount, // 簡化總金額結構 Simplify total amount structure
-        status: 'pending',
-        createdAt: format(new Date(), 'yyyy-MM-dd'),
-        items: formData.items,
-        remark: formData.remark || ''
+      // 將表單資料轉換為後端 API 格式 Convert form data to backend API format
+      const payload = {
+        procurementNo: formData.procurementNo, // 採購單號 Procurement Number
+        procurementDate: formData.procurementDate, // 採購日期 Procurement Date
+        supplier: formData.supplierId, // 供應商 Supplier
+        items: formData.items.map(item => ({ // 採購項目 Procurement Items
+          name: item.materialId, // 物料名稱 Material Name
+          quantity: item.specifications?.[0]?.quantity || 1, // 數量 Quantity
+          unitPrice: item.specifications?.[0]?.unitPrice || 0 // 單價 Unit Price
+        })),
+        currency: formData.items[0]?.currency || 'TWD', // 幣別 Currency
+        remark: formData.remark || '', // 備註 Remark
+        extraCharges: formData.extraCharges || [] // 額外費用 Extra Charges
       };
-
-      console.log('New procurement to be added:', newProcurement); // 日誌：即將添加的新採購單 Log: new procurement to be added
-      
-      // 使用展開運算符更新數組 Update array using spread operator
-      procurements.value = [newProcurement, ...procurements.value];
-      
-      console.log('Updated procurements list:', procurements.value); // 日誌：更新後的採購單列表 Log: updated procurement list
-      
-      showProcurementDialog.value = false;
-      Message.success('採購單已成功創建！ Procurement order created successfully!');
+      // 取得 JWT token Get JWT token
+      const token = localStorage.getItem('token');
+      // 呼叫後端 API 新增採購單 Call backend API to create procurement
+      const res = await axios.post('/procurements', payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      });
+      if (res.data && res.data.success) {
+        Message.success('採購單已成功創建！ Procurement order created successfully!');
+        procurements.value = [res.data.data, ...procurements.value]; // 新增到前端列表 Add to frontend list
+        showProcurementDialog.value = false;
+      } else {
+        Message.error(res.data.message || '採購單創建失敗');
+      }
     } catch (error) {
-      console.error('Error submitting procurement:', error);
-      Message.error('創建採購單時發生錯誤！ Error creating procurement order!');
+      Message.error('採購單創建失敗: ' + (error.response?.data?.message || error.message || error));
     } finally {
       loading.value = false;
     }
@@ -246,6 +248,35 @@ export const useProcurementManagement = () => {
     // 過濾邏輯已經在 computed 屬性中實現
     // Filter logic is implemented in computed property
   };
+
+  // 取得所有採購單 Fetch all procurements from backend
+  const fetchProcurements = async () => {
+    try {
+      loading.value = true;
+      const token = localStorage.getItem('token'); // 取得 JWT token
+      const res = await axios.get('/procurements', {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+      if (res.data && res.data.success) {
+        procurements.value = res.data.data; // 寫入前端狀態 Write to frontend state
+      } else {
+        procurements.value = [];
+        Message.error(res.data.message || '獲取採購單失敗');
+      }
+    } catch (error) {
+      procurements.value = [];
+      Message.error('獲取採購單失敗: ' + (error.response?.data?.message || error.message || error));
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 掛載時自動取得採購單 On mounted, fetch procurements
+  onMounted(() => {
+    fetchProcurements();
+  });
 
   return {
     // 狀態 States

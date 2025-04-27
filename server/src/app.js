@@ -16,6 +16,7 @@ const inventoryRoutes = require('./routes/inventory');
 const warehouseRoutes = require('./routes/warehouse');
 const { initializeWebSocket } = require('./controllers/notificationController');
 const ApiError = require('./utils/apiError');
+const procurementRoutes = require('./routes/procurementRoutes');
 
 // 創建 Express 應用
 const app = express();
@@ -57,6 +58,7 @@ app.use('/api/teacher-reports', teacherReportRoutes);
 app.use('/api/qrcode', qrcodeRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/warehouse', warehouseRoutes);
+app.use('/api/procurements', procurementRoutes);
 
 // 配置靜態文件服務 Configure static file service
 app.use('/api/qrcodes', express.static(path.join(__dirname, '../public/qrcodes')));
