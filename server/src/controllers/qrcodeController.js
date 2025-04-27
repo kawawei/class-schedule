@@ -502,7 +502,10 @@ const downloadQRCode = async (req, res, next) => {
         
         // 設置響應頭 Set response headers
         res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Content-Disposition', `attachment; filename="${name}.png"`);
+        // 修正：支援中文與特殊字元檔名，使用 RFC 5987 標準
+        // Fix: Support Chinese/special characters in filename using RFC 5987
+        const safeName = encodeURIComponent(name) + '.png'; // 將檔名進行 URL 編碼 Encode filename
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${safeName}`);
         
         // 發送文件 Send file
         res.sendFile(qrcodePath);
