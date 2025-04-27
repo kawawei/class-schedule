@@ -447,4 +447,16 @@
       }
     }
   }
+}
+
+// 額外費用金額欄位加寬 Extra charge amount input wider
+.extra-charge-amount-input {
+  width: 160px !important;
+  min-width: 120px;
+}
+
+// 額外費用說明欄位變窄 Extra charge description input narrower
+.extra-charge-description-input {
+  width: 120px !important;
+  min-width: 80px;
 } 

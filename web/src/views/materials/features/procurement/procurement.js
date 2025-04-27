@@ -177,10 +177,13 @@ export const useProcurementManagement = () => {
         procurementNo: formData.procurementNo, // 採購單號 Procurement Number
         procurementDate: formData.procurementDate, // 採購日期 Procurement Date
         supplier: formData.supplier, // 供應商 Supplier
-        items: formData.items.map(item => ({ // 採購項目 Procurement Items
-          name: item.materialId, // 物料名稱 Material Name
-          quantity: item.specifications?.[0]?.quantity || 1, // 數量 Quantity
-          unitPrice: item.specifications?.[0]?.unitPrice || 0 // 單價 Unit Price
+        status: formData.status, // 狀態 Status
+        items: formData.items.map(item => ({
+          materialId: item.materialId, // 物料ID Material ID
+          materialName: item.materialName, // 物料名稱 Material Name
+          unit: item.unit, // 單位 Unit
+          currency: item.currency, // 幣種 Currency
+          specifications: item.specifications // 傳完整規格陣列 Pass full specifications array
         })),
         currency: formData.items[0]?.currency || 'TWD', // 幣別 Currency
         remark: formData.remark || '', // 備註 Remark

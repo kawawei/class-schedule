@@ -83,7 +83,7 @@
         <template #materialName="{ row }">
           <AppSelect
             v-model="row.materialId"
-            :options="materialOptions"
+            :options="materialOptions.map(opt => ({ ...opt, value: String(opt.value) }))"
             placeholder="請輸入或選擇物料名稱"
             class="full-width-input"
             searchable
@@ -248,7 +248,7 @@
                 type="number" 
                 :min="0" 
                 :step="0.01"
-                class="full-width-input text-right"
+                class="extra-charge-amount-input text-right"
                 @input="calculateTotals"
               />
             </div>
@@ -257,7 +257,7 @@
             <AppInput 
               v-model="row.description"
               placeholder="請輸入說明"
-              class="full-width-input"
+              class="extra-charge-description-input"
             />
           </template>
           <template #actions="{ index }">

@@ -90,6 +90,8 @@ exports.getProcurement = async (req, res) => {
 // 創建採購單 Create procurement
 exports.createProcurement = async (req, res) => {
   try {
+    // 新增：log 輸入資料，方便除錯 Add: log input data for debugging
+    console.log('收到的採購單資料 (Received procurement payload):', JSON.stringify(req.body, null, 2));
     const {
       procurementNo,
       procurementDate,

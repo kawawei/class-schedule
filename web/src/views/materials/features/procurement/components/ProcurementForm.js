@@ -382,7 +382,8 @@ export const useProcurementForm = (props, { emit }) => {
         currency: formData.items[0]?.currency || 'TWD',
         remark: formData.remark,
         procurementDate: formData.procurementDate,
-        status: formData.status
+        status: formData.status,
+        extraCharges: formData.extraCharges // 新增：額外費用 Extra charges
       }
 
       // 依照指定格式詳細 log 輸出所有欄位
@@ -437,6 +438,56 @@ export const useProcurementForm = (props, { emit }) => {
   // 新增規格選項 Add specification options
   const specificationOptions = ref({})  // 用於存儲每個物料的規格選項 Store specification options for each material
 
+  // 將 items 回填邏輯抽成函數 Extract items mapping logic as a function
+  const fillFormItems = () => {
+    // 詳細日誌：回填時的 materialOptions 與 items
+    console.log('[FillFormItems] materialOptions:', JSON.parse(JSON.stringify(materialOptions.value))) // 物料選項
+    console.log('[FillFormItems] 原始 items:', JSON.parse(JSON.stringify(formData.items))) // 原始 items
+    if (Array.isArray(formData.items)) {
+      formData.items = formData.items.map(item => {
+        const materialId = String(item.materialId || item.name)
+        // 詳細日誌：每個 item 的 materialId
+        console.log('[FillFormItems] 處理 item materialId:', materialId)
+        const material = materialOptions.value.find(m => String(m.value) === materialId)
+        // 詳細日誌：找到的 material
+        console.log('[FillFormItems] 對應 material:', material)
+        const mapped = {
+          materialId,
+          materialName: material ? material.label : (item.materialName || ''),
+          unit: material ? material.unit : (item.unit || ''),
+          currency: item.currency || 'TWD',
+          specifications: Array.isArray(item.specifications)
+            ? item.specifications.map(spec => ({
+                specification: spec.specification || '',
+                quantity: spec.quantity || 1,
+                unitPrice: spec.unitPrice || 0,
+                amount: spec.amount || 0
+              }))
+            : []
+        }
+        // 詳細日誌：最終回填結果
+        console.log('[FillFormItems] 最終回填 mapped item:', mapped)
+        return mapped
+      })
+    }
+    // 詳細日誌：回填後的 items
+    console.log('[FillFormItems] 回填後 items:', JSON.parse(JSON.stringify(formData.items)))
+  }
+
+  // 監聽 initialData 與 materialOptions，任一變動都回填 Watch initialData and materialOptions, fill items on any change
+  watch([
+    () => props.initialData,
+    () => materialOptions.value
+  ], ([val, options]) => {
+    if (val && Array.isArray(options) && options.length > 0) {
+      Object.assign(formData, val)
+      if (formData.procurementDate) {
+        formData.procurementDate = String(formData.procurementDate).slice(0, 10)
+      }
+      fillFormItems() // 主動回填 Ensure fill after options loaded
+    }
+  }, { immediate: true, deep: true })
+
   // 獲取物料列表 Fetch materials list
   const fetchMaterials = async (query = '') => {
     try {
@@ -488,6 +539,9 @@ export const useProcurementForm = (props, { emit }) => {
       materialOptions.value = [] // 發生錯誤時清空選項 Clear options on error
     } finally {
       loadingMaterials.value = false
+      // 詳細日誌：fetchMaterials 結束後 materialOptions
+      console.log('[fetchMaterials] 載入後 materialOptions:', JSON.parse(JSON.stringify(materialOptions.value)))
+      fillFormItems() // 主動回填 Ensure fill after options loaded
     }
   }
 
@@ -566,43 +620,6 @@ export const useProcurementForm = (props, { emit }) => {
   watch(() => props.dialogType, (val) => {
     readonly.value = val === 'view'
   }, { immediate: true })
-
-  // 合併監聽 initialData 與 materialOptions，確保物料名稱正確顯示
-  watch([
-    () => props.initialData,
-    () => materialOptions.value
-  ], ([val, options]) => {
-    if (val && Array.isArray(options) && options.length > 0) {
-      Object.assign(formData, val)
-      // 採購日期格式轉換 Format procurementDate
-      if (formData.procurementDate) {
-        formData.procurementDate = String(formData.procurementDate).slice(0, 10) // 只取 yyyy-MM-dd
-      }
-      // 採購項目結構轉換 Convert items structure
-      if (Array.isArray(formData.items)) {
-        formData.items = formData.items.map(item => {
-          // 取得 materialId（資料庫 name 欄位實為 id）
-          const materialId = item.name
-          // 從 materialOptions 找到對應物料資訊 Find material info from materialOptions
-          const material = materialOptions.value.find(m => m.value == materialId)
-          return {
-            materialId, // 物料ID
-            materialName: material ? material.label : '', // 物料名稱
-            unit: material ? material.unit : '', // 單位
-            currency: item.currency || 'TWD', // 幣種
-            specifications: [ // 轉成規格陣列
-              {
-                specification: '', // 若有規格可補上
-                quantity: item.quantity || 1,
-                unitPrice: item.unitPrice || 0,
-                amount: (item.quantity || 1) * (item.unitPrice || 0)
-              }
-            ]
-          }
-        })
-      }
-    }
-  }, { immediate: true, deep: true })
 
   return {
     // 狀態 States
