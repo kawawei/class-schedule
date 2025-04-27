@@ -157,6 +157,7 @@
         <template #default>
           <ProcurementForm
             :initial-data="currentProcurement"
+            :existingNumbers="procurements.map(p => p.procurementNo)"
             @submit="handleProcurementSubmit"
             @cancel="closeProcurementDialog"
             ref="procurementFormRef"
