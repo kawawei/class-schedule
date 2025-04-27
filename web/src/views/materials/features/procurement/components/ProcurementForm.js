@@ -39,7 +39,7 @@ export const useProcurementForm = (props, { emit }) => {
   const formData = reactive({
     procurementNo: generateProcurementNo(),
     procurementDate: format(new Date(), 'yyyy-MM-dd'),
-    supplierId: '',
+    supplier: '',
     status: '',
     items: [],
     remark: '',
@@ -51,7 +51,7 @@ export const useProcurementForm = (props, { emit }) => {
   const errors = reactive({
     procurementNo: '',
     procurementDate: '',
-    supplierId: '',
+    supplier: '',
     status: ''
   })
 
@@ -309,6 +309,15 @@ export const useProcurementForm = (props, { emit }) => {
     return formData.extraCharges && formData.extraCharges.length > 0
   })
 
+  // 監聽每個欄位的變化並輸出日誌 Watch each field and log changes
+  watch(() => formData.procurementNo, (val) => { console.log('[Log] 採購單號:', val) })
+  watch(() => formData.procurementDate, (val) => { console.log('[Log] 採購日期:', val) })
+  watch(() => formData.supplier, (val) => { console.log('[Log] 供應商:', val) })
+  watch(() => formData.status, (val) => { console.log('[Log] 狀態:', val) })
+  watch(() => formData.items, (val) => { console.log('[Log] 採購項目:', val) }, { deep: true })
+  watch(() => formData.remark, (val) => { console.log('[Log] 備註:', val) })
+  watch(() => formData.extraCharges, (val) => { console.log('[Log] 額外費用:', val) }, { deep: true })
+
   // 驗證表單 Validate form
   const validateForm = () => {
     let isValid = true
@@ -327,8 +336,8 @@ export const useProcurementForm = (props, { emit }) => {
       errors.procurementDate = '請選擇採購日期'
       isValid = false
     }
-    if (!formData.supplierId) {
-      errors.supplierId = '請選擇供應商'
+    if (!formData.supplier) {
+      errors.supplier = '請選擇供應商'
       isValid = false
     }
     if (!formData.status) {
@@ -336,6 +345,9 @@ export const useProcurementForm = (props, { emit }) => {
       isValid = false
     }
 
+    // 詳細日誌輸出 Log all field values and errors
+    console.log('[Validate] formData:', JSON.parse(JSON.stringify(formData)))
+    console.log('[Validate] errors:', JSON.parse(JSON.stringify(errors)))
     return isValid
   }
 
@@ -345,7 +357,7 @@ export const useProcurementForm = (props, { emit }) => {
     formData.items = []
     formData.remark = ''
     formData.status = ''
-    formData.supplierId = ''
+    formData.supplier = ''
     formData.procurementNo = generateProcurementNo()
     emit('cancel')
   }
@@ -354,24 +366,53 @@ export const useProcurementForm = (props, { emit }) => {
   const handleSubmit = async () => {
     if (!validateForm()) {
       Message.error('請檢查表單填寫是否正確')
+      console.log('[Submit] 驗證失敗，當前欄位與錯誤:', JSON.parse(JSON.stringify(formData)), JSON.parse(JSON.stringify(errors)))
       return
     }
 
     try {
       // 準備提交數據 Prepare submission data
       const procurementData = {
-        procurementNumber: formData.procurementNo,
-        supplier: formData.supplierId,
+        procurementNo: formData.procurementNo,
+        supplier: formData.supplier,
         items: formData.items.map(item => ({
           ...item,
           amount: Number(item.amount || 0).toFixed(2)
         })),
         currency: formData.items[0]?.currency || 'TWD',
-        remark: formData.remark
+        remark: formData.remark,
+        procurementDate: formData.procurementDate,
+        status: formData.status
       }
 
-      console.log('Submitting procurement data:', procurementData)
-      
+      // 依照指定格式詳細 log 輸出所有欄位
+      // Log all fields in the specified format
+      console.log('--- 採購單資料 Procurement Form Data ---')
+      console.log('單號 Procurement No:', procurementData.procurementNo)
+      console.log('採購日期 Procurement Date:', procurementData.procurementDate)
+      console.log('供應商 Supplier:', procurementData.supplier)
+      console.log('採購狀態 Status:', procurementData.status)
+      if (procurementData.items && procurementData.items.length > 0) {
+        procurementData.items.forEach((item, idx) => {
+          // 逐一列出每個物料明細 List each material detail
+          if (item.specifications && item.specifications.length > 0) {
+            item.specifications.forEach((spec, sidx) => {
+              console.log(
+                `物料名稱 Material Name: ${item.materialName || ''} | 規格 Spec: ${spec.specification || ''} | 單位 Unit: ${item.unit || ''} | 數量 Qty: ${spec.quantity || ''} | 單價 Unit Price: ${spec.unitPrice || ''} | 金額 Amount: ${spec.amount || ''} | 幣種 Currency: ${item.currency || ''}`
+              )
+            })
+          } else {
+            // 沒有規格時也要列出
+            console.log(
+              `物料名稱 Material Name: ${item.materialName || ''} | 規格 Spec: 無 | 單位 Unit: ${item.unit || ''} | 數量 Qty: ${item.quantity || ''} | 單價 Unit Price: ${item.unitPrice || ''} | 金額 Amount: ${item.amount || ''} | 幣種 Currency: ${item.currency || ''}`
+            )
+          }
+        })
+      } else {
+        console.log('無採購項目 No procurement items')
+      }
+      console.log('--------------------------------------')
+
       // 觸發父組件的提交事件 Emit submit event to parent component
       emit('submit', procurementData)
       
@@ -379,7 +420,7 @@ export const useProcurementForm = (props, { emit }) => {
       formData.items = []
       formData.remark = ''
       formData.status = ''
-      formData.supplierId = ''
+      formData.supplier = ''
       formData.procurementNo = generateProcurementNo()
       
       Message.success('採購單建立成功！')

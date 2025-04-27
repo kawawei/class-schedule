@@ -174,7 +174,7 @@ export const useProcurementManagement = () => {
       const payload = {
         procurementNo: formData.procurementNo, // 採購單號 Procurement Number
         procurementDate: formData.procurementDate, // 採購日期 Procurement Date
-        supplier: formData.supplierId, // 供應商 Supplier
+        supplier: formData.supplier, // 供應商 Supplier
         items: formData.items.map(item => ({ // 採購項目 Procurement Items
           name: item.materialId, // 物料名稱 Material Name
           quantity: item.specifications?.[0]?.quantity || 1, // 數量 Quantity

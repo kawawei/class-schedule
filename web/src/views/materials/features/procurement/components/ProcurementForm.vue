@@ -31,9 +31,9 @@
         <div class="form-group">
           <label class="required">供應商</label>
           <AppInput
-            v-model="formData.supplierId"
+            v-model="formData.supplier"
             placeholder="請輸入供應商名稱"
-            :error="errors.supplierId"
+            :error="errors.supplier"
           />
         </div>
       </div>
