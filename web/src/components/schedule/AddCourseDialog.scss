@@ -138,6 +138,67 @@
       }
     }
   }
+
+  .custom-dates-section {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+
+    .section-title {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-sm);
+      color: var(--text-primary);
+    }
+
+    .calendar-container {
+      margin-bottom: var(--spacing-md);
+      // 這裡需要添加日曆組件的樣式
+      // Add calendar component styles here
+    }
+
+    .selected-dates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-md);
+
+      .selected-date {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background-color: var(--bg-primary);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        color: var(--text-primary);
+
+        .remove-date {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          padding: 0;
+          border: none;
+          background: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: color 0.2s;
+
+          &:hover {
+            color: var(--color-danger);
+          }
+
+          svg {
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+  }
 }
 
 .dialog-footer {

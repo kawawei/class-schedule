@@ -69,21 +69,57 @@
         />
       </div>
 
-      <!-- 第四行：日期和時間 Fourth row: Date and Time -->
-      <div class="time-selection">
+      <!-- 第四行：排課模式 Fourth row: Schedule Mode -->
+      <div class="form-row">
+        <AppSelect
+          v-model="formData.scheduleMode"
+          label="排課模式 / Schedule Mode"
+          :options="scheduleModes"
+          placeholder="請選擇排課模式"
+          required
+        />
+      </div>
+
+      <!-- 第五行：日期和時間 Fifth row: Date and Time -->
+      <div v-if="formData.scheduleMode !== 'custom'" class="time-selection">
         <AppInput
           v-model="formData.date"
-          label="開始日期 / Start Date"
+          :label="formData.scheduleMode === 'single' ? '上課日期 / Course Date' : '開始日期 / Start Date'"
           type="date"
           required
         />
         <AppInput
+          v-if="formData.scheduleMode === 'recurring'"
           v-model="formData.endDate"
           label="結束日期 / End Date"
           type="date"
-          placeholder="選填 / Optional"
+          required
         />
       </div>
+
+      <!-- 自選日期模式 Custom Dates Mode -->
+      <div v-if="formData.scheduleMode === 'custom'" class="custom-dates-section">
+        <div class="section-title">選擇上課日期 / Select Course Dates</div>
+        <div class="calendar-container">
+          <!-- 多日期選擇器組件 Multi Date Picker Component -->
+          <AppMultiDatePicker
+            v-model="formData.selectedDates"
+            @change="handleDateSelect"
+          />
+        </div>
+        <div class="selected-dates">
+          <div v-for="date in formData.selectedDates" :key="date.getTime()" class="selected-date">
+            {{ formatDate(date) }}
+            <button class="remove-date" @click="removeSelectedDate(date)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="time-selection">
         <AppInput
           v-model="formData.startTime"
@@ -100,7 +136,7 @@
       </div>
 
       <!-- 重複性選項 Recurring Options -->
-      <div v-if="formData.endDate" class="recurring-options">
+      <div v-if="formData.scheduleMode === 'recurring' && formData.endDate" class="recurring-options">
         <div class="section-title">重複性 / Recurring</div>
         <div class="weekday-checkboxes">
           <label v-for="(day, index) in weekDays" :key="index" class="weekday-checkbox">
@@ -114,7 +150,7 @@
         </div>
       </div>
 
-      <!-- 第五行：課程費用 Fifth row: Course Fees -->
+      <!-- 第六行：課程費用 Sixth row: Course Fees -->
       <div class="time-selection">
         <AppInput
           v-model="formData.courseFee"
@@ -130,7 +166,7 @@
         />
       </div>
 
-      <!-- 第六行：備註 Sixth row: Notes -->
+      <!-- 第七行：備註 Seventh row: Notes -->
       <div class="form-row">
         <AppInput
           v-model="formData.notes"
@@ -214,24 +250,23 @@
 </template>
 
 <script>
-import { name, props, emits, setup } from './AddCourseDialog.js';
+import * as dialog from './AddCourseDialog.js';
 import AppDialog from '../base/AppDialog.vue';
 import AppInput from '../base/AppInput.vue';
 import AppSelect from '../base/AppSelect.vue';
 import AppButton from '../base/AppButton.vue';
+import AppMultiDatePicker from '../base/AppMultiDatePicker.vue';
 import './AddCourseDialog.scss';  // 引入樣式文件 Import style file
 
 export default {
-  name,
-  props,
-  emits,
+  ...dialog,
   components: {
     AppDialog,
     AppInput,
     AppSelect,
-    AppButton
-  },
-  setup
+    AppButton,
+    AppMultiDatePicker
+  }
 };
 </script>
 

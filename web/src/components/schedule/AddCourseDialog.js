@@ -107,8 +107,39 @@ export const setup = (props, { emit }) => {
     teacherFee: '0',  // 預設為 0 Default to 0
     notes: '',  // 新增備註欄位 Add notes field
     assistants: [],
-    recurringDays: Array(7).fill(false)
+    recurringDays: Array(7).fill(false),
+    scheduleMode: 'single', // 新增：排課模式 (single/recurring/custom) New: Schedule mode
+    selectedDates: [], // 新增：自選日期列表 New: Custom dates list
+    seriesId: '' // 新增：自選日期課程共用的 seriesId // New: Shared seriesId for custom date courses
   });
+
+  // 新增：排課模式選項 New: Schedule mode options
+  const scheduleModes = [
+    { label: '單堂課程 / Single', value: 'single' },
+    { label: '重複性課程 / Recurring', value: 'recurring' },
+    { label: '自選日期課程 / Custom Dates', value: 'custom' }
+  ];
+
+  // 處理多日期選擇，確保 selectedDates 為 Date 物件陣列 Handle multi-date selection, ensure Date object array
+  const handleDateSelect = (dates) => {
+    formData.selectedDates = dates;
+  };
+
+  // 移除已選日期 Remove selected date
+  const removeSelectedDate = (date) => {
+    formData.selectedDates = formData.selectedDates.filter(
+      d => (d instanceof Date ? d.getTime() : new Date(d).getTime()) !== date.getTime()
+    );
+  };
+
+  // 新增：生成系列ID New: Generate series ID
+  const generateSeriesId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
 
   // 處理縣市變更 Handle county change
   const handleCountyChange = () => {
@@ -411,7 +442,10 @@ export const setup = (props, { emit }) => {
       teacherFee: '0',
       notes: '',  // 重置備註欄位 Reset notes field
       assistants: [],
-      recurringDays: Array(7).fill(false)
+      recurringDays: Array(7).fill(false),
+      scheduleMode: 'single', // 重置排課模式 Reset schedule mode
+      selectedDates: [], // 重置自選日期列表 Reset custom dates list
+      seriesId: '' // 重置 seriesId // Reset seriesId
     });
     // 重置老師列表 Reset teacher list
     teachers.value = [];
@@ -436,111 +470,147 @@ export const setup = (props, { emit }) => {
 
   // 處理提交 Handle submit
   const handleSubmit = async () => {
-    if (loading.value) return;
-    
     try {
       loading.value = true;
       
-      // 確保鐘點費為數字，如果為空則設為 0
-      // Ensure fees are numbers, set to 0 if empty
-      const courseFee = formData.courseFee === '' ? 0 : Number(formData.courseFee);
-      const teacherFee = formData.teacherFee === '' ? 0 : Number(formData.teacherFee);
-      
-      // 創建課程數據 Create course data
-      const selectedTeacher = teachers.value.find(t => t.value === formData.teacherId);
-      const teacherName = selectedTeacher ? selectedTeacher.label.split(' / ')[0] : '';
-
-      // 確保補習班名稱不為空 Ensure school name is not empty
-      if (!formData.schoolName) {
-        Message.error('請輸入補習班名稱 / Please enter school name');
+      // 修正驗證邏輯：自選日期模式只檢查 selectedDates，其他模式檢查 date
+      if (
+        !formData.schoolName ||
+        !formData.courseType ||
+        !formData.teacherId ||
+        !formData.startTime ||
+        !formData.endTime ||
+        (
+          formData.scheduleMode === 'custom'
+            ? formData.selectedDates.length === 0
+            : !formData.date
+        )
+      ) {
+        Message.error('請填寫必填欄位');
         return;
       }
 
-      // 基本課程數據 Base course data
-      const baseEventData = {
-        school_name: formData.schoolName,  // 直接使用用戶輸入的值，不進行 trim Directly use user input without trim
-        class_name: formData.className || null,  // 如果為空則設為 null If empty, set to null
-        course_type: formData.courseType,
-        teacher_id: formData.teacherId || null,  // 確保 teacher_id 為 null 而不是空字串
-        county: formData.county,  // 添加縣市資訊
-        district: formData.district,  // 添加區域資訊
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        course_fee: courseFee,
-        teacher_fee: teacherFee,
-        notes: formData.notes,
-        company_code: localStorage.getItem('companyCode'),
-        assistants: formData.assistants.map(assistant => ({
-          id: assistant.id || null,  // 確保助教 ID 為 null 而不是空字串
-          fee: Number(assistant.fee) || 0  // 確保助教鐘點費為數字
-        }))
-      };
-
-      // 如果沒有結束日期，創建單次課程 If no end date, create single course
-      if (!formData.endDate) {
-        console.log('創建單次課程:', {
-          ...baseEventData,
-          date: formData.date,
-          is_recurring: false
-        });
-        
+      // 根據排課模式處理不同的提交邏輯 Handle different submit logic based on schedule mode
+      if (formData.scheduleMode === 'custom') {
+        if (formData.selectedDates.length === 0) {
+          Message.error('請選擇至少一個上課日期');
+          return;
+        }
+        // 若尚未產生 seriesId，則產生並掛在 formData 上 // Generate and attach seriesId to formData if not exists
+        if (!formData.seriesId) {
+          formData.seriesId = generateSeriesId();
+        }
+        const seriesId = formData.seriesId; // 取得本批次共用的 seriesId // Get shared seriesId for this batch
+        console.log('本次所有自選課程共用 seriesId:', seriesId); // Log for debug
+        let successCount = 0;
+        let hasError = false;
+        let createdCourses = []; // 儲存成功建立的課程資料 // Store successfully created course data
+        // 為每個選擇的日期創建課程 // Create course for each selected date
+        for (const date of formData.selectedDates) {
+          try {
+            // 明確組裝課程資料 // Explicitly assemble schedule data
+            const scheduleData = {
+              school_name: formData.schoolName, // 補習班名稱 // School name
+              class_name: formData.className,   // 班級名稱 // Class name
+              course_type: formData.courseType, // 課程類型 // Course type
+              teacher_id: formData.teacherId,   // 老師ID // Teacher ID
+              date: date,                       // 上課日期 // Course date
+              start_time: formData.startTime,   // 開始時間 // Start time
+              end_time: formData.endTime,       // 結束時間 // End time
+              course_fee: formData.courseFee,   // 課程費用 // Course fee
+              teacher_fee: formData.teacherFee, // 老師費用 // Teacher fee
+              county: formData.county,          // 縣市 // County
+              district: formData.district,      // 區域 // District
+              notes: formData.notes,            // 備註 // Notes
+              assistants: formData.assistants,  // 助教 // Assistants
+              is_recurring: false,              // 非重複性課程 // Not recurring
+              series_id: seriesId               // 同一系列ID // Same series ID for all
+            };
+            const response = await scheduleAPI.createSchedule(scheduleData);
+            if (response.success) {
+              successCount++;
+              createdCourses.push(response.data); // 收集課程資料 // Collect course data
+            } else {
+              hasError = true;
+              console.error('創建課程失敗:', response.message); // 課程建立失敗 // Course creation failed
+            }
+          } catch (error) {
+            hasError = true;
+            console.error('創建課程時發生錯誤:', error); // 建立過程發生錯誤 // Error during creation
+          }
+        }
+        // 清空 seriesId，避免下次重複使用 // Clear seriesId after submit
+        formData.seriesId = '';
+        if (successCount > 0) {
+          if (hasError) {
+            Message.warning(`部分課程創建成功，共 ${successCount} 堂`); // 部分成功 // Partial success
+          } else {
+            Message.success(`成功創建 ${successCount} 堂自選日期課程`); // 全部成功 // All success
+          }
+          // 回傳所有成功建立的課程詳細資料 // Emit all created course details
+          emit('submit', createdCourses);
+          handleClose();
+        } else {
+          Message.error('課程創建失敗，請檢查輸入資料'); // 全部失敗 // All failed
+        }
+      } else if (formData.scheduleMode === 'single') {
+        // 單堂課程模式 Single course mode
         const scheduleData = {
-          ...baseEventData,
+          school_name: formData.schoolName,
+          class_name: formData.className,
+          course_type: formData.courseType,
+          teacher_id: formData.teacherId,
           date: formData.date,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+          course_fee: formData.courseFee,
+          teacher_fee: formData.teacherFee,
+          county: formData.county,
+          district: formData.district,
+          notes: formData.notes,
+          assistants: formData.assistants,
           is_recurring: false
         };
-        
         const response = await scheduleAPI.createSchedule(scheduleData);
-        console.log('單次課程創建響應:', response);
-        
         if (response.success) {
           emit('submit', response.data);
           handleClose();
         } else {
           Message.error(response.message || '課程排程創建失敗');
         }
-      } else {
-        // 如果有結束日期，創建重複性課程 If has end date, create recurring courses
-        console.log('選擇的重複性日期:', formData.recurringDays);
-        console.log('星期幾選項:', weekDays);
-        
+      } else if (formData.scheduleMode === 'recurring') {
+        // 週期性課程模式 Recurring course mode
+        if (!formData.endDate) {
+          Message.error('請選擇結束日期');
+          return;
+        }
         const recurringDays = formData.recurringDays
-          .map((checked, index) => {
-            console.log(`第 ${index} 天: ${checked ? '已選擇' : '未選擇'}`);
-            // 直接使用 index + 1 作為星期值（1-7，週一到週日）
-            // Directly use index + 1 as weekday value (1-7, Monday to Sunday)
-            return checked ? index + 1 : null;
-          })
+          .map((checked, index) => checked ? index + 1 : null)
           .filter(Boolean);
-          
-        console.log('生成的重複性日期:', recurringDays);
-        
-        console.log('創建重複性課程:', {
-          ...baseEventData,
-          date: formData.date,
-          is_recurring: true,
-          recurring_days: recurringDays,
-          recurring_start_date: formData.date,
-          recurring_end_date: formData.endDate
-        });
-        
         if (recurringDays.length === 0) {
           Message.error('請選擇至少一個重複的星期');
           return;
         }
-        
         const scheduleData = {
-          ...baseEventData,
+          school_name: formData.schoolName,
+          class_name: formData.className,
+          course_type: formData.courseType,
+          teacher_id: formData.teacherId,
           date: formData.date,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+          course_fee: formData.courseFee,
+          teacher_fee: formData.teacherFee,
+          county: formData.county,
+          district: formData.district,
+          notes: formData.notes,
+          assistants: formData.assistants,
           is_recurring: true,
           recurring_days: recurringDays,
           recurring_start_date: formData.date,
           recurring_end_date: formData.endDate
         };
-        
         const response = await scheduleAPI.createSchedule(scheduleData);
-        console.log('重複性課程創建響應:', response);
-        
         if (response.success) {
           emit('submit', response.data);
           handleClose();
@@ -554,6 +624,13 @@ export const setup = (props, { emit }) => {
     } finally {
       loading.value = false;
     }
+  };
+
+  // 格式化日期 Format date
+  const formatDate = (date) => {
+    // 若不是 Date 物件則轉換 If not a Date object, convert
+    const d = (date instanceof Date) ? date : new Date(date);
+    return format(d, 'yyyy-MM-dd');
   };
 
   return {
@@ -575,5 +652,9 @@ export const setup = (props, { emit }) => {
     handleCountyChange,
     schoolNameOptions,
     handleSchoolNameSearch,
+    scheduleModes,
+    handleDateSelect,
+    removeSelectedDate,
+    formatDate, // 將 formatDate 暴露給 template Use formatDate in template
   };
 }; 
