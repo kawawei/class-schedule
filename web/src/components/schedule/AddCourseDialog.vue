@@ -98,15 +98,12 @@
       </div>
 
       <!-- 自選日期模式 Custom Dates Mode -->
-      <div v-if="formData.scheduleMode === 'custom'" class="custom-dates-section">
-        <div class="section-title">選擇上課日期 / Select Course Dates</div>
-        <div class="calendar-container">
-          <!-- 多日期選擇器組件 Multi Date Picker Component -->
-          <AppMultiDatePicker
-            v-model="formData.selectedDates"
-            @change="handleDateSelect"
-          />
-        </div>
+      <div v-if="formData.scheduleMode === 'custom'">
+        <!-- 多日期選擇器組件 Multi Date Picker Component -->
+        <AppMultiDatePicker
+          v-model="formData.selectedDates"
+          @change="handleDateSelect"
+        />
         <div class="selected-dates">
           <div v-for="date in formData.selectedDates" :key="date.getTime()" class="selected-date">
             {{ formatDate(date) }}
@@ -271,5 +268,50 @@ export default {
 </script>
 
 <style lang="scss">
-// 移除所有樣式代碼 Remove all style code
+.selected-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0 12px;
+
+  .selected-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+
+    .remove-date {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #ff4d4f;
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}
+
+// 修改日曆選中日期的文字顏色
+:deep(.multi-date-picker) {
+  .selected {
+    color: white !important;
+  }
+}
 </style> 

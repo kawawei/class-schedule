@@ -268,7 +268,12 @@ export default defineComponent({
         background-color: var(--color-primary);
         
         .date-number {
-          color: var(--color-white);
+          color: white !important;
+          font-weight: var(--font-weight-bold);
+        }
+
+        &:hover {
+          background-color: var(--color-primary-dark);
         }
       }
 
