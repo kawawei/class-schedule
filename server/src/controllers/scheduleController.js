@@ -305,7 +305,6 @@ const scheduleController = {
         console.log('創建單次課程');
         const schedule = await CourseSchedule.create({
           ...scheduleData,
-          series_id: null,  // 單次課程設置 series_id 為 null Set series_id to null for single course
           company_code: companyCode,
           course_fee: scheduleData.course_fee || null,  // 允許空值 Allow null
           teacher_fee: scheduleData.teacher_fee || null,  // 允許空值 Allow null
