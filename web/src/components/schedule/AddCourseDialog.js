@@ -470,6 +470,12 @@ export const setup = (props, { emit }) => {
 
   // 處理提交 Handle submit
   const handleSubmit = async () => {
+    // 防止重複提交 Prevent duplicate submission
+    if (loading.value) {
+      console.log('正在提交中，請勿重複提交 / Submitting, please do not submit repeatedly');
+      return;
+    }
+
     try {
       loading.value = true;
       
@@ -486,14 +492,14 @@ export const setup = (props, { emit }) => {
             : !formData.date
         )
       ) {
-        Message.error('請填寫必填欄位');
+        Message.error('請填寫必填欄位 / Please fill in required fields');
         return;
       }
 
       // 根據排課模式處理不同的提交邏輯 Handle different submit logic based on schedule mode
       if (formData.scheduleMode === 'custom') {
         if (formData.selectedDates.length === 0) {
-          Message.error('請選擇至少一個上課日期');
+          Message.error('請選擇至少一個上課日期 / Please select at least one course date');
           return;
         }
         // 若尚未產生 seriesId，則產生並掛在 formData 上 // Generate and attach seriesId to formData if not exists
@@ -504,7 +510,7 @@ export const setup = (props, { emit }) => {
         console.log('本次所有自選課程共用 seriesId:', seriesId); // Log for debug
         let successCount = 0;
         let hasError = false;
-        let createdCourses = []; // 儲存成功建立的課程資料 // Store successfully created course data
+        let createdCourses = [];
         // 為每個選擇的日期創建課程 // Create course for each selected date
         for (const date of formData.selectedDates) {
           try {
@@ -532,26 +538,26 @@ export const setup = (props, { emit }) => {
               createdCourses.push(response.data); // 收集課程資料 // Collect course data
             } else {
               hasError = true;
-              console.error('創建課程失敗:', response.message); // 課程建立失敗 // Course creation failed
+              console.error('創建課程失敗 / Course creation failed:', response.message);
             }
           } catch (error) {
             hasError = true;
-            console.error('創建課程時發生錯誤:', error); // 建立過程發生錯誤 // Error during creation
+            console.error('創建課程時發生錯誤 / Error during course creation:', error);
           }
         }
         // 清空 seriesId，避免下次重複使用 // Clear seriesId after submit
         formData.seriesId = '';
         if (successCount > 0) {
           if (hasError) {
-            Message.warning(`部分課程創建成功，共 ${successCount} 堂`); // 部分成功 // Partial success
+            Message.warning(`部分課程創建成功，共 ${successCount} 堂 / Partially successful, created ${successCount} courses`);
           } else {
-            Message.success(`成功創建 ${successCount} 堂自選日期課程`); // 全部成功 // All success
+            Message.success(`成功創建 ${successCount} 堂自選日期課程 / Successfully created ${successCount} custom date courses`);
           }
           // 回傳所有成功建立的課程詳細資料 // Emit all created course details
           emit('submit', createdCourses);
           handleClose();
         } else {
-          Message.error('課程創建失敗，請檢查輸入資料'); // 全部失敗 // All failed
+          Message.error('課程創建失敗，請檢查輸入資料 / Course creation failed, please check input data');
         }
       } else if (formData.scheduleMode === 'single') {
         // 單堂課程模式 Single course mode
@@ -576,19 +582,19 @@ export const setup = (props, { emit }) => {
           emit('submit', response.data);
           handleClose();
         } else {
-          Message.error(response.message || '課程排程創建失敗');
+          Message.error(response.message || '課程排程創建失敗 / Course schedule creation failed');
         }
       } else if (formData.scheduleMode === 'recurring') {
         // 週期性課程模式 Recurring course mode
         if (!formData.endDate) {
-          Message.error('請選擇結束日期');
+          Message.error('請選擇結束日期 / Please select end date');
           return;
         }
         const recurringDays = formData.recurringDays
           .map((checked, index) => checked ? index + 1 : null)
           .filter(Boolean);
         if (recurringDays.length === 0) {
-          Message.error('請選擇至少一個重複的星期');
+          Message.error('請選擇至少一個重複的星期 / Please select at least one recurring day');
           return;
         }
         const scheduleData = {
@@ -615,12 +621,12 @@ export const setup = (props, { emit }) => {
           emit('submit', response.data);
           handleClose();
         } else {
-          Message.error(response.message || '重複性課程排程創建失敗');
+          Message.error(response.message || '重複性課程排程創建失敗 / Recurring course schedule creation failed');
         }
       }
     } catch (error) {
-      console.error('創建課程排程失敗:', error);
-      Message.error('創建課程排程失敗');
+      console.error('創建課程排程失敗 / Failed to create course schedule:', error);
+      Message.error('創建課程排程失敗 / Failed to create course schedule');
     } finally {
       loading.value = false;
     }
