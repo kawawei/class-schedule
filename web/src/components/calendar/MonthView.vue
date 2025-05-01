@@ -66,6 +66,7 @@
                 :is-teacher="isTeacher"
                 class="month-schedule-block"
                 @click="handleScheduleBlockClick($event, event)"
+                @dblclick="handleScheduleBlockDoubleClick($event, event)"
                 @dragstart="handleDragStart"
                 @dragend="handleDragEnd"
               />
@@ -149,7 +150,7 @@ export default defineComponent({
     }
   },
   
-  emits: ['event-click', 'date-click', 'course-move', 'dragstart', 'dragend'],
+  emits: ['event-click', 'date-click', 'course-move', 'dragstart', 'dragend', 'event-dblclick'],
   
   setup(props, { emit }) {
     // 星期標題 Weekday headers (英文) English weekday headers
@@ -164,6 +165,9 @@ export default defineComponent({
     
     // 添加拖曳狀態 Add drag state
     const isDragging = ref(false);
+
+    // 選中的課程 Selected course
+    const selectedCourse = ref(null);
 
     // 監聽 events 變化，更新 courseDataService
     // Watch for events changes and update courseDataService
@@ -249,12 +253,25 @@ export default defineComponent({
       emit('date-click', date);
     };
     
-    // 處理課程方塊點擊 Handle schedule block click
-    const handleScheduleBlockClick = (event, scheduleEvent) => {
+    // 處理課程方塊點擊事件 Handle schedule block click event
+    const handleScheduleBlockClick = (event, course) => {
       // 阻止事件冒泡到日期單元格 Prevent event bubbling to date cell
       event?.preventDefault?.();
-      // 發出事件點擊事件 Emit event click event
-      handleEventClick(scheduleEvent);
+      
+      // 更新選中的課程 Update selected course
+      selectedCourse.value = course.isSelected ? course : null;
+      
+      // 觸發事件點擊事件 Emit event click event
+      emit('event-click', course);
+    };
+    
+    // 處理課程方塊雙擊事件 Handle schedule block double click event
+    const handleScheduleBlockDoubleClick = (event, course) => {
+      // 阻止事件冒泡到日期單元格 Prevent event bubbling to date cell
+      event?.preventDefault?.();
+      
+      // 觸發事件雙擊事件 Emit event double click event
+      emit('event-dblclick', course);
     };
     
     // 處理事件點擊 Handle event click
@@ -406,8 +423,10 @@ export default defineComponent({
       isSelectedDate,
       selectedDate,
       isDragging,
+      selectedCourse,
       handleDayClick,
       handleScheduleBlockClick,
+      handleScheduleBlockDoubleClick,
       handleEventClick,
       handleMoreEventsClick,
       getSortedEventsForDay,

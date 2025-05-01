@@ -45,6 +45,14 @@ export default defineComponent({
     
     // 課程事件數據 Course events data
     const courseEvents = ref([]);
+    
+    // 過濾後的課程事件 Filtered course events
+    const filteredCourseEvents = computed(() => {
+      return courseEvents.value;
+    });
+    
+    // 是否為教師 Is teacher
+    const isTeacher = ref(false);
 
     // 篩選類別配置 Filter categories configuration
     const filterCategories = ref([
@@ -381,60 +389,20 @@ export default defineComponent({
       }
     };
 
-    // 處理課程點擊事件 Handle course click
-    const handleEventClick = async (event) => {
-      console.log('課程點擊事件 Course click event:', event);
-      try {
-        // 獲取完整的課程詳情 Get complete course details
-        const response = await scheduleAPI.getSchedule(event.id);
-        console.log('獲取到的課程詳情 Course details received:', response);
-        
-        if (response.success) {
-          const courseData = response.data;
-          console.log('後端返回的原始數據 Backend raw data:', courseData);
-          
-          // 檢查是否為重複性課程 Check if it's a recurring course
-          const isRecurring = courseData.series_id != null;
-          console.log('是否為重複性課程 Is recurring course:', isRecurring);
-          
-          selectedCourseData.value = {
-            id: courseData.id,
-            courseType: courseData.course_type,
-            schoolName: courseData.school_name,
-            className: courseData.class_name,
-            teacherId: courseData.teacher_id,
-            teacherName: courseData.teacher?.name || '',
-            assistantName: courseData.assistants?.[0]?.assistant_id,
-            startTime: courseData.start_time,
-            endTime: courseData.end_time,
-            date: courseData.date,
-            courseFee: courseData.course_fee,
-            teacherFee: courseData.teacher_fee,
-            assistantFee: courseData.assistants?.[0]?.fee || 0,
-            county: courseData.county || '',
-            district: courseData.district || '',
-            notes: courseData.notes || '',  // 確保包含備註字段
-            teacher: courseData.teacher,
-            assistants: courseData.assistants || [],
-            series_id: courseData.series_id
-          };
-          
-          console.log('處理後的課程數據:', {
-            schoolName: selectedCourseData.value.schoolName,
-            className: selectedCourseData.value.className,
-            county: selectedCourseData.value.county,
-            district: selectedCourseData.value.district,
-            notes: selectedCourseData.value.notes
-          });
-          
-          showScheduleDetailDialog.value = true;
-        } else {
-          Message.error('獲取課程詳情失敗 Failed to get course details');
-        }
-      } catch (error) {
-        console.error('獲取課程詳情失敗:', error);
-        Message.error('獲取課程詳情失敗 Failed to get course details');
-      }
+    // 選中的課程 Selected course
+    const selectedCourse = ref(null);
+    
+    // 處理課程方塊點擊事件 Handle schedule block click event
+    const handleEventClick = (course) => {
+      // 更新選中的課程 Update selected course
+      selectedCourse.value = course.isSelected ? course : null;
+    };
+    
+    // 處理課程方塊雙擊事件 Handle schedule block double click event
+    const handleEventDoubleClick = (course) => {
+      // 顯示課程詳情對話框 Show course detail dialog
+      selectedCourseData.value = course;
+      showScheduleDetailDialog.value = true;
     };
 
     // 處理日期點擊 Handle date click
@@ -674,6 +642,8 @@ export default defineComponent({
       isAddCourseDialogVisible,
       isLoggingOut,
       courseEvents,
+      filteredCourseEvents,
+      isTeacher,
       viewOptions,
       currentYear,
       currentMonth,
@@ -683,6 +653,7 @@ export default defineComponent({
       hideAddCourseDialog,
       handleAddCourse,
       handleEventClick,
+      handleEventDoubleClick,
       handleDateClick,
       navigatePrevious,
       navigateNext,
@@ -699,7 +670,8 @@ export default defineComponent({
       loading,
       currentDayDate,
       filterCategories,
-      handleFilterChange
+      handleFilterChange,
+      selectedCourse
     };
   }
 }); 

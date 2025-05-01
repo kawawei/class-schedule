@@ -80,8 +80,10 @@
           <component 
             :is="currentCalendarComponent" 
             :current-date="currentDate"
-            :events="courseEvents"
+            :events="filteredCourseEvents"
+            :is-teacher="isTeacher"
             @event-click="handleEventClick"
+            @event-dblclick="handleEventDoubleClick"
             @date-click="handleDateClick"
             @course-move="handleCourseMove"
           ></component>
@@ -104,140 +106,6 @@
       @save="handleCourseUpdate"
       @delete="handleCourseDelete"
     />
-
-    <!-- 暫時隱藏對話框 Temporarily hide dialogs -->
-    <!-- 
-    <el-dialog
-      :visible.sync="courseDialogVisible"
-      :title="courseDialogTitle"
-      width="500px"
-      @close="resetCourseForm"
-    >
-      <!-- 課程表單 Course form -->
-    <!--
-      <el-form :model="currentCourse" label-width="80px">
-        <el-form-item label="課程名稱">
-          <el-input v-model="currentCourse.title" placeholder="請輸入課程名稱"></el-input>
-        </el-form-item>
-        <el-form-item label="開始時間">
-          <el-date-picker
-            v-model="currentCourse.start"
-            type="datetime"
-            placeholder="選擇開始時間"
-            format="yyyy-MM-dd HH:mm"
-            value-format="yyyy-MM-dd HH:mm"
-          ></el-date-picker>
-        </el-form-item>
-        <el-form-item label="結束時間">
-          <el-date-picker
-            v-model="currentCourse.end"
-            type="datetime"
-            placeholder="選擇結束時間"
-            format="yyyy-MM-dd HH:mm"
-            value-format="yyyy-MM-dd HH:mm"
-          ></el-date-picker>
-        </el-form-item>
-        <el-form-item label="老師">
-          <el-select v-model="currentCourse.teacherId" placeholder="請選擇老師">
-            <el-option
-              v-for="teacher in teachers"
-              :key="teacher.id"
-              :label="teacher.name"
-              :value="teacher.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="課程類型">
-          <el-select v-model="currentCourse.courseTypeId" placeholder="請選擇課程類型">
-            <el-option
-              v-for="type in courseTypes"
-              :key="type.id"
-              :label="type.name"
-              :value="type.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="地點">
-          <el-select v-model="currentCourse.locationId" placeholder="請選擇地點">
-            <el-option
-              v-for="location in locations"
-              :key="location.id"
-              :label="location.name"
-              :value="location.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="備註">
-          <el-input
-            type="textarea"
-            v-model="currentCourse.description"
-            placeholder="請輸入備註"
-            :rows="3"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="courseDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveCourse">確定</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 篩選對話框 Filter dialog -->
-    <!--
-    <el-dialog
-      :visible.sync="filterDialogVisible"
-      title="篩選條件"
-      width="400px"
-    >
-      <el-form :model="filters" label-width="80px">
-        <el-form-item label="老師">
-          <el-select v-model="filters.teacherId" placeholder="請選擇老師" clearable>
-            <el-option
-              v-for="teacher in teachers"
-              :key="teacher.id"
-              :label="teacher.name"
-              :value="teacher.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="課程類型">
-          <el-select v-model="filters.courseTypeId" placeholder="請選擇課程類型" clearable>
-            <el-option
-              v-for="type in courseTypes"
-              :key="type.id"
-              :label="type.name"
-              :value="type.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="地點">
-          <el-select v-model="filters.locationId" placeholder="請選擇地點" clearable>
-            <el-option
-              v-for="location in locations"
-              :key="location.id"
-              :label="location.name"
-              :value="location.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="日期範圍">
-          <el-date-picker
-            v-model="filters.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="開始日期"
-            end-placeholder="結束日期"
-            format="yyyy-MM-dd"
-            value-format="yyyy-MM-dd"
-          ></el-date-picker>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="resetFilters">重置</el-button>
-        <el-button type="primary" @click="applyFilters">應用</el-button>
-      </div>
-    </el-dialog>
-    -->
   </div>
 </template>
 
