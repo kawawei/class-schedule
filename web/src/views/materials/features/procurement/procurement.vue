@@ -187,6 +187,11 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import axios from 'axios';
 import { ref } from 'vue';
 import Message from '@/utils/message';
+import { 
+  format,
+  addHours,
+  parseISO
+} from 'date-fns';
 
 export default {
   name: 'ProcurementManagement',
@@ -211,6 +216,11 @@ export default {
         case 'rejected': return 'cancelled'; // 已拒絕 → 已取消
         default: return 'upcoming';
       }
+    };
+
+    // 格式化創建時間 Format creation time
+    const formatCreatedAt = (date) => {
+      return format(addHours(parseISO(date), 8), 'yyyy/MM/dd HH:mm');
     };
 
     // 取得 useProcurementManagement 回傳的 loading 狀態與方法 Get loading state and methods from useProcurementManagement
@@ -293,7 +303,8 @@ export default {
       showDeleteDialog,
       handleDeleteProcurement,
       handleDialogClose,
-      isDeleting
+      isDeleting,
+      formatCreatedAt // 導出格式化函數
     };
   }
 };

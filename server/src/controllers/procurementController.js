@@ -104,8 +104,20 @@ exports.createProcurement = async (req, res) => {
 
     // 計算總金額 Calculate total amount
     const totalAmount = items.reduce((sum, item) => {
-      return sum + (Number(item.quantity) * Number(item.unitPrice));
+      // 計算每個項目的規格總金額 Calculate total amount for each item's specifications
+      const itemTotal = item.specifications?.reduce((specSum, spec) => {
+        return specSum + (Number(spec.quantity || 0) * Number(spec.unitPrice || 0));
+      }, 0) || 0;
+      return sum + itemTotal;
     }, 0);
+
+    // 計算額外費用總額 Calculate extra charges total
+    const extraChargesTotal = extraCharges?.reduce((sum, charge) => {
+      return sum + (Number(charge.amount) || 0);
+    }, 0) || 0;
+
+    // 總金額 = 商品金額 + 額外費用 Total amount = items total + extra charges
+    const finalTotalAmount = totalAmount + extraChargesTotal;
 
     // 創建採購單 Create procurement
     const procurement = await Procurement.create({
@@ -113,7 +125,7 @@ exports.createProcurement = async (req, res) => {
       procurementDate,
       supplier,
       items,
-      totalAmount,
+      totalAmount: finalTotalAmount,
       currency,
       remark,
       extraCharges,
@@ -158,15 +170,27 @@ exports.updateProcurement = async (req, res) => {
 
     // 計算總金額 Calculate total amount
     const totalAmount = items.reduce((sum, item) => {
-      return sum + (Number(item.quantity) * Number(item.unitPrice));
+      // 計算每個項目的規格總金額 Calculate total amount for each item's specifications
+      const itemTotal = item.specifications?.reduce((specSum, spec) => {
+        return specSum + (Number(spec.quantity || 0) * Number(spec.unitPrice || 0));
+      }, 0) || 0;
+      return sum + itemTotal;
     }, 0);
+
+    // 計算額外費用總額 Calculate extra charges total
+    const extraChargesTotal = extraCharges?.reduce((sum, charge) => {
+      return sum + (Number(charge.amount) || 0);
+    }, 0) || 0;
+
+    // 總金額 = 商品金額 + 額外費用 Total amount = items total + extra charges
+    const finalTotalAmount = totalAmount + extraChargesTotal;
 
     // 更新採購單 Update procurement
     await procurement.update({
       procurementDate,
       supplier,
       items,
-      totalAmount,
+      totalAmount: finalTotalAmount,
       currency,
       remark,
       extraCharges
@@ -199,14 +223,15 @@ exports.approveProcurement = async (req, res) => {
       });
     }
 
-    if (procurement.status !== 'pending') {
+    // 更新採購單狀態為已進貨 Update procurement status to received
+    if (procurement.status !== 'pending_receipt') {
       return res.status(400).json({
         success: false,
-        message: '只能審核待審核狀態的採購單'
+        message: '只有待進貨的採購單可以標記為已進貨'
       });
     }
 
-    await procurement.update({ status: 'approved' });
+    await procurement.update({ status: 'received' });
 
     res.json({
       success: true,
@@ -234,14 +259,15 @@ exports.rejectProcurement = async (req, res) => {
       });
     }
 
-    if (procurement.status !== 'pending') {
+    // 更新採購單狀態為待進貨 Update procurement status to pending receipt
+    if (procurement.status !== 'draft') {
       return res.status(400).json({
         success: false,
-        message: '只能拒絕待審核狀態的採購單'
+        message: '只有草稿狀態的採購單可以標記為待進貨'
       });
     }
 
-    await procurement.update({ status: 'rejected' });
+    await procurement.update({ status: 'pending_receipt' });
 
     res.json({
       success: true,

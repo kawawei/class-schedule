@@ -9,7 +9,7 @@ import {
   addDays, 
   startOfMonth, 
   endOfMonth, 
-  format 
+  format
 } from 'date-fns';
 import { useRouter } from 'vue-router';
 import axios from 'axios'; // 新增：直接引入 axios
@@ -39,9 +39,26 @@ export const useProcurementManagement = () => {
   const procurementColumns = [
     { key: 'procurementNo', title: '採購單號' },
     { key: 'supplier', title: '供應商' },
-    { key: 'totalAmount', title: '總金額' },
+    { 
+      key: 'totalAmount', 
+      title: '總金額',
+      formatter: (row) => {
+        const amount = Number(row.totalAmount || 0).toFixed(2);
+        return row.currency === 'CNY' ? `¥ ${amount}` : `NT$ ${amount}`;
+      }
+    },
     { key: 'status', title: '狀態', slot: true },
-    { key: 'createdAt', title: '創建時間' },
+    { 
+      key: 'createdAt', 
+      title: '創建時間',
+      formatter: (row) => {
+        if (!row.createdAt) return '';
+        // 直接解析 ISO 字串並格式化，不需要時區調整
+        // Parse ISO string and format directly, no timezone adjustment needed
+        const date = parseISO(row.createdAt);
+        return format(date, 'yyyy/MM/dd HH:mm');
+      }
+    },
     { key: 'actions', title: '操作', slot: true }
   ];
 
@@ -224,7 +241,7 @@ export const useProcurementManagement = () => {
   const approveProcurement = async (procurement) => {
     try {
       // 更新採購單狀態 Update procurement status
-      procurement.status = 'approved';
+      procurement.status = 'received';
       
       // 在實際應用中，這裡應該調用後端 API
       // In real application, should call backend API here

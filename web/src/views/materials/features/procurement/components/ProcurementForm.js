@@ -58,9 +58,8 @@ export const useProcurementForm = (props, { emit }) => {
   // 狀態選項 Status options
   const statusOptions = [
     { value: 'draft', label: '草稿' },
-    { value: 'pending', label: '待審核' },
-    { value: 'approved', label: '已審核' },
-    { value: 'rejected', label: '已拒絕' }
+    { value: 'pending_receipt', label: '待進貨' },
+    { value: 'received', label: '已進貨' }
   ]
 
   // 幣種選項 Currency options

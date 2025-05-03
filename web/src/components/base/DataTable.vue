@@ -84,6 +84,12 @@ export default {
   methods: {
     // 獲取列值 Get column value
     getColumnValue(row, column) {
+      // 如果有 formatter，優先使用 formatter
+      // If formatter exists, use it first
+      if (column.formatter && typeof column.formatter === 'function') {
+        return column.formatter(row);
+      }
+
       if (column.render && typeof column.render === 'function') {
         return column.render(row);
       }
