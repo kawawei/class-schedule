@@ -109,6 +109,17 @@
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
             </button>
+            <!-- 進貨按鈕 Purchase button -->
+            <button
+              v-if="row.status === 'draft'"
+              class="icon-button purchase-btn"
+              @click="handlePurchase(row)"
+              title="進貨"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+            </button>
             <!-- 刪除按鈕 Delete button (紅色 danger) -->
             <button
               class="icon-button delete-btn danger"

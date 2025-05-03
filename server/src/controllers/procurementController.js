@@ -315,4 +315,43 @@ exports.deleteProcurement = async (req, res) => {
       message: '刪除採購單失敗'
     });
   }
+};
+
+// 更新採購單狀態 Update procurement status
+exports.updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const procurement = await Procurement.findByPk(id);
+
+    if (!procurement) {
+      return res.status(404).json({
+        success: false,
+        message: '採購單不存在'
+      });
+    }
+
+    // 檢查狀態轉換是否合法 Check if status transition is valid
+    if (procurement.status === 'draft' && status === 'pending_receipt') {
+      await procurement.update({ status });
+      
+      res.json({
+        success: true,
+        message: '採購單狀態更新成功',
+        data: procurement
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: '無效的狀態更新'
+      });
+    }
+  } catch (error) {
+    console.error('更新採購單狀態失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新採購單狀態失敗'
+    });
+  }
 }; 

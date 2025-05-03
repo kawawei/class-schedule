@@ -157,9 +157,11 @@ export const useProcurementManagement = () => {
   const getStatusText = (status) => {
     const texts = {
       draft: '草稿', // draft → 草稿
-      pending: '待審核', // pending → 待審核
-      approved: '已審核', // approved → 已審核
-      rejected: '已拒絕' // rejected → 已拒絕
+      pending_receipt: '待進貨', // pending_receipt → 待進貨
+      received: '已進貨', // received → 已進貨
+      pending: '待審核', // pending → 待審核（如有）
+      approved: '已審核', // approved → 已審核（如有）
+      rejected: '已拒絕' // rejected → 已拒絕（如有）
     };
     return texts[status] || status;
   };
@@ -254,13 +256,36 @@ export const useProcurementManagement = () => {
   };
 
   // 進貨操作 Purchase operation
-  const handlePurchase = (procurement) => {
-    // 跳轉到進貨頁面並帶上採購單信息
-    // Navigate to purchase page with procurement info
-    router.push({
-      name: 'purchase',
-      query: { procurementId: procurement.id }
-    });
+  const handlePurchase = async (procurement) => {
+    try {
+      loading.value = true;
+      // 取得 JWT token Get JWT token
+      const token = localStorage.getItem('token');
+      
+      // 呼叫後端 API 更新狀態為待進貨 Call backend API to update status to pending receipt
+      const response = await axios.patch(`/procurements/${procurement.id}/status`, 
+        { status: 'pending_receipt' },
+        {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        Message.success('採購單已更新為待進貨狀態！');
+        // 重新獲取採購單列表 Refresh procurement list
+        await fetchProcurements();
+      } else {
+        throw new Error(response.data?.message || '更新狀態失敗');
+      }
+    } catch (error) {
+      console.error('更新採購單狀態失敗:', error);
+      Message.error('更新狀態失敗: ' + (error.response?.data?.message || error.message || error));
+    } finally {
+      loading.value = false;
+    }
   };
 
   // 拒絕採購單 Reject procurement

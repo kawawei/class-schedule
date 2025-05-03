@@ -15,6 +15,9 @@ router.post('/', procurementController.createProcurement);
 // 更新採購單 Update procurement
 router.put('/:id', procurementController.updateProcurement);
 
+// 更新採購單狀態 Update procurement status
+router.patch('/:id/status', procurementController.updateStatus);
+
 // 審核採購單 Approve procurement
 router.post('/:id/approve', procurementController.approveProcurement);
 
