@@ -128,17 +128,64 @@
         </template>
       </DataTable>
     </div>
+
+    <!-- 新增進貨單對話框 Add Purchase Dialog -->
+    <AppDialog
+      v-model="dialogVisible"
+      title="新增進貨單"
+      width="1100px"
+      @close="handleDialogClose"
+    >
+      <PurchaseForm
+        ref="purchaseForm"
+        :existing-numbers="existingPurchaseNumbers"
+        @submit="handleFormSubmit"
+        @cancel="handleDialogClose"
+        @open-scanner="handleOpenScanner"
+      />
+    </AppDialog>
+
+    <!-- 掃描器對話框 Scanner Dialog -->
+    <!-- 對話框寬度加大為520px，提升顯示空間 Dialog width increased to 520px for better display -->
+    <AppDialog
+      v-model="scannerVisible"
+      title="掃描條碼"
+      width="520px"
+    >
+      <div class="scanner-content">
+        <!-- 掃描模式切換按鈕區塊 Scan mode switch buttons -->
+        <div class="scanner-modes">
+          <!-- 單次掃描 Single scan -->
+          <AppButton :type="scanMode==='single'?'primary':'default'" @click="setScanMode('single')">單次掃描 Single</AppButton>
+          <!-- 連續掃描 Continuous scan -->
+          <AppButton :type="scanMode==='continuous'?'primary':'default'" @click="setScanMode('continuous')">連續掃描 Continuous</AppButton>
+          <!-- 自動掃描 Auto scan -->
+          <AppButton :type="scanMode==='auto'?'primary':'default'" @click="setScanMode('auto')">自動掃描 Auto</AppButton>
+        </div>
+        <video ref="scannerVideo" class="scanner-video"></video>
+        <div class="scanner-result" v-if="scannerResult">
+          <p>掃描結果：{{ scannerResult }}</p>
+        </div>
+      </div>
+      <template #footer>
+        <AppButton @click="closeScanner">關閉</AppButton>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
 <script>
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import AppButton from '@/components/base/AppButton.vue';
 import AppInput from '@/components/base/AppInput.vue';
 import AppSelect from '@/components/base/AppSelect.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
 import DataTable from '@/components/base/DataTable.vue';
+import PurchaseForm from './components/PurchaseForm.vue';
 import Message from '@/utils/message';
 import { parseISO, isWithinInterval, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, format } from 'date-fns';
+// 引入 ZXing 掃描器 Import ZXing scanner
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 export default defineComponent({
   name: 'PurchaseManagement',
@@ -147,7 +194,9 @@ export default defineComponent({
     AppButton,
     AppInput,
     AppSelect,
-    DataTable
+    AppDialog,
+    DataTable,
+    PurchaseForm
   },
 
   setup() {
@@ -284,8 +333,61 @@ export default defineComponent({
       return texts[status] || status;
     };
 
+    // 對話框狀態 Dialog states
+    const dialogVisible = ref(false);
+    const scannerVisible = ref(false);
+    const scannerVideo = ref(null);
+    const scannerResult = ref('');
+    const currentScanningRow = ref(null);
+    let codeReader = null; // ZXing 掃描器實例
+    let stream = null; // 攝影機串流
+
+    // 現有進貨單號 Existing purchase numbers
+    const existingPurchaseNumbers = computed(() => {
+      return purchases.value.map(purchase => purchase.id);
+    });
+
+    // 處理對話框關閉 Handle dialog close
+    const handleDialogClose = () => {
+      dialogVisible.value = false;
+    };
+
+    // 處理表單提交 Handle form submit
+    const handleFormSubmit = async (purchaseData) => {
+      try {
+        loading.value = true;
+        // 這裡可以添加提交到後端的邏輯
+        // Add backend submission logic here
+        Message.success('進貨單創建成功');
+        await fetchPurchases();
+        dialogVisible.value = false;
+      } catch (error) {
+        Message.error('進貨單創建失敗');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 處理打開掃描器 Handle open scanner
+    const handleOpenScanner = (row) => {
+      currentScanningRow.value = row;
+      scannerVisible.value = true;
+      // 這裡可以添加初始化掃描器的邏輯
+      // Add scanner initialization logic here
+    };
+
+    // 關閉掃描器 Close scanner
+    const closeScanner = () => {
+      scannerVisible.value = false;
+      scannerResult.value = '';
+      currentScanningRow.value = null;
+      // 這裡可以添加停止掃描器的邏輯
+      // Add scanner stop logic here
+    };
+
+    // 修改原有的 openAddPurchaseDialog 方法
     const openAddPurchaseDialog = () => {
-      Message.info('此功能開發中');
+      dialogVisible.value = true;
     };
 
     const viewPurchaseDetails = (purchase) => {
@@ -304,6 +406,99 @@ export default defineComponent({
       // 過濾邏輯已經在 computed 屬性中實現
     };
 
+    // 掃描器初始化與釋放
+    const startScanner = async () => {
+      if (!scannerVideo.value) return;
+      codeReader = new BrowserMultiFormatReader();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        scannerVideo.value.srcObject = stream;
+        scannerVideo.value.setAttribute('playsinline', true);
+        codeReader.decodeFromVideoElement(scannerVideo.value, (result, err) => {
+          if (result) {
+            handleScanResult(result.getText());
+          }
+        }).catch(e => {
+          if (e && e.name === 'NotFoundException') {
+            // 安靜忽略，不顯示錯誤
+          } else {
+            Message.error(e.message || '掃描器發生錯誤');
+          }
+        });
+      } catch (err) {
+        Message.error('無法啟動攝影機或存取被拒絕');
+      }
+    };
+    const stopScanner = () => {
+      if (codeReader) {
+        codeReader.reset();
+        codeReader = null;
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      if (scannerVideo.value) {
+        scannerVideo.value.srcObject = null;
+      }
+    };
+
+    // 掃描結果處理
+    const handleScanResult = (code) => {
+      scannerResult.value = code;
+      // 取得進貨表單 ref
+      const purchaseForm = document.querySelector('.purchase-form');
+      // 透過 $refs 取得組件實例
+      const formVm = purchaseForm && purchaseForm.__vueParentComponent?.ctx?.$refs?.purchaseForm;
+      if (formVm && formVm.formData && formVm.materialOptions) {
+        // 嘗試根據條碼找到商品
+        const found = formVm.materialOptions.find(m => m.value === code || m.label === code);
+        if (found) {
+          // 檢查進貨項目是否已存在該商品
+          const existRow = formVm.formData.items.find(item => item.materialId === found.value);
+          if (existRow) {
+            // 已存在則數量+1
+            if (existRow.specifications && existRow.specifications.length > 0) {
+              existRow.specifications[0].quantity += 1;
+            } else {
+              existRow.quantity = (existRow.quantity || 0) + 1;
+            }
+          } else {
+            // 不存在則自動新增一筆
+            formVm.handleAddItem();
+            const newRow = formVm.formData.items[formVm.formData.items.length - 1];
+            newRow.materialId = found.value;
+            newRow.materialName = found.label;
+            // 自動選第一個規格
+            if (formVm.specificationOptions && formVm.specificationOptions[found.value] && formVm.specificationOptions[found.value].length > 0) {
+              newRow.specifications[0].specification = formVm.specificationOptions[found.value][0].value;
+            }
+          }
+        } else {
+          Message.error('查無對應商品');
+        }
+      }
+    };
+
+    // 監聽掃描器開關
+    watch(scannerVisible, (val) => {
+      if (val) {
+        setTimeout(() => startScanner(), 200);
+      } else {
+        stopScanner();
+      }
+    });
+    onBeforeUnmount(() => {
+      stopScanner();
+    });
+
+    // 掃描模式狀態 Scan mode state
+    const scanMode = ref('single'); // 預設單次掃描 Default: single scan
+    // 切換掃描模式 Switch scan mode
+    const setScanMode = (mode) => {
+      scanMode.value = mode;
+    };
+
     return {
       loading,
       searchQuery,
@@ -317,11 +512,22 @@ export default defineComponent({
       filteredPurchases,
       purchaseColumns,
       getStatusText,
+      dialogVisible,
+      scannerVisible,
+      scannerVideo,
+      scannerResult,
+      existingPurchaseNumbers,
+      handleDialogClose,
+      handleFormSubmit,
+      handleOpenScanner,
+      closeScanner,
       openAddPurchaseDialog,
       viewPurchaseDetails,
       approvePurchase,
       rejectPurchase,
-      applyFilters
+      applyFilters,
+      scanMode, // 掃描模式狀態 Scan mode state
+      setScanMode, // 切換掃描模式 Switch scan mode
     };
   }
 });
@@ -329,4 +535,29 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 @import './purchase.scss';
+
+// 掃描器樣式 Scanner Styles
+.scanner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+
+  .scanner-video {
+    width: 100%;
+    max-width: 320px;
+    height: 240px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+  }
+
+  .scanner-result {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+}
 </style> 

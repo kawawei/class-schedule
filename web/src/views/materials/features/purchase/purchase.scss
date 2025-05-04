@@ -292,4 +292,22 @@
       }
     }
   }
+}
+
+// 掃描模式切換按鈕區塊樣式 Scanner mode switch buttons style
+.scanner-modes {
+  display: flex; // 橫向排列 Horizontal layout
+  gap: 12px; // 按鈕間距 Button spacing
+  justify-content: center; // 置中 Centered
+  margin-bottom: 16px; // 與下方內容間距 Spacing below
+  
+  // 限制按鈕寬度與字體大小 Limit button width and font size
+  :deep(.app-button) {
+    min-width: 120px; // 最小寬度 Minimum width
+    max-width: 160px; // 最大寬度 Maximum width
+    font-size: 14px; // 字體大小 Font size
+    padding: 0 10px; // 內距 Padding
+    height: 32px; // 高度 Height
+    white-space: nowrap; // 不換行 No wrap
+  }
 } 
