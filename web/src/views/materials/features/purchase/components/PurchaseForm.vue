@@ -42,7 +42,7 @@
         <AppButton
           type="default"
           class="scan-title-button"
-          @click="$emit('open-scanner', null)"
+          @click="openScanner"
         >
           <template #icon>
             <!-- 掃描圖標（四個圓角掃描框＋綠色橫槓）Scan Icon (Corners + Green Bar) -->
@@ -158,6 +158,7 @@
 
     <div class="form-divider"></div>
 
+    <!-- 備註區 Remark Area -->
     <h3 class="form-title">備註</h3>
     <div class="form-group">
       <AppInput
@@ -168,20 +169,37 @@
       />
     </div>
 
-    <div class="form-actions">
-      <AppButton @click="handleCancel">取消</AppButton>
-      <AppButton type="primary" @click="handleSubmit">提交</AppButton>
-    </div>
+    <!-- 掃描器對話框 Scanner Dialog -->
+    <AppDialog
+      v-model="scannerVisible"
+      title="掃描條碼"
+      width="450px"
+      :hide-footer="false"
+    >
+      <Scanner
+        @close="closeScanner"
+        @scan-result="handleScanResult"
+      />
+      <template #footer>
+        <AppButton @click="closeScanner">取消 Cancel</AppButton>
+        <AppButton type="primary" @click="closeScanner">確定 Confirm</AppButton>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
 <script>
-// 引入組件和工具 Import components and utilities
-import AppButton from '@/components/base/AppButton.vue'
-import AppInput from '@/components/base/AppInput.vue'
-import AppSelect from '@/components/base/AppSelect.vue'
-import DataTable from '@/components/base/DataTable.vue'
-import { usePurchaseForm } from './PurchaseForm'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { format } from 'date-fns';
+import { BrowserMultiFormatReader } from '@zxing/library';
+import AppInput from '@/components/base/AppInput.vue';
+import AppSelect from '@/components/base/AppSelect.vue';
+import AppButton from '@/components/base/AppButton.vue';
+import AppDialog from '@/components/base/AppDialog.vue';
+import DataTable from '@/components/base/DataTable.vue';
+import Scanner from '@/components/base/Scanner.vue';
+import Message from '@/utils/message';
+import { usePurchaseForm } from './PurchaseForm';
 
 export default {
   name: 'PurchaseForm',
@@ -190,7 +208,9 @@ export default {
     AppButton,
     AppInput,
     AppSelect,
-    DataTable
+    AppDialog,
+    DataTable,
+    Scanner
   },
 
   props: {
@@ -205,9 +225,66 @@ export default {
   },
 
   setup(props, { emit }) {
-    return usePurchaseForm(props, { emit })
+    // 掃描器狀態 Scanner state
+    const scannerVisible = ref(false);
+    const { formData, materialOptions, specificationOptions } = usePurchaseForm(props, { emit });
+    
+    // 打開掃描器 Open scanner
+    const openScanner = () => {
+      scannerVisible.value = true;
+    };
+    
+    // 關閉掃描器 Close scanner
+    const closeScanner = () => {
+      scannerVisible.value = false;
+    };
+    
+    // 處理掃描結果 Handle scan result
+    const handleScanResult = (code) => {
+      try {
+        // 嘗試根據條碼找到商品 Try to find product by barcode
+        const found = materialOptions.value.find(m => m.value === code || m.label === code);
+        if (found) {
+          // 檢查進貨項目是否已存在該商品 Check if item already exists
+          const existRow = formData.value.items.find(item => item.materialId === found.value);
+          if (existRow) {
+            // 已存在則數量+1 If exists, increment quantity
+            if (existRow.specifications && existRow.specifications.length > 0) {
+              existRow.specifications[0].quantity += 1;
+            } else {
+              existRow.quantity = (existRow.quantity || 0) + 1;
+            }
+          } else {
+            // 不存在則自動新增一筆 If not exists, add new item
+            handleAddItem();
+            const newRow = formData.value.items[formData.value.items.length - 1];
+            newRow.materialId = found.value;
+            newRow.materialName = found.label;
+            // 自動選第一個規格 Auto select first specification
+            if (specificationOptions.value[found.value] && specificationOptions.value[found.value].length > 0) {
+              newRow.specifications[0].specification = specificationOptions.value[found.value][0].value;
+            }
+          }
+        } else {
+          Message.error('查無對應商品');
+        }
+      } catch (error) {
+        console.error('處理掃描結果失敗:', error);
+        Message.error('處理掃描結果失敗');
+      } finally {
+        closeScanner();
+      }
+    };
+    
+    return {
+      ...usePurchaseForm(props, { emit }),
+      scannerVisible,
+      openScanner,
+      closeScanner,
+      handleScanResult
+    };
   }
-}
+};
 </script>
 
 <style lang="scss">
